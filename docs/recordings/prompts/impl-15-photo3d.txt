@@ -1,0 +1,1 @@
+spec/M3-house-workspace.md 의 빨간 AC-53(3D 사진)을 초록으로 만들어줘. 렌더 결과나 업로드한 방 사진을 workflows/cloud/photo-to-3d-moge.json 으로 3D 메시로 만들고, 회전이 제한된 전용 뷰어로 보여주는 기능이야. 스펙 1·4·5절과 ADR-0008을 봐. AGENTS.md 규칙을 따르고, 끝나기 전에 뷰어 스크린샷을 직접 확인하고 짧게 알려줘.
