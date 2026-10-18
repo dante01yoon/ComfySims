@@ -27,6 +27,7 @@ function boxDocument({ size, center }: Box): Document {
 export const fixtureBoxes = {
   'generated-offset-box.glb': { size: [1, 0.425, 0.45], center: [0.3, 0.6, -0.2] },
   'generated-squashed-box.glb': { size: [1, 0.3, 0.45], center: [-0.1, 0.05, 0.4] },
+  'generated-flat-plane.glb': { size: [1, 0, 0.45], center: [0, 0, 0] },
   'sofa-200x90x85-bottom-center.glb': { size: [2, 0.85, 0.9], center: [0, 0.425, 0] }
 } satisfies Record<string, Box>
 

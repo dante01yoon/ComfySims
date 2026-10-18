@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -15,8 +15,9 @@ const nextTarget = () => join(outputDir, `fitted-${outputCount++}.glb`)
 
 async function fit(source: string, mode?: 'exact' | 'uniform') {
   const target = nextTarget()
-  const report = await fitGlb({ source, target, dimensions: sofa, mode })
-  return { report, measured: await measureGlb(target) }
+  const outcome = await fitGlb({ source, target, dimensions: sofa, mode })
+  if (!outcome.ok) throw new Error(`fit failed: ${outcome.reason}`)
+  return { report: outcome.report, measured: await measureGlb(target) }
 }
 
 describe('AC-3 exact fit', () => {
@@ -79,5 +80,20 @@ describe('AC-12 fit report', () => {
     expect(report.scale.z).toBeCloseTo(expected.scale.z, 3)
     expect(report.distortion).toBeCloseTo(expected.distortion, 3)
     expect(report.flagged).toBe(expected.flagged)
+  })
+})
+
+describe('AC-13 fit failures are data', () => {
+  it.for([
+    { source: 'fixtures/glb/generated-flat-plane.glb', reason: 'degenerate-bounds' },
+    { source: 'fixtures/glb/not-a-glb.glb', reason: 'unreadable' },
+    { source: 'fixtures/glb/does-not-exist.glb', reason: 'unreadable' }
+  ])('AC-13 returns $reason for $source without throwing or writing a file', async ({ source, reason }) => {
+    const target = nextTarget()
+
+    const outcome = await fitGlb({ source, target, dimensions: sofa })
+
+    expect(outcome).toEqual({ ok: false, reason })
+    expect(existsSync(target)).toBe(false)
   })
 })

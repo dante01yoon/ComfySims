@@ -30,3 +30,5 @@ Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-si
 ## Style
 
 TypeScript strict, no `any`, pure functions for geometry, outcomes as data instead of throws at boundaries. English in code, commits and specs.
+
+No code comments. Say it with names, extracted functions and types; the only allowed comment is a one-line JSDoc on an exported API. Rationale goes in the ADR or the commit message. Remove existing comments in any function you touch.
