@@ -787,7 +787,7 @@ async function readinessOf(kind: BackendKind): Promise<Pick<BackendState, 'statu
   if (!catalog.success) return { status: 'unreachable', unavailable: [] }
   const unavailable = JOB_KINDS.flatMap((job) => {
     const workflow = WORKFLOW_FILES[workflowSets[kind][job]]
-    const missing = workflow ? missingFromCatalog(workflow, catalog.data) : [workflowSets[kind][job]]
+    const missing = workflow ? missingFromCatalog(workflow, catalog.data, kind) : [workflowSets[kind][job]]
     return missing.length > 0 ? [{ kind: job, missing }] : []
   })
   return { status: 'ready', unavailable }

@@ -16,7 +16,7 @@ describe('missingFromCatalog', () => {
       ControlNetLoader: { input: { required: { control_net_name: [['canny.safetensors']] } } },
       CheckpointLoaderSimple: { input: { required: { ckpt_name: ['COMBO', { options: ['flux.safetensors'] }] } } }
     }
-    expect(missingFromCatalog(workflow, catalog)).toEqual(['depth.safetensors', 'sdxl.safetensors', 'MoGeInference'])
+    expect(missingFromCatalog(workflow, catalog, 'local')).toEqual(['depth.safetensors', 'sdxl.safetensors', 'MoGeInference'])
   })
 
   it('names files from empty option lists in both combo formats and accepts installed files', () => {
@@ -26,7 +26,12 @@ describe('missingFromCatalog', () => {
       CheckpointLoaderSimple: { input: { required: { ckpt_name: ['COMBO', { options: [] }] } } },
       MoGeInference: {}
     }
-    expect(missingFromCatalog(workflow, catalog)).toEqual(['depth.safetensors', 'sdxl.safetensors'])
-    expect(missingFromCatalog(workflow, { ...catalog, CheckpointLoaderSimple: { input: { required: { ckpt_name: [['sdxl.safetensors']] } } } })).toEqual(['depth.safetensors'])
+    expect(missingFromCatalog(workflow, catalog, 'local')).toEqual(['depth.safetensors', 'sdxl.safetensors'])
+    expect(missingFromCatalog(workflow, { ...catalog, CheckpointLoaderSimple: { input: { required: { ckpt_name: [['sdxl.safetensors']] } } } }, 'local')).toEqual(['depth.safetensors'])
+  })
+
+  it('on Cloud names only absent classes, never model files', () => {
+    const catalog = { LoadImage: {}, ControlNetLoader: { input: { required: { control_net_name: [[]] } } }, CheckpointLoaderSimple: {} }
+    expect(missingFromCatalog(workflow, catalog, 'cloud')).toEqual(['MoGeInference'])
   })
 })

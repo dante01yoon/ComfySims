@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../../harness/tools/lint-workflow.ts'
-import { DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type Job, type JobKind } from '../../schema/src/index.ts'
+import { type BackendKind, DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type Job, type JobKind } from '../../schema/src/index.ts'
 
 export type PromptOutcome = { ok: true; prompt: ApiWorkflow } | { ok: false; missing: string[] }
 
@@ -79,14 +79,15 @@ function modelOptions(spec: unknown): unknown[] | null {
   return Array.isArray(options) && !isUpload ? options : null
 }
 
-/** Node classes and model files a workflow uses that a ComfyUI's `/api/object_info` catalog does not have. */
-export function missingFromCatalog(workflow: ApiWorkflow, catalog: Record<string, unknown>): string[] {
+/** Node classes a workflow uses that a ComfyUI's `/api/object_info` catalog lacks, plus model files it lacks on Local only. */
+export function missingFromCatalog(workflow: ApiWorkflow, catalog: Record<string, unknown>, backendKind: BackendKind): string[] {
   const missing = new Set<string>()
   for (const { class_type, inputs } of Object.values(workflow)) {
     if (!Object.hasOwn(catalog, class_type)) {
       missing.add(class_type)
       continue
     }
+    if (backendKind === 'cloud') continue
     const input = CatalogNode.safeParse(catalog[class_type]).data?.input
     const specs = { ...input?.required, ...input?.optional }
     for (const [name, value] of Object.entries(inputs)) {
