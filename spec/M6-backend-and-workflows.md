@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Draft |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
 | Decisions | — |
@@ -92,12 +92,13 @@ Risks
 - Local 3D generation quality/speed on a Mac may be far below Cloud → spike first; Local may launch with product → 3D marked unavailable.
 - Runtime proxy switching is a new server endpoint → same-origin + 127.0.0.1 checks as the MCP bridge (ADR-0009).
 
-Open questions (recommended answers in bold)
-1. Where the switch lives: **workspace rail chip** vs settings page.
-2. Local product → 3D model: **decide by spike** (Hunyuan3D 2.x vs TRELLIS) vs ship Local without product → 3D.
-3. "Open in ComfyUI": **open tab + copy graph to clipboard** vs ship roomfit workflows as ComfyUI templates (node pack `example_workflows/`) so they appear in ComfyUI's template browser — recommended as a follow-up.
-4. Let agents switch backend: **no (read-only `get_backend`)** vs a `set_backend` tool.
+Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approve M6 on the recommended answers"):
+1. The switch lives in the workspace rail chip.
+2. Local product → 3D: decided by a spike during M6; until it passes, Local marks product → 3D unavailable (AC-72 covers that state).
+3. "Open in ComfyUI": open tab + copy graph to clipboard; ComfyUI template packaging is a follow-up.
+4. Agents get read-only `get_backend`; no `set_backend`.
 
 ## Change log
 
 - 2026-10-18 Draft, from Dante's questions about Local/Cloud, MCP and seeing workflows.
+- 2026-10-18 Approved on the recommended answers; implement after M5.
