@@ -4,6 +4,7 @@ import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useSyncExternalStore } from 'react'
 import { Color, SRGBColorSpace, type DirectionalLight, type HemisphereLight, type PointLight } from 'three'
 
+import { studioPrompt } from '../../packages/comfy/src/index.ts'
 import type { PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
 import type { Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
 import { api, snapshot, subscribe } from './editor.ts'
@@ -293,11 +294,6 @@ export function ZoneChips({ room }: { room: Room }) {
       ))}
     </nav>
   )
-}
-
-function studioPrompt(roomName: string | undefined, preset: ScenePreset): string {
-  const subject = roomName ? `the ${roomName.toLowerCase()} of a bright modern home` : 'a bright modern home'
-  return `Photograph of ${subject}, ${preset} light, photorealistic interior, natural materials, soft shadows`
 }
 
 /** Pill bar of scene presets over the studio view, with a button that renders the current view. */

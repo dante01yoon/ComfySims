@@ -5,7 +5,7 @@
 | Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
-| Decisions | ADR-0009 (to be written on approval) |
+| Decisions | [ADR-0009](../docs/adr/0009-agent-mcp-bridge.md) |
 
 ## 1. Why
 

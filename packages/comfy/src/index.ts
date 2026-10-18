@@ -18,6 +18,12 @@ function wireTaggedInputs(workflow: ApiWorkflow, inputsByTag: InputsByTag): Prom
   return missing.length > 0 ? { ok: false, missing } : { ok: true, prompt }
 }
 
+/** The default render prompt for a room (or the whole home) under a scene preset. */
+export function studioPrompt(roomName: string | undefined, preset: string): string {
+  const subject = roomName ? `the ${roomName.toLowerCase()} of a bright modern home` : 'a bright modern home'
+  return `Photograph of ${subject}, ${preset} light, photorealistic interior, natural materials, soft shadows`
+}
+
 /** Fills the tagged inputs of a product-to-glb workflow; the template is never mutated. */
 export function buildProductPrompt(
   workflow: ApiWorkflow,

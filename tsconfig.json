@@ -12,5 +12,5 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["packages", "acceptance", "harness", "web"]
+  "include": ["packages", "acceptance", "harness", "web", "mcp"]
 }

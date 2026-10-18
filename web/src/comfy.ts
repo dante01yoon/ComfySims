@@ -21,14 +21,21 @@ export function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31)
 }
 
-/** Uploads an input, runs the workflow built for it and downloads the file it saved, reporting each step. */
+export type ComfyInput = { file: Blob; fileName: string } | { imageName: string }
+
+async function inputName(step: (status: JobStep) => void, input: ComfyInput): Promise<{ ok: true; name: string } | Failure> {
+  if ('imageName' in input) return { ok: true, name: input.imageName }
+  step('uploading')
+  return comfy.upload(input.file, input.fileName)
+}
+
+/** Uploads an input (unless it already is a ComfyUI input), runs the workflow built for it and downloads the file it saved, reporting each step. */
 export async function generate(
   step: (status: JobStep) => void,
-  input: { file: Blob; fileName: string },
+  input: ComfyInput,
   build: (uploadedName: string) => PromptOutcome
 ): Promise<{ ok: true; bytes: Uint8Array; file: SavedFile } | Failure> {
-  step('uploading')
-  const uploaded = await comfy.upload(input.file, input.fileName)
+  const uploaded = await inputName(step, input)
   if (!uploaded.ok) return uploaded
   const built = build(uploaded.name)
   if (!built.ok) return { ok: false, reason: 'rejected', message: `the workflow is missing ${built.missing.join(', ')}` }

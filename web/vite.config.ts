@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
+import { bridge } from './bridge.ts'
+
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const fixturesDir = fileURLToPath(new URL('../fixtures', import.meta.url))
 
@@ -76,7 +78,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       serveFixtures(),
-      proxyComfy({ target: env.ROOMFIT_COMFY_URL || 'http://127.0.0.1:8188', apiKey: env.COMFY_CLOUD_API_KEY || undefined })
+      proxyComfy({ target: env.ROOMFIT_COMFY_URL || 'http://127.0.0.1:8188', apiKey: env.COMFY_CLOUD_API_KEY || undefined }),
+      bridge({ tokenFile: resolve(repoRoot, '.harness/bridge-token') })
     ],
     server: { host: '127.0.0.1' }
   }

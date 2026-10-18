@@ -36,9 +36,9 @@ import type {
 import photoWorkflow from '../../workflows/cloud/photo-to-3d-moge.json'
 import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
-import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
+import { comfyOutputUri, generate, randomSeed, type ComfyInput } from './comfy.ts'
 import * as edits from './edits.ts'
-import { amend, commit, fresh, redo, undo, type History } from './history.ts'
+import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
 import { boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, studioCamera } from './framing.ts'
 import { exportPasses } from './passes.ts'
@@ -70,6 +70,7 @@ export type Editor = {
   focusedZone: string | null
   shootingEyeLevel: boolean
   lastRenderCamera: CameraPose | null
+  agentConnected: boolean
   revision: number
 }
 
@@ -104,6 +105,7 @@ let editor: Editor = {
   focusedZone: null,
   shootingEyeLevel: false,
   lastRenderCamera: null,
+  agentConnected: false,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -115,6 +117,11 @@ const threeReady = new Promise<void>((resolve) => {
 })
 let committedRevision = -1
 let controls: OrbitControlsImpl | null = null
+let actionLabel: string | null = null
+
+function currentLabel(): string {
+  return actionLabel ?? 'editor'
+}
 
 function update(change: Partial<Omit<Editor, 'revision'>>): void {
   editor = { ...editor, ...change, revision: editor.revision + 1 }
@@ -129,7 +136,7 @@ function setHistory(history: History<RoomLayout>, gesture: Gesture = editor.gest
 function edit(next: RoomLayout): void {
   if (next === editor.history.present) return
   if (editor.gesture === 'editing') return setHistory(amend(editor.history, next))
-  setHistory(commit(editor.history, next), editor.gesture === 'started' ? 'editing' : 'none')
+  setHistory(commit(editor.history, next, currentLabel()), editor.gesture === 'started' ? 'editing' : 'none')
 }
 
 function requestMeshes(layout: RoomLayout): void {
@@ -196,6 +203,11 @@ export function attachControls(instance: OrbitControlsImpl | null): void {
   controls = instance
 }
 
+/** Whether an MCP agent is attached to the bridge; shown as a badge in the workspace rail. */
+export function setAgentConnected(agentConnected: boolean): void {
+  if (agentConnected !== editor.agentConnected) update({ agentConnected })
+}
+
 export function select(id: string | null): void {
   if (id !== editor.selectedId) update({ selectedId: id })
 }
@@ -234,7 +246,9 @@ function state(): EditorState {
     focusedZone: editor.focusedZone,
     photoViewer: editor.photoViewer,
     wallCutCm: wallCutCm(editor),
-    lastRenderCamera: editor.lastRenderCamera
+    lastRenderCamera: editor.lastRenderCamera,
+    undoLabels: labels(history),
+    agentConnected: editor.agentConnected
   }
 }
 
@@ -403,15 +417,21 @@ function placementIn(zoneId: string | null, dimensions: Dimensions): Placement |
   return spot.reason === 'no-space' ? { ok: false, reason: 'no-space', message: `No space in ${zoneName(zoneId)}` } : rejection(`there is no room called ${zoneId}`)
 }
 
-function placeItem(layout: RoomLayout, assetId: string, { position, rotationY }: Placement): PlacedItem {
+function placeItem(layout: RoomLayout, assetId: string, { position, rotationY }: Placement, label = currentLabel()): PlacedItem {
   const item: PlacedItem = { id: uniqueId(assetId, layout.items), assetId, position, rotationY }
   const next = { ...layout, items: [...layout.items, item] }
-  setHistory(commit(editor.history, next), 'none')
+  setHistory(commit(editor.history, next, label), 'none')
   requestMeshes(next)
   return item
 }
 
-async function generateProduct(request: ProductRequest, step: Step): Promise<Finished<ProductPlaced> | ComfyFailure> {
+function productInput({ imageBase64, imageName, fileName }: ProductRequest): Promise<ComfyInput> | null {
+  if ((imageBase64 === undefined) === (imageName === undefined)) return null
+  if (imageName !== undefined) return Promise.resolve({ imageName })
+  return blobAt(`data:application/octet-stream;base64,${imageBase64}`).then((file) => ({ file, fileName }))
+}
+
+async function generateProduct(request: ProductRequest, step: Step, label: string): Promise<Finished<ProductPlaced> | ComfyFailure> {
   const mode = request.mode ?? 'exact'
   const name = request.name.trim()
   if (!name) return rejection('the product needs a name')
@@ -420,9 +440,11 @@ async function generateProduct(request: ProductRequest, step: Step): Promise<Fin
   const planned = placementIn(zoneId, request.dimensions)
   if (!planned.ok) return planned
 
-  const photo = await blobAt(`data:application/octet-stream;base64,${request.imageBase64}`)
+  const pending = productInput(request)
+  if (!pending) return rejection('the product needs exactly one of imageBase64 or imageName')
+  const input = await pending
   const seed = request.seed ?? randomSeed()
-  const generated = await generate(step, { file: photo, fileName: request.fileName }, (imageName) =>
+  const generated = await generate(step, input, (imageName) =>
     buildPhotoTo3dPrompt(productWorkflow, { imageName, seed })
   )
   if (!generated.ok) return generated
@@ -443,16 +465,17 @@ async function generateProduct(request: ProductRequest, step: Step): Promise<Fin
     source: { kind: 'generated', workflow: PRODUCT_WORKFLOW },
     fit: { mode, distortion }
   }
-  const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement)
+  const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement, label)
   return {
     ok: true,
     value: { itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } },
-    result: { image: URL.createObjectURL(photo), itemId: item.id }
+    result: 'file' in input ? { image: URL.createObjectURL(input.file), itemId: item.id } : { itemId: item.id }
   }
 }
 
 function addProductFromPhoto(request: ProductRequest): Promise<Started<ProductPlaced>> {
-  return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (step) => generateProduct(request, step), () => addProductFromPhoto(request))
+  const label = currentLabel()
+  return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (step) => generateProduct(request, step, label), () => addProductFromPhoto(request))
 }
 
 async function renderShot(request: RenderRequest, zone: Zone | undefined, step: Step): Promise<Finished<{ image: string }> | ComfyFailure> {
@@ -569,9 +592,16 @@ function renameZone(zoneId: string, name: string): ReturnType<RoomfitEditorApi['
   const trimmed = name.trim()
   if (!trimmed) return { ok: false, reason: 'empty-name' }
   const zones = room.zones.map((zone) => (zone.id === zoneId ? { ...zone, name: trimmed } : zone))
-  setHistory(commit(editor.history, { ...layout, room: { ...room, zones } }), 'none')
+  setHistory(commit(editor.history, { ...layout, room: { ...room, zones } }, currentLabel()), 'none')
   return { ok: true }
 }
+
+async function screenshot(): Promise<string> {
+  const { gl, scene, camera } = await rendered()
+  gl.render(scene, camera)
+  return gl.domElement.toDataURL('image/png')
+}
+
 /** The `window.roomfit` implementation; UI gestures call these same functions. */
 export const api: RoomfitEditorApi = {
   ready: () => threeReady,
@@ -616,5 +646,9 @@ export const api: RoomfitEditorApi = {
     const target = controls?.target ?? { x: 0, y: 0, z: 0 }
     return { position: { x: position.x, y: position.y, z: position.z }, target: { x: target.x, y: target.y, z: target.z } }
   },
-  focusZone
+  focusZone,
+  screenshot,
+  setActionLabel: (label) => {
+    actionLabel = label
+  }
 }

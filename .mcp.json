@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "roomfit": { "command": "pnpm", "args": ["-s", "mcp"] }
+  }
+}

@@ -190,8 +190,10 @@ function LibrarySection() {
 
 /** Right-hand rail with the jobs panel and the asset library, in both views. */
 export function WorkspaceRail() {
+  const { agentConnected } = useSyncExternalStore(subscribe, snapshot)
   return (
     <aside className="workspace" aria-label="Workspace">
+      {agentConnected && <div className="agent-badge" role="status">Agent connected</div>}
       <JobsSection />
       <LibrarySection />
     </aside>
