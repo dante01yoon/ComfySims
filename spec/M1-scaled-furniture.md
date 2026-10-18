@@ -55,6 +55,8 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 
 ## Open questions
 
+- Rounding parity: the Python fit rounds measured sizes to 1 µm (float32 noise) and the TypeScript fit does not (raised by impl-04-nodepack). Decide whether both round.
+
 - Which image-to-3D model is the default local path (Hunyuan3D 2.x vs TRELLIS) — decide after a fixture comparison run.
 - Front-facing detection: assume the product photo is a front shot for M1, or add a rotate control in the editor?
 

@@ -1,0 +1,72 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "sd_xl_base_1.0.safetensors" },
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "roomfit-depth.png" },
+    "_meta": { "title": "roomfit:depth" }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "photoreal interior, natural light", "clip": ["1", 1] },
+    "_meta": { "title": "roomfit:positive" }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "blurry, distorted", "clip": ["1", 1] },
+    "_meta": { "title": "roomfit:negative" }
+  },
+  "5": {
+    "class_type": "ControlNetLoader",
+    "inputs": { "control_net_name": "controlnet-depth-sdxl-1.0.safetensors" },
+    "_meta": { "title": "Load Depth ControlNet" }
+  },
+  "6": {
+    "class_type": "ControlNetApplyAdvanced",
+    "inputs": {
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "control_net": ["5", 0],
+      "image": ["2", 0],
+      "strength": 0.8,
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "vae": ["1", 2]
+    },
+    "_meta": { "title": "Apply Depth ControlNet" }
+  },
+  "7": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": 1024, "height": 1024, "batch_size": 1 },
+    "_meta": { "title": "Empty Latent Image" }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "seed": 0,
+      "steps": 30,
+      "cfg": 6.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "positive": ["6", 0],
+      "negative": ["6", 1],
+      "latent_image": ["7", 0],
+      "denoise": 1.0
+    },
+    "_meta": { "title": "roomfit:seed" }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["8", 0], "vae": ["1", 2] },
+    "_meta": { "title": "VAE Decode" }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["9", 0], "filename_prefix": "roomfit/render" },
+    "_meta": { "title": "roomfit:save" }
+  }
+}

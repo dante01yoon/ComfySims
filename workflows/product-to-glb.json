@@ -1,0 +1,68 @@
+{
+  "1": {
+    "class_type": "ImageOnlyCheckpointLoader",
+    "inputs": { "ckpt_name": "hunyuan3d-dit-v2.safetensors" },
+    "_meta": { "title": "Load Hunyuan3D 2" }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "product.png" },
+    "_meta": { "title": "roomfit:product-image" }
+  },
+  "3": {
+    "class_type": "CLIPVisionEncode",
+    "inputs": { "clip_vision": ["1", 1], "image": ["2", 0], "crop": "center" },
+    "_meta": { "title": "CLIP Vision Encode" }
+  },
+  "4": {
+    "class_type": "Hunyuan3Dv2Conditioning",
+    "inputs": { "clip_vision_output": ["3", 0] },
+    "_meta": { "title": "Hunyuan3D 2 Conditioning" }
+  },
+  "5": {
+    "class_type": "EmptyLatentHunyuan3Dv2",
+    "inputs": { "resolution": 3072, "batch_size": 1 },
+    "_meta": { "title": "Empty Latent Hunyuan3D 2" }
+  },
+  "6": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": { "model": ["1", 0], "shift": 1.0 },
+    "_meta": { "title": "Model Sampling" }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["6", 0],
+      "seed": 0,
+      "steps": 30,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "positive": ["4", 0],
+      "negative": ["4", 1],
+      "latent_image": ["5", 0],
+      "denoise": 1.0
+    },
+    "_meta": { "title": "roomfit:seed" }
+  },
+  "8": {
+    "class_type": "VAEDecodeHunyuan3D",
+    "inputs": { "samples": ["7", 0], "vae": ["1", 2], "num_chunks": 8000, "octree_resolution": 256 },
+    "_meta": { "title": "VAE Decode Hunyuan3D" }
+  },
+  "9": {
+    "class_type": "VoxelToMesh",
+    "inputs": { "voxel": ["8", 0], "algorithm": "surface net", "threshold": 0.6 },
+    "_meta": { "title": "Voxel To Mesh" }
+  },
+  "10": {
+    "class_type": "RoomfitFitMesh",
+    "inputs": { "mesh": ["9", 0], "width_cm": 100.0, "depth_cm": 100.0, "height_cm": 100.0, "mode": "exact" },
+    "_meta": { "title": "roomfit:fit" }
+  },
+  "11": {
+    "class_type": "SaveGLB",
+    "inputs": { "mesh": ["10", 0], "filename_prefix": "roomfit/product" },
+    "_meta": { "title": "roomfit:save" }
+  }
+}

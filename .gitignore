@@ -5,3 +5,4 @@ node_modules/
 web/dist/
 nodes/roomfit/editor/
 __pycache__/
+demo/out/
