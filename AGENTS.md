@@ -17,6 +17,7 @@ Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-si
 
 - `pnpm verify` prints `VERIFY PASS`. The Stop hook runs it for you and sends you back (up to 3 times) when it fails.
 - The AC you worked on moved from `TODO` to `PASS` (or `EARLY` if the spec still says `planned`).
+- To look at what you built, run `pnpm see --help` and read the PNG it writes.
 - Units are centimeters everywhere in our code; glTF files are meters. Convert only at the GLB boundary.
 
 ## Layout

@@ -13,7 +13,8 @@
     "web:build": "vite build web",
     "e2e": "playwright test",
     "web:build:nodepack": "vite build web --base /roomfit/ --outDir ../nodes/roomfit/editor --emptyOutDir",
-    "comfy:snapshot": "node harness/tools/snapshot-object-info.mjs"
+    "comfy:snapshot": "node harness/tools/snapshot-object-info.mjs",
+    "see": "node harness/tools/see.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.2.1",

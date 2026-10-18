@@ -10,6 +10,7 @@ The harness is the working environment agents run in. It keeps them away from th
 | Stop | Retry limit in the Stop hook | After 3 failed attempts, or a reply starting with `BLOCKED:`, Claude may stop; the report stays in `.harness/last-verify.json` |
 | Measure | `harness/tools/measure-glb.ts` | Turns "is this the right size?" into numbers an agent can read: size, bounds and center in cm |
 | See | Playwright e2e on headless Chromium (SwiftShader) | Editor behavior through `window.roomfit`; on failure a screenshot and trace land in `.harness/e2e-output/` for the agent to look at |
+| See (on demand) | `pnpm see --layout=… --view=… --focus=… --scene=…` | Starts its own editor on port 5189, takes a screenshot to `.harness/see/`, prints console errors and a state summary. Added after impl-16 could not look at its own screen (the runner allows `pnpm`, not `npx`) |
 
 The harness tests itself: `harness/self-test/` checks the guard's block/allow table and the GLB measurer against fixtures with known sizes.
 
