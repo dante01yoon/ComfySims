@@ -75,7 +75,7 @@ No new workflows. Uses `workflows/cloud/product-to-glb-pixal3d.json`, `render-fr
 | AC-58 | active | `add_product` with a Comfy input name queues the product workflow with that name and no upload, and returns the placed item |
 | AC-59 | active | `render_room` and `screenshot` return PNG image content; `render_room` also saves the file |
 | AC-60 | active | With no editor connected every tool fails with the "No roomfit editor is connected…" message; the bridge refuses connections without the token or from other hosts |
-| AC-61 | manual | Recording: Claude Code with the Comfy Cloud MCP and the roomfit MCP completes scenario 1 from one sentence |
+| AC-61 | manual | Recording: Claude Code with the Comfy Cloud MCP and the roomfit MCP completes scenario 1 from one sentence (evidence 2026-10-18: `docs/recordings/demo-ac61-agent.md`) |
 
 ## 9. Test plan
 
