@@ -1,0 +1,1 @@
+spec/M3-house-workspace.md 의 빨간 AC-62를 초록으로 만들어줘. 실제 Cloud 녹화에서 3D 사진이 검은 화면 가운데 작은 카드처럼 보였어(시야각 60° 고정). 스펙의 "Found by recording on real Comfy Cloud (AC-62)" 절을 봐. 끝나기 전에 뷰어 스크린샷을 직접 확인하고 짧게 알려줘.
