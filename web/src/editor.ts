@@ -11,10 +11,13 @@ import type {
   ComfyFailure,
   ComfyJob,
   EditorState,
+  EditorView,
+  Lighting,
   ProductRequest,
   RenderRequest,
   RoomfitEditorApi,
-  SceneItem
+  SceneItem,
+  ScenePreset
 } from '../../spec/contracts/editor-api.ts'
 import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
@@ -39,7 +42,16 @@ export type Editor = {
   gesture: Gesture
   jobs: readonly ComfyJob[]
   lastRender: string | null
+  view: EditorView
+  scene: ScenePreset
   revision: number
+}
+
+const SCENE_LIGHTING: Record<ScenePreset, Omit<Lighting, 'preset'>> = {
+  work: { sunElevationDeg: 55, sunAzimuthDeg: 150, sunKelvin: 6000, sunIntensity: 3.0, interiorKelvin: 5000, interiorIntensity: 0.6 },
+  reading: { sunElevationDeg: 35, sunAzimuthDeg: 200, sunKelvin: 4500, sunIntensity: 2.0, interiorKelvin: 3000, interiorIntensity: 1.0 },
+  movie: { sunElevationDeg: 8, sunAzimuthDeg: 250, sunKelvin: 3200, sunIntensity: 0.4, interiorKelvin: 2400, interiorIntensity: 0.35 },
+  evening: { sunElevationDeg: 4, sunAzimuthDeg: 270, sunKelvin: 2700, sunIntensity: 0.6, interiorKelvin: 2700, interiorIntensity: 1.4 }
 }
 
 const emptyLayout: RoomLayout = {
@@ -59,6 +71,8 @@ let editor: Editor = {
   gesture: 'none',
   jobs: [],
   lastRender: null,
+  view: 'editor',
+  scene: 'work',
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -183,7 +197,9 @@ function state(): EditorState {
     canUndo: history.past.length > 0,
     canRedo: history.future.length > 0,
     jobs: [...editor.jobs],
-    lastRender: editor.lastRender
+    lastRender: editor.lastRender,
+    view: editor.view,
+    scene: editor.scene
   }
 }
 
@@ -303,5 +319,13 @@ export const api: RoomfitEditorApi = {
     return exportPasses(gl, scene, camera, size)
   },
   addProductFromPhoto,
-  renderInComfy
+  renderInComfy,
+  setView: (view) => update({ view }),
+  setScene: (scene) => update({ scene }),
+  lighting: () => ({ preset: editor.scene, ...SCENE_LIGHTING[editor.scene] }),
+  camera: () => {
+    const position = getThree?.().camera.position ?? { x: 0, y: 0, z: 0 }
+    const target = controls?.target ?? { x: 0, y: 0, z: 0 }
+    return { position: { x: position.x, y: position.y, z: position.z }, target: { x: target.x, y: target.y, z: target.z } }
+  }
 }

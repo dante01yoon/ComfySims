@@ -1,4 +1,4 @@
-import type { Dimensions, PlacedItem, RoomLayout } from '../../schema/src/index.ts'
+import type { BoxRoom, Dimensions, Opening, PlacedItem, PlanRoom, RoomLayout, Wall } from '../../schema/src/index.ts'
 
 type Point = { x: number; z: number }
 type Footprint = { id: string; corners: Point[]; top: number }
@@ -49,10 +49,10 @@ function projectionRange(corners: Point[], axis: Point): { min: number; max: num
   return { min: Math.min(...values), max: Math.max(...values) }
 }
 
-function overlaps(a: Footprint, b: Footprint): boolean {
-  return [...edgeNormals(a.corners), ...edgeNormals(b.corners)].every((axis) => {
-    const rangeA = projectionRange(a.corners, axis)
-    const rangeB = projectionRange(b.corners, axis)
+function overlaps(a: Point[], b: Point[]): boolean {
+  return [...edgeNormals(a), ...edgeNormals(b)].every((axis) => {
+    const rangeA = projectionRange(a, axis)
+    const rangeB = projectionRange(b, axis)
     return Math.min(rangeA.max, rangeB.max) - Math.max(rangeA.min, rangeB.min) > TOUCH_TOLERANCE_CM
   })
 }
@@ -63,22 +63,88 @@ export function collisions(layout: RoomLayout): { a: string; b: string }[] {
   return sorted.flatMap((first, index) =>
     sorted
       .slice(index + 1)
-      .filter((second) => overlaps(first, second))
+      .filter((second) => overlaps(first.corners, second.corners))
       .map((second) => ({ a: first.id, b: second.id }))
   )
 }
 
-/** Items whose listed footprint leaves the room or whose top exceeds the ceiling. */
-export function outOfBounds(layout: RoomLayout): { itemId: string; reason: 'outside-room' | 'above-ceiling' }[] {
-  const halfWidth = layout.room.width / 2 + TOUCH_TOLERANCE_CM
-  const halfDepth = layout.room.depth / 2 + TOUCH_TOLERANCE_CM
+export type OutOfBoundsReason = 'outside-room' | 'hits-wall' | 'above-ceiling'
+
+type Bounds = { outside: (corner: Point) => boolean; hitsWall: (corners: Point[]) => boolean; ceiling: number }
+
+function boxBounds(room: BoxRoom): Bounds {
+  const halfWidth = room.width / 2 + TOUCH_TOLERANCE_CM
+  const halfDepth = room.depth / 2 + TOUCH_TOLERANCE_CM
+  return {
+    outside: ({ x, z }) => Math.abs(x) > halfWidth || Math.abs(z) > halfDepth,
+    hitsWall: () => false,
+    ceiling: room.height
+  }
+}
+
+function distanceToSegment(point: Point, a: Point, b: Point): number {
+  const dx = b.x - a.x
+  const dz = b.z - a.z
+  const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / (dx * dx + dz * dz || 1)))
+  return Math.hypot(point.x - (a.x + t * dx), point.z - (a.z + t * dz))
+}
+
+function inPolygon(point: Point, polygon: readonly Point[]): boolean {
+  const edges = polygon.map((corner, index) => [corner, polygon[(index + 1) % polygon.length]!] as const)
+  if (edges.some(([a, b]) => distanceToSegment(point, a, b) <= TOUCH_TOLERANCE_CM)) return true
+  const crossings = edges.filter(([a, b]) => a.z > point.z !== b.z > point.z && point.x < a.x + ((point.z - a.z) * (b.x - a.x)) / (b.z - a.z))
+  return crossings.length % 2 === 1
+}
+
+/** Solid stretches of a wall's centre line as [start, end] distances from `from`, minus openings of the given kinds (doors by default). */
+export function solidStretches(wall: Wall, openings: readonly Opening[], kinds: readonly Opening['kind'][] = ['door']): [number, number][] {
+  const length = Math.hypot(wall.to.x - wall.from.x, wall.to.z - wall.from.z)
+  const gaps = openings
+    .filter((opening) => opening.wallId === wall.id && kinds.includes(opening.kind))
+    .map((opening) => [opening.offset, opening.offset + opening.width] as const)
+    .sort(([a], [b]) => a - b)
+  const stretches: [number, number][] = []
+  let start = 0
+  for (const [gapStart, gapEnd] of gaps) {
+    if (gapStart > start) stretches.push([start, gapStart])
+    start = Math.max(start, gapEnd)
+  }
+  if (length > start) stretches.push([start, length])
+  return stretches
+}
+
+function wallRectangle(wall: Wall, [start, end]: [number, number], thickness: number): Point[] {
+  const length = Math.hypot(wall.to.x - wall.from.x, wall.to.z - wall.from.z)
+  const along = { x: (wall.to.x - wall.from.x) / length, z: (wall.to.z - wall.from.z) / length }
+  const across = { x: (-along.z * thickness) / 2, z: (along.x * thickness) / 2 }
+  const at = (distance: number, side: 1 | -1) => ({
+    x: wall.from.x + along.x * distance + across.x * side,
+    z: wall.from.z + along.z * distance + across.z * side
+  })
+  return [at(start, -1), at(end, -1), at(end, 1), at(start, 1)]
+}
+
+function planBounds(room: PlanRoom): Bounds {
+  const solids = room.walls.flatMap((wall) =>
+    solidStretches(wall, room.openings).map((stretch) => wallRectangle(wall, stretch, room.wallThickness))
+  )
+  return {
+    outside: (corner) => !room.zones.some((zone) => inPolygon(corner, zone.polygon)),
+    hitsWall: (corners) => solids.some((solid) => overlaps(corners, solid)),
+    ceiling: room.wallHeight
+  }
+}
+
+/** Items whose listed footprint leaves the room (or its zones), hits a solid wall, or whose top exceeds the ceiling. */
+export function outOfBounds(layout: RoomLayout): { itemId: string; reason: OutOfBoundsReason }[] {
+  const bounds = layout.room.kind === 'plan' ? planBounds(layout.room) : boxBounds(layout.room)
   return footprints(layout).flatMap((item) => {
-    const outsideRoom = item.corners.some(({ x, z }) => Math.abs(x) > halfWidth || Math.abs(z) > halfDepth)
-    const aboveCeiling = item.top > layout.room.height + TOUCH_TOLERANCE_CM
-    return [
-      ...(outsideRoom ? [{ itemId: item.id, reason: 'outside-room' as const }] : []),
-      ...(aboveCeiling ? [{ itemId: item.id, reason: 'above-ceiling' as const }] : [])
+    const reasons: OutOfBoundsReason[] = [
+      ...(item.corners.some(bounds.outside) ? ['outside-room' as const] : []),
+      ...(bounds.hitsWall(item.corners) ? ['hits-wall' as const] : []),
+      ...(item.top > bounds.ceiling + TOUCH_TOLERANCE_CM ? ['above-ceiling' as const] : [])
     ]
+    return reasons.map((reason) => ({ itemId: item.id, reason }))
   })
 }
 

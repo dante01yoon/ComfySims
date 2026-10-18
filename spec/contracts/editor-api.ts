@@ -13,7 +13,7 @@ export type EditorState = {
   layout: RoomLayout
   selectedId: string | null
   collisions: { a: string; b: string }[]
-  outOfBounds: { itemId: string; reason: 'outside-room' | 'above-ceiling' }[]
+  outOfBounds: { itemId: string; reason: 'outside-room' | 'hits-wall' | 'above-ceiling' }[]
   canUndo: boolean
   canRedo: boolean
   jobs: ComfyJob[]

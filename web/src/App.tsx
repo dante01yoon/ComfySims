@@ -1,11 +1,22 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
-import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Vector3, type Material, type Object3D } from 'three'
+import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, Vector2, Vector3, type Material, type Object3D } from 'three'
 
 import { DISTORTION_FLAG_THRESHOLD } from '../../packages/fit/src/index.ts'
-import { collisions, outOfBounds } from '../../packages/placement/src/index.ts'
-import { serializeLayout, type Asset, type FitMode, type PlacedItem, type Room as BoxRoom, type RoomLayout } from '../../packages/schema/src/index.ts'
+import { collisions, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
+import {
+  serializeLayout,
+  type Asset,
+  type BoxRoom,
+  type FitMode,
+  type FloorMaterial,
+  type PlacedItem,
+  type PlanRoom,
+  type Room,
+  type RoomLayout,
+  type Zone
+} from '../../packages/schema/src/index.ts'
 import type { ComfyJob, ComfyJobStatus } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { meshKey } from './meshes.ts'
@@ -14,6 +25,8 @@ const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
 const floorPlane = new Plane(new Vector3(0, 1, 0), 0)
 const emphasisColors = { none: new Color(0x000000), selected: new Color(0x1f4f8f), problem: new Color(0xb3261e) }
+
+const floorColors: Record<FloorMaterial, string> = { oak: '#c9a46c', walnut: '#7a5536', tile: '#d9d6cf', concrete: '#a7a39c', carpet: '#b9ad9a' }
 
 type Emphasis = keyof typeof emphasisColors
 
@@ -24,7 +37,73 @@ function Bridge({ revision }: { revision: number }) {
   return null
 }
 
-function Room({ room }: { room: BoxRoom }) {
+function roomSummary(room: Room): string {
+  if (room.kind === 'box') return `${room.width} × ${room.depth} × ${room.height} cm`
+  return `${room.zones.map((zone) => zone.name).join(', ')} (walls ${room.wallHeight} cm)`
+}
+
+type WallBox = { key: string; center: [number, number, number]; size: [number, number, number]; rotationY: number }
+
+function wallBoxes(room: PlanRoom): WallBox[] {
+  return room.walls.flatMap((wall) => {
+    const dx = wall.to.x - wall.from.x
+    const dz = wall.to.z - wall.from.z
+    const length = Math.hypot(dx, dz)
+    const rotationY = Math.atan2(-dz, dx)
+    const box = (key: string, [start, end]: [number, number], bottom: number, top: number): WallBox => {
+      const middle = (start + end) / 2 / length
+      return {
+        key: `${wall.id}|${key}`,
+        center: [wall.from.x + dx * middle, (bottom + top) / 2, wall.from.z + dz * middle],
+        size: [end - start, top - bottom, room.wallThickness],
+        rotationY
+      }
+    }
+    const solid = solidStretches(wall, room.openings, ['door', 'window']).map((stretch) => box(`${stretch[0]}`, stretch, 0, room.wallHeight))
+    const aroundOpenings = room.openings
+      .filter((opening) => opening.wallId === wall.id)
+      .flatMap((opening): WallBox[] => {
+        const stretch: [number, number] = [opening.offset, opening.offset + opening.width]
+        const head = opening.sill + opening.height
+        return [
+          ...(opening.sill > 0 ? [box(`${opening.offset}|sill`, stretch, 0, opening.sill)] : []),
+          ...(head < room.wallHeight ? [box(`${opening.offset}|head`, stretch, head, room.wallHeight)] : [])
+        ]
+      })
+    return [...solid, ...aroundOpenings]
+  })
+}
+
+function zoneShape(zone: Zone): Shape {
+  return new Shape(zone.polygon.map(({ x, z }) => new Vector2(x, -z)))
+}
+
+function PlanRoomView({ room }: { room: PlanRoom }) {
+  const boxes = useMemo(() => wallBoxes(room), [room])
+  const shapes = useMemo(() => room.zones.map((zone) => ({ zone, shape: zoneShape(zone) })), [room])
+  return (
+    <group>
+      {shapes.map(({ zone, shape }) => (
+        <mesh key={zone.id} rotation-x={-Math.PI / 2}>
+          <shapeGeometry args={[shape]} />
+          <meshStandardMaterial color={floorColors[zone.floor]} />
+        </mesh>
+      ))}
+      {boxes.map((wall) => (
+        <mesh key={wall.key} position={wall.center} rotation-y={wall.rotationY}>
+          <boxGeometry args={wall.size} />
+          <meshStandardMaterial color="#ece8e1" />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function RoomView({ room }: { room: Room }) {
+  return room.kind === 'plan' ? <PlanRoomView room={room} /> : <BoxRoomView room={room} />
+}
+
+function BoxRoomView({ room }: { room: BoxRoom }) {
   const walls: { position: [number, number, number]; rotationY: number; length: number }[] = [
     { position: [0, room.height / 2, -room.depth / 2], rotationY: 0, length: room.width },
     { position: [0, room.height / 2, room.depth / 2], rotationY: Math.PI, length: room.width },
@@ -186,7 +265,7 @@ function Panel() {
         <div key={issue} className="problem">{issue}</div>
       ))}
       <h2>Room</h2>
-      <div>{layout.name}: {layout.room.width} × {layout.room.depth} × {layout.room.height} cm</div>
+      <div>{layout.name}: {roomSummary(layout.room)}</div>
       <h2>Selected</h2>
       {selectedId ? (
         <div className="button-row">
@@ -403,7 +482,7 @@ export function App() {
         <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />
         <directionalLight position={[200, 400, 300]} intensity={1.5} />
         <OrbitControls makeDefault ref={attachControls} />
-        <Room room={layout.room} />
+        <RoomView room={layout.room} />
         {layout.items.map((item) => {
           const asset = assets.get(item.assetId)
           return asset ? (
