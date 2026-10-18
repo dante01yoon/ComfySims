@@ -38,3 +38,10 @@ export type M4Checks = [
   Assert<Equal<EditorState['undoLabels'], string[]>>,
   Assert<Equal<EditorState['agentConnected'], boolean>>
 ]
+
+import type { Viewer360 } from '../spec/contracts/editor-api.ts'
+
+export type M5Checks = [
+  Assert<Equal<EditorState['viewer360'], Viewer360 | null>>,
+  Assert<Equal<Extract<JobKind, 'pano360'>, 'pano360'>>
+]

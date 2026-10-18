@@ -1,12 +1,24 @@
 {
- "source": "Comfy Cloud live catalog via the comfy-cloud MCP get_node tool, 2026-10-18 (3795 nodes live); only the nodes Cloud workflows linted here use",
+ "source": "Comfy Cloud live catalog via the comfy-cloud MCP get_node tool, 2026-10-18 (3795 nodes live); only the nodes Cloud workflows linted here use; 2026-10-18 (M5): 12 ComfyUI core nodes for pano360-from-depth \u2014 class presence confirmed by get_node (UNETLoader) and three real Cloud runs (jobs d4f9a312, d884a841, 4f09e5e4); input specs copied from the local core snapshot, model lists stripped as elsewhere",
  "classes": [
+  "CLIPLoader",
+  "CLIPTextEncode",
+  "ControlNetApplyAdvanced",
+  "ControlNetLoader",
+  "EmptySD3LatentImage",
+  "KSampler",
   "LoadImage",
   "LoadMoGeModel",
+  "LoraLoaderModelOnly",
   "MeshToFile3D",
   "MoGeInference",
   "MoGePointMapToMesh",
-  "SaveGLB"
+  "ModelSamplingAuraFlow",
+  "SaveGLB",
+  "SaveImage",
+  "UNETLoader",
+  "VAEDecode",
+  "VAELoader"
  ],
  "nodes": {
   "LoadImage": {
@@ -231,6 +243,550 @@
    },
    "output": [],
    "output_name": []
+  },
+  "UNETLoader": {
+   "input": {
+    "required": {
+     "unet_name": [
+      []
+     ],
+     "weight_dtype": [
+      [
+       "default",
+       "fp8_e4m3fn",
+       "fp8_e4m3fn_fast",
+       "fp8_e5m2"
+      ],
+      {
+       "advanced": true
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "unet_name",
+     "weight_dtype"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
+  },
+  "ModelSamplingAuraFlow": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL"
+     ],
+     "shift": [
+      "FLOAT",
+      {
+       "default": 1.73,
+       "min": 0,
+       "max": 100,
+       "step": 0.01
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "shift"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
+  },
+  "CLIPLoader": {
+   "input": {
+    "required": {
+     "clip_name": [
+      []
+     ],
+     "type": [
+      [
+       "stable_diffusion",
+       "stable_cascade",
+       "sd3",
+       "stable_audio",
+       "mochi",
+       "ltxv",
+       "pixart",
+       "cosmos",
+       "lumina2",
+       "wan",
+       "hidream",
+       "chroma",
+       "ace",
+       "omnigen2",
+       "qwen_image",
+       "hunyuan_image",
+       "flux2",
+       "ovis",
+       "longcat_image",
+       "cogvideox",
+       "lens",
+       "pixeldit",
+       "ideogram4",
+       "boogu",
+       "krea2",
+       "joyimage",
+       "mage",
+       "minimax"
+      ]
+     ]
+    },
+    "optional": {
+     "device": [
+      [
+       "default",
+       "cpu"
+      ],
+      {
+       "advanced": true
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "clip_name",
+     "type"
+    ],
+    "optional": [
+     "device"
+    ]
+   },
+   "output": [
+    "CLIP"
+   ],
+   "output_name": [
+    "CLIP"
+   ]
+  },
+  "VAELoader": {
+   "input": {
+    "required": {
+     "vae_name": [
+      []
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "vae_name"
+    ]
+   },
+   "output": [
+    "VAE"
+   ],
+   "output_name": [
+    "VAE"
+   ]
+  },
+  "CLIPTextEncode": {
+   "input": {
+    "required": {
+     "text": [
+      "STRING",
+      {
+       "multiline": true,
+       "dynamicPrompts": true,
+       "tooltip": "The text to be encoded."
+      }
+     ],
+     "clip": [
+      "CLIP",
+      {
+       "tooltip": "The CLIP model used for encoding the text."
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "text",
+     "clip"
+    ]
+   },
+   "output": [
+    "CONDITIONING"
+   ],
+   "output_name": [
+    "CONDITIONING"
+   ]
+  },
+  "EmptySD3LatentImage": {
+   "input": {
+    "required": {
+     "width": [
+      "INT",
+      {
+       "default": 1024,
+       "min": 16,
+       "max": 16384,
+       "step": 16
+      }
+     ],
+     "height": [
+      "INT",
+      {
+       "default": 1024,
+       "min": 16,
+       "max": 16384,
+       "step": 16
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "default": 1,
+       "min": 1,
+       "max": 4096
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "width",
+     "height",
+     "batch_size"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
+   ]
+  },
+  "ControlNetLoader": {
+   "input": {
+    "required": {
+     "control_net_name": [
+      []
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "control_net_name"
+    ]
+   },
+   "output": [
+    "CONTROL_NET"
+   ],
+   "output_name": [
+    "CONTROL_NET"
+   ]
+  },
+  "ControlNetApplyAdvanced": {
+   "input": {
+    "required": {
+     "positive": [
+      "CONDITIONING"
+     ],
+     "negative": [
+      "CONDITIONING"
+     ],
+     "control_net": [
+      "CONTROL_NET"
+     ],
+     "image": [
+      "IMAGE"
+     ],
+     "strength": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 10,
+       "step": 0.01
+      }
+     ],
+     "start_percent": [
+      "FLOAT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 1,
+       "step": 0.001
+      }
+     ],
+     "end_percent": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 1,
+       "step": 0.001
+      }
+     ]
+    },
+    "optional": {
+     "vae": [
+      "VAE"
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "positive",
+     "negative",
+     "control_net",
+     "image",
+     "strength",
+     "start_percent",
+     "end_percent"
+    ],
+    "optional": [
+     "vae"
+    ]
+   },
+   "output": [
+    "CONDITIONING",
+    "CONDITIONING"
+   ],
+   "output_name": [
+    "positive",
+    "negative"
+   ]
+  },
+  "KSampler": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL",
+      {
+       "tooltip": "The model used for denoising the input latent."
+      }
+     ],
+     "seed": [
+      "INT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 18446744073709552000,
+       "control_after_generate": true,
+       "tooltip": "The random seed used for creating the noise."
+      }
+     ],
+     "steps": [
+      "INT",
+      {
+       "default": 20,
+       "min": 1,
+       "max": 10000,
+       "tooltip": "The number of steps used in the denoising process."
+      }
+     ],
+     "cfg": [
+      "FLOAT",
+      {
+       "default": 8,
+       "min": 0,
+       "max": 100,
+       "step": 0.1,
+       "round": 0.01,
+       "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
+      }
+     ],
+     "sampler_name": [
+      [],
+      {
+       "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
+      }
+     ],
+     "scheduler": [
+      [
+       "simple",
+       "sgm_uniform",
+       "karras",
+       "exponential",
+       "ddim_uniform",
+       "beta",
+       "normal",
+       "linear_quadratic",
+       "kl_optimal"
+      ],
+      {
+       "tooltip": "The scheduler controls how noise is gradually removed to form the image."
+      }
+     ],
+     "positive": [
+      "CONDITIONING",
+      {
+       "tooltip": "The conditioning describing the attributes you want to include in the image."
+      }
+     ],
+     "negative": [
+      "CONDITIONING",
+      {
+       "tooltip": "The conditioning describing the attributes you want to exclude from the image."
+      }
+     ],
+     "latent_image": [
+      "LATENT",
+      {
+       "tooltip": "The latent image to denoise."
+      }
+     ],
+     "denoise": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 1,
+       "step": 0.01,
+       "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "seed",
+     "steps",
+     "cfg",
+     "sampler_name",
+     "scheduler",
+     "positive",
+     "negative",
+     "latent_image",
+     "denoise"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
+   ]
+  },
+  "VAEDecode": {
+   "input": {
+    "required": {
+     "samples": [
+      "LATENT",
+      {
+       "tooltip": "The latent to be decoded."
+      }
+     ],
+     "vae": [
+      "VAE",
+      {
+       "tooltip": "The VAE model used for decoding the latent."
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "samples",
+     "vae"
+    ]
+   },
+   "output": [
+    "IMAGE"
+   ],
+   "output_name": [
+    "IMAGE"
+   ]
+  },
+  "SaveImage": {
+   "input": {
+    "required": {
+     "images": [
+      "IMAGE",
+      {
+       "tooltip": "The images to save."
+      }
+     ],
+     "filename_prefix": [
+      "STRING",
+      {
+       "default": "ComfyUI",
+       "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      }
+     ]
+    },
+    "hidden": {
+     "prompt": "PROMPT",
+     "extra_pnginfo": "EXTRA_PNGINFO"
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "images",
+     "filename_prefix"
+    ],
+    "hidden": [
+     "prompt",
+     "extra_pnginfo"
+    ]
+   },
+   "output": [
+    "IMAGE"
+   ],
+   "output_name": [
+    "images"
+   ]
+  },
+  "LoraLoaderModelOnly": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL"
+     ],
+     "lora_name": [
+      [],
+      {}
+     ],
+     "strength_model": [
+      "FLOAT",
+      {
+       "default": 1.0,
+       "min": -100.0,
+       "max": 100.0,
+       "step": 0.01
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "lora_name",
+     "strength_model"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
   }
  }
 }

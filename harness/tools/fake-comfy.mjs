@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 
 const GLB = readFileSync(new URL('../../fixtures/glb/generated-offset-box.glb', import.meta.url))
 const PHOTO3D_GLB = readFileSync(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url))
+const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', import.meta.url))
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
   'base64'
@@ -20,7 +21,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     requests.push({ server: 'storage', method: request.method, url: request.url, headers: request.headers })
     const isGlb = request.url.includes('.glb')
     response.setHeader('Content-Type', isGlb ? 'model/gltf-binary' : 'image/png')
-    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : GLB) : PNG)
+    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : GLB) : request.url.includes('pano360') ? PANORAMA : PNG)
   })
 
   const api = createServer(async (request, response) => {
@@ -36,7 +37,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     }
 
     if (url.pathname === '/__requests') return json(200, requests.filter((entry) => entry.url !== '/__requests').map(({ body, ...entry }) => entry))
-    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image) })))
+    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null })))
     if (requireKey && request.headers['x-api-key'] !== requireKey) return json(401, { error: 'unauthorized' })
 
     if (request.method === 'POST' && url.pathname === '/api/upload/image') {
@@ -66,7 +67,8 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
       const [saveId, saveNode] = save ?? ['0', { class_type: 'SaveImage' }]
       const isGlb = saveNode.class_type === 'SaveGLB'
       const isPhoto3d = String(saveNode.inputs?.filename_prefix ?? '').includes('photo3d')
-      const file = { filename: isGlb ? (isPhoto3d ? 'photo3d_00001_.glb' : 'product_00001_.glb') : 'render_00001_.png', subfolder: 'roomfit', type: 'output' }
+      const isPanorama = String(saveNode.inputs?.filename_prefix ?? '').includes('pano360')
+      const file = { filename: isGlb ? (isPhoto3d ? 'photo3d_00001_.glb' : 'product_00001_.glb') : isPanorama ? 'pano360_00001_.png' : 'render_00001_.png', subfolder: 'roomfit', type: 'output' }
       return json(200, { id: job[1], status: 'completed', create_time: 0, update_time: 0, outputs: { [saveId]: isGlb ? { '3d': [file] } : { images: [file] } } })
     }
     if (request.method === 'GET' && url.pathname === '/api/view') {

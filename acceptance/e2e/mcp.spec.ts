@@ -99,6 +99,17 @@ test('AC-59 screenshot and render_room return PNG images, and render_room saves 
   expect(existsSync(path)).toBe(true)
 })
 
+test('AC-67 view_360 returns the panorama as PNG image content and saves the file', async ({ page }) => {
+  const result = await call('view_360', { room: 'Bedroom', prompt: 'equirectangular 360 image, cozy bedroom' })
+  expect(result.isError).toBe(false)
+  expect(result.content.find((part) => part.type === 'image')?.mimeType).toBe('image/png')
+  const { jobId, path } = json(result.content)
+  expect(existsSync(path)).toBe(true)
+  const state = await page.evaluate(() => window.roomfit.state())
+  expect(state.jobs.find((job) => job.id === jobId)?.kind).toBe('pano360')
+  expect(state.undoLabels.filter((label) => label === 'mcp:view_360')).toHaveLength(0)
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })

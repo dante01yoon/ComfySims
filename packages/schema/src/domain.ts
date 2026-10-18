@@ -25,7 +25,7 @@ export type FindSpotOutcome =
   | { ok: false; reason: 'unknown-zone' | 'no-space' }
 
 /** Kinds of ComfyUI work the editor runs. */
-export type JobKind = 'product' | 'render' | 'photo3d'
+export type JobKind = 'product' | 'render' | 'photo3d' | 'pano360'
 
 /** Steps a ComfyUI job goes through, in order; it ends in `done` or `failed`. */
 export type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'fitting' | 'meshing' | 'done' | 'failed'
@@ -47,4 +47,4 @@ export type Job = {
 export const MAX_CONCURRENT_JOBS = 3
 
 /** Expected seconds before any job of a kind has finished in this session. */
-export const DEFAULT_EXPECTED_SECONDS: Record<JobKind, number> = { product: 60, render: 15, photo3d: 30 }
+export const DEFAULT_EXPECTED_SECONDS: Record<JobKind, number> = { product: 60, render: 15, photo3d: 30, pano360: 60 }

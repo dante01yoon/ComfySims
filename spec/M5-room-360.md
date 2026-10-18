@@ -41,28 +41,29 @@ Non-goals (M5)
 
 - Studio bottom bar, next to "Render this view": **"360° view"**. Disabled with tooltip "Focus a room first" when no room is focused.
 - Job card kind `pano360`: "360° view · <room>", steps uploading → queued → generating → downloading → done, actions **"Open"**, **"Regenerate"**; failure shows the server message and **"Retry"** (M3 rules).
-- Viewer: full window, image on the inside of a sphere, drag to look (yaw unlimited, pitch ±80°), wheel zooms FOV 40–100°, **"Close"** and Esc close it. Stale views show the label "Layout changed since this view".
+- Viewer: a full-window dialog named **"360° view"**, the panorama on the inside of a sphere. Dragging across the viewer's full width turns 180° (yaw unlimited, wraps), full height tilts 90° (pitch clamped ±80°); wheel down widens the field of view, up narrows it (clamped 40–100°, starts at 75°). **"Close"** and Esc close it. Stale views show "Layout changed since this view" in the viewer and on the job card.
+- The viewer opens by itself when a `pano360` job finishes.
 
 ## 5. Behaviour rules
 
-- Standing point: the focused room's centroid, moved to the nearest free floor cell if furniture occupies it; eye height 160 cm. Yaw 0 of the panorama = +Z (ADR-0002 front).
+- Standing point: the room polygon's centroid; if it lies within any item's footprint (half the larger of width/depth around the item), move it to the nearest point on a 10 cm grid inside the room that is clear of every footprint. Eye height 160 cm.
+- Panorama axes: column 0 is yaw −180°, the centre column yaw 0 = +Z (ADR-0002 front), yaw +90 = +X; row 0 is pitch +90°. Direction for (yaw, pitch) = (sin yaw · cos pitch, sin pitch, cos yaw · cos pitch).
 - The editor renders a 6-face depth cube at the standing point and converts it to a 2048×1024 equirectangular depth PNG: grey = 1 − (distance − 40 cm) / 560 cm, clamped; openings (windows, doors) read as far. Linear to 8 m (the first try) left a 5 m room almost uniformly light.
 - Control strength 0.6 by default (spike: 0.9 turns soft furniture into boxes).
-- Prompt = room name + scene preset + user prompt, as `render_room` does.
+- Prompt = "equirectangular 360 image, " + the room name + the scene preset wording (as `render_room`), or the caller's prompt (which must then start with that prefix; the editor adds it if missing).
 - One `pano360` job per room at a time; counts toward `MAX_CONCURRENT_JOBS`.
 - A panorama remembers the layout revision it was made from; any later change to items in that room marks it stale.
-- Panoramas are saved like renders (`comfy-output:` reference in the layout file), never regenerated automatically.
+- Panoramas are never regenerated automatically. Saving them in the layout file is a follow-up (M5 keeps them with the session's jobs).
 
 ## 6. Contract and data changes
 
 - `JobKind` gains `pano360`; `DEFAULT_EXPECTED_SECONDS.pano360 = 60` (adjusted after the spike).
-- Editor API: `view360(zoneId): Promise<Job>`, `open360(jobId)`, `close360()`, `state().viewer360 = { jobId, stale } | null`, `depthPanorama(zoneId): Promise<string>` (PNG data URL, for tests).
+- Editor API (`spec/contracts/editor-api.ts`): `depthPanorama(zoneId)` → `{ image (PNG data URL), width, height, standingPoint, eyeHeightCm }`; `view360({ zoneId?, prompt? })` (focused room when no zoneId; `no-room` when neither); `open360(jobId)`; `close360()`; `state().viewer360 = { jobId, zoneId, yawDegrees, pitchDegrees, fovDegrees, stale } | null`.
 - MCP: `view_360({ room, prompt?, preset? })` → waits; `{ jobId, path }` plus image content. `spec/contracts/mcp-tools.json` gains it.
-- Layout file: optional `panoramas: [{ zoneId, image, revision }]`.
 
 ## 7. ComfyUI workflows
 
-- New `workflows/cloud/pano360-from-depth.json`: Qwen-Image 2512 + 360 LoRA (+ Lightning 4-step LoRA) + Fun ControlNet Union 2602 in depth mode, `LoadImage` tagged `roomfit:depth`, output tagged `roomfit:pano`. Linted against the Cloud catalog snapshot (AC-54 rule).
+- New `workflows/cloud/pano360-from-depth.json`: Qwen-Image 2512 + 360 LoRA + Lightning 4-step LoRA + Fun ControlNet Union 2602 (strength 0.6) on the depth panorama. Same tags as `render-from-depth` (`roomfit:depth`, `roomfit:positive`, `roomfit:negative`, `roomfit:seed`, `roomfit:save` with prefix `roomfit/pano360`), so the existing render prompt builder fills it. Linted against the Cloud catalog snapshot, which now pins these 12 core nodes.
 - **Spike before approval** (approved and run 2026-10-18, see below): one depth panorama of the demo bedroom → (a) the template alone, (b) with depth ControlNet at strength 0.6 and 0.9. Pass if (b) keeps a seamless left/right edge and the armchair/lamp/bed land within ~15° of yaw of their layout positions. Record job ids, times and images here.
 
 ### Spike result (2026-10-18) — PASS
@@ -83,12 +84,12 @@ Seam = mean |column 0 − column 2047| in RGB, against 3.3 between two ordinary 
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-63 | planned | `depthPanorama(zone)` returns a 2048×1024 equirectangular depth image whose nearest-wall columns line up with the room polygon's directions from the standing point (yaw error ≤ 2°) |
-| AC-64 | planned | "360° view" is disabled with no focused room; with one, it queues `pano360-from-depth` with the depth panorama and the prompt, and shows a `pano360` job card |
-| AC-65 | planned | The viewer opens the result on a sphere: drag changes yaw/pitch (pitch clamped ±80°), wheel changes FOV within 40–100°, Close/Esc closes it |
-| AC-66 | planned | Moving an item in the room marks that room's panorama stale; "Regenerate" queues a new job; nothing regenerates automatically |
-| AC-67 | planned | `view_360` MCP tool returns PNG image content and a saved path; listed in `mcp-tools.json` |
-| AC-68 | planned | `pano360-from-depth.json` lints against the Cloud catalog snapshot |
+| AC-63 | active | `depthPanorama(zone)` returns a 2048×1024 equirectangular depth image whose nearest-wall columns line up with the room polygon's directions from the standing point (yaw error ≤ 2°) |
+| AC-64 | active | "360° view" is disabled with no focused room; with one, it queues `pano360-from-depth` with the depth panorama and the prompt, and shows a `pano360` job card |
+| AC-65 | active | The viewer opens the result on a sphere: drag changes yaw/pitch (pitch clamped ±80°), wheel changes FOV within 40–100°, Close/Esc closes it |
+| AC-66 | active | Moving an item in the room marks that room's panorama stale; "Regenerate" queues a new job; nothing regenerates automatically |
+| AC-67 | active | `view_360` MCP tool returns PNG image content and a saved path; listed in `mcp-tools.json` |
+| AC-68 | active | `pano360-from-depth.json` lints against the Cloud catalog snapshot |
 | AC-69 | manual | Recording on real Comfy Cloud: the demo bedroom as a 360° view, looking around past the reading corner |
 
 ## 9. Test plan
@@ -119,3 +120,4 @@ Settled 2026-10-18 on the recommended answers (Dante: "Approve the open question
 
 - 2026-10-18 Draft, from Dante's request for an opt-in generative 360° room view; feasibility checked against the Comfy Cloud catalog.
 - 2026-10-18 Spike passed (depth 0.6); Approved with the recommended answers. ADR-0010.
+- 2026-10-18 Spec session: contracts, Cloud catalog nodes, workflow, panorama fixture, fake ComfyUI panoramas, tests for AC-63~68; ACs active. Persisting panoramas in the layout file moved to a follow-up.

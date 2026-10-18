@@ -92,3 +92,32 @@ describe('AC-54 the 3D photo workflow matches the Comfy Cloud catalog', () => {
     expect(byTitle(workflow, 'roomfit:save').map((node) => node.class_type)).toEqual(['SaveGLB'])
   })
 })
+
+describe('AC-68 the 360° workflow matches the Comfy Cloud catalog', () => {
+  it('AC-68 pano360-from-depth lints against the pinned Cloud catalog and takes the depth panorama through a ControlNet', () => {
+    const workflow: ApiWorkflow = JSON.parse(readFileSync('workflows/cloud/pano360-from-depth.json', 'utf8'))
+
+    expect(lintWorkflow(workflow, loadSnapshot('spec/contracts/comfy-cloud-object-info.json'))).toEqual([])
+    for (const title of ['roomfit:depth', 'roomfit:positive', 'roomfit:negative', 'roomfit:seed', 'roomfit:save']) {
+      expect(byTitle(workflow, title), title).toHaveLength(1)
+    }
+    const [depthId] = Object.entries(workflow).find(([, node]) => node._meta?.title === 'roomfit:depth')!
+    const control = Object.values(workflow).find((node) => node.class_type === 'ControlNetApplyAdvanced')!
+    expect(control.inputs.image).toEqual([depthId, 0])
+    expect(byTitle(workflow, 'roomfit:save')[0]!.inputs.filename_prefix).toBe('roomfit/pano360')
+    expect(byTitle(workflow, 'roomfit:positive')[0]!.inputs.text).toMatch(/^equirectangular 360 image/)
+  })
+
+  it('AC-68 the render prompt builder fills the 360° workflow', () => {
+    const outcome = buildRenderPrompt(JSON.parse(readFileSync('workflows/cloud/pano360-from-depth.json', 'utf8')), {
+      depthImageName: 'roomfit-depth-pano-001.png',
+      prompt: 'equirectangular 360 image, bedroom',
+      negativePrompt: 'blurry',
+      seed: 3
+    })
+    if (!outcome.ok) throw new Error(`missing ${outcome.missing.join(', ')}`)
+
+    expect(byTitle(outcome.prompt, 'roomfit:depth')[0]!.inputs.image).toBe('roomfit-depth-pano-001.png')
+    expect(lintWorkflow(outcome.prompt, loadSnapshot('spec/contracts/comfy-cloud-object-info.json'))).toEqual([])
+  })
+})

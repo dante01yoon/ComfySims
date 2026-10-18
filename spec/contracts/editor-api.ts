@@ -22,11 +22,18 @@ export type EditorState = {
   scene: ScenePreset
   focusedZone: string | null
   photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
+  viewer360: Viewer360 | null
   undoLabels: string[]
   agentConnected: boolean
   wallCutCm: number
   lastRenderCamera: { position: Vec3; target: Vec3 } | null
 }
+
+/** The open 360° viewer. Yaw 0 looks at +Z, +90 at +X; pitch is clamped to ±80, field of view to 40–100. */
+export type Viewer360 = { jobId: string; zoneId: string; yawDegrees: number; pitchDegrees: number; fovDegrees: number; stale: boolean }
+
+/** An equirectangular depth panorama from a room's standing point: column 0 is yaw −180, the centre column yaw 0 (+Z); row 0 is pitch +90. */
+export type DepthPanorama = { image: string; width: number; height: number; standingPoint: { x: number; z: number }; eyeHeightCm: number }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
@@ -88,6 +95,10 @@ export type RoomfitEditorApi = {
   closePhoto3d(): void
   screenshot(): Promise<string>
   setActionLabel(label: string | null): void
+  depthPanorama(zoneId: string): Promise<DepthPanorama | { ok: false; reason: 'unknown-zone' }>
+  view360(request?: { zoneId?: string; prompt?: string }): Promise<{ ok: true; jobId: string; image: string } | { ok: false; reason: 'no-room' } | ComfyFailure>
+  open360(jobId: string): void
+  close360(): void
 }
 
 declare global {
