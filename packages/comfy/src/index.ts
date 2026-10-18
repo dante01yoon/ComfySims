@@ -76,7 +76,7 @@ function modelOptions(spec: unknown): unknown[] | null {
   const [type, extra] = spec
   const options: unknown = Array.isArray(type) ? type : type === 'COMBO' ? z.object({ options: z.array(z.unknown()) }).safeParse(extra).data?.options : null
   const isUpload = z.object({ image_upload: z.literal(true) }).safeParse(extra).success
-  return Array.isArray(options) && options.length > 0 && !isUpload ? options : null
+  return Array.isArray(options) && !isUpload ? options : null
 }
 
 /** Node classes and model files a workflow uses that a ComfyUI's `/api/object_info` catalog does not have. */

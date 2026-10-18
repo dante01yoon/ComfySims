@@ -19,13 +19,14 @@ describe('missingFromCatalog', () => {
     expect(missingFromCatalog(workflow, catalog)).toEqual(['depth.safetensors', 'sdxl.safetensors', 'MoGeInference'])
   })
 
-  it('accepts empty option lists and installed files', () => {
+  it('names files from empty option lists in both combo formats and accepts installed files', () => {
     const catalog = {
-      LoadImage: {},
+      LoadImage: { input: { required: { image: [[], { image_upload: true }] } } },
       ControlNetLoader: { input: { required: { control_net_name: [[]] } } },
-      CheckpointLoaderSimple: { input: { required: { ckpt_name: [['sdxl.safetensors']] } } },
+      CheckpointLoaderSimple: { input: { required: { ckpt_name: ['COMBO', { options: [] }] } } },
       MoGeInference: {}
     }
-    expect(missingFromCatalog(workflow, catalog)).toEqual([])
+    expect(missingFromCatalog(workflow, catalog)).toEqual(['depth.safetensors', 'sdxl.safetensors'])
+    expect(missingFromCatalog(workflow, { ...catalog, CheckpointLoaderSimple: { input: { required: { ckpt_name: [['sdxl.safetensors']] } } } })).toEqual(['depth.safetensors'])
   })
 })

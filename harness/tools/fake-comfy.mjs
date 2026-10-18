@@ -7,12 +7,19 @@ const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', 
 const snapshotAt = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'))
 const LOCAL_WITHOUT = ['LoadMoGeModel', 'MoGeInference', 'MoGePointMapToMesh']
 
-/** Every (node class, model-file input, file) the repo's workflows use: the fakes have exactly these models installed. */
-function modelFilesUsedByWorkflows() {
+/** Every (node class, input, string value) the repo's workflows use: the fakes offer exactly these options, so their models count as installed. */
+function optionValuesUsedByWorkflows() {
   const sets = snapshotAt('workflows/sets.json')
   const files = [...new Set(Object.values(sets).flatMap((set) => Object.values(set)))]
   return files.flatMap((file) => Object.values(snapshotAt(`workflows/${file}`)).flatMap((node) =>
-    Object.entries(node.inputs).filter(([name, value]) => name.endsWith('_name') && typeof value === 'string').map(([name, value]) => [node.class_type, name, value])))
+    Object.entries(node.inputs).filter(([, value]) => typeof value === 'string').map(([name, value]) => [node.class_type, name, value])))
+}
+
+const optionListOf = (spec) => {
+  if (!Array.isArray(spec) || spec[1]?.image_upload) return null
+  if (Array.isArray(spec[0])) return spec[0]
+  if (spec[0] === 'COMBO') return (spec[1] ??= {}).options ??= []
+  return null
 }
 
 /** /api/object_info as a backend would serve it, with the workflows' model files installed: `cloud` from the Cloud snapshot; `local` from the local snapshot without MoGe nodes and with only an SDXL ControlNet installed. */
@@ -20,9 +27,9 @@ function catalogOf(kind) {
   const snapshot = snapshotAt(kind === 'local' ? 'spec/contracts/comfyui-object-info.json' : 'spec/contracts/comfy-cloud-object-info.json')
   const classes = snapshot.classes.filter((name) => kind !== 'local' || !LOCAL_WITHOUT.includes(name))
   const catalog = Object.fromEntries(classes.map((name) => [name, structuredClone(snapshot.nodes[name] ?? { input: { required: {} }, output: [] })]))
-  for (const [className, inputName, file] of modelFilesUsedByWorkflows()) {
-    const spec = catalog[className]?.input?.required?.[inputName] ?? catalog[className]?.input?.optional?.[inputName]
-    if (Array.isArray(spec?.[0]) && !spec[0].includes(file)) spec[0].push(file)
+  for (const [className, inputName, value] of optionValuesUsedByWorkflows()) {
+    const options = optionListOf(catalog[className]?.input?.required?.[inputName] ?? catalog[className]?.input?.optional?.[inputName])
+    if (options && !options.includes(value)) options.push(value)
   }
   if (kind === 'local') {
     catalog.ControlNetLoader = structuredClone(catalog.ControlNetLoader)
