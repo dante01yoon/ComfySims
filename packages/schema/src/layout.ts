@@ -55,10 +55,31 @@ export const AssetSource = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('upload') }),
   z.strictObject({
     kind: z.literal('generated'),
-    workflow: z.string().min(1),
-    productUrl: z.url().optional()
+    workflow: z.string().min(1)
   })
 ])
+
+/** A product page address: http or https only. */
+export const ProductUrl = z.url({ protocol: /^https?$/, message: 'Enter a web address starting with https://' })
+
+/** A small JPEG/PNG thumbnail of the product photo, as a data URL of at most 40 KB of image bytes. */
+const PhotoThumbnail = z.string().regex(/^data:image\/(jpeg|png|webp);base64,/).max(56_000)
+
+export const AssetProduct = z.strictObject({
+  photo: z.strictObject({ thumbnail: PhotoThumbnail, comfyInputName: z.string().min(1).optional() }).optional(),
+  url: ProductUrl.optional(),
+  brand: z.string().trim().min(1).max(80).optional(),
+  store: z.string().trim().min(1).max(80).optional(),
+  generatedPhoto: z.boolean().optional()
+})
+
+export const AssetLabel = z.string().trim().min(1).max(32)
+
+/** Up to 12 labels per asset, unique ignoring case, in the order they were added. */
+export const AssetLabels = z
+  .array(AssetLabel)
+  .max(12)
+  .refine((labels) => new Set(labels.map((label) => label.toLowerCase())).size === labels.length, 'labels must be unique (ignoring case)')
 
 export const FitMode = z.enum(['exact', 'uniform', 'auto'])
 
@@ -73,7 +94,9 @@ export const Asset = z.strictObject({
   uri: z.string().min(1),
   dimensions: Dimensions,
   source: AssetSource,
-  fit: AssetFit.optional()
+  fit: AssetFit.optional(),
+  product: AssetProduct.optional(),
+  labels: AssetLabels.optional()
 })
 
 export const PlacedItem = z.strictObject({
@@ -154,6 +177,7 @@ export type FloorMaterial = z.infer<typeof FloorMaterial>
 export type FitMode = z.infer<typeof FitMode>
 export type AssetFit = z.infer<typeof AssetFit>
 export type Asset = z.infer<typeof Asset>
+export type AssetProduct = z.infer<typeof AssetProduct>
 export type PlacedItem = z.infer<typeof PlacedItem>
 export type RoomLayout = z.infer<typeof RoomLayout>
 

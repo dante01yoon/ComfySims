@@ -114,6 +114,22 @@ test('AC-74 get_backend reports the backend the editor uses and what it cannot r
   await expect.poll(async () => json((await call('get_backend')).content), { timeout: 15_000 }).toEqual({ kind: 'cloud', url: 'http://127.0.0.1:8199', ready: true, unavailable: [] })
 })
 
+test('AC-81 add_product keeps product fields, set_asset_labels relabels undoably, list_assets returns both', async ({ page }) => {
+  const added = await call('add_product', { image: { comfyInputName: 'existing-input.png' }, name: 'Store lamp', width: 30, depth: 30, height: 150, room: 'garage', productUrl: 'https://www.example-store.com/lamp-42', brand: 'Lumen', store: 'Example Store', labels: ['lighting'] })
+  expect(added.isError).toBe(false)
+  const { itemId } = json(added.content)
+  const assetId = (await page.evaluate(() => window.roomfit.state())).layout.items.find((item) => item.id === itemId)!.assetId
+
+  const relabelled = await call('set_asset_labels', { assetId, labels: ['lighting', 'shortlist'] })
+  expect(relabelled.isError).toBe(false)
+  const state = await page.evaluate(() => window.roomfit.state())
+  expect(state.undoLabels.at(-1)).toBe('mcp:set_asset_labels')
+
+  const listed = json((await call('list_assets')).content) as { id: string; product?: Record<string, unknown>; labels?: string[] }[]
+  expect(listed.find((asset) => asset.id === assetId)).toMatchObject({ product: { url: 'https://www.example-store.com/lamp-42', brand: 'Lumen', store: 'Example Store' }, labels: ['lighting', 'shortlist'] })
+  expect((await call('set_asset_labels', { assetId: 'nope', labels: [] })).isError).toBe(true)
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })

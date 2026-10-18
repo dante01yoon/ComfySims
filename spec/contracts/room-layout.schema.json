@@ -290,10 +290,6 @@
                   "workflow": {
                     "type": "string",
                     "minLength": 1
-                  },
-                  "productUrl": {
-                    "type": "string",
-                    "format": "uri"
                   }
                 },
                 "required": [
@@ -325,6 +321,56 @@
               "distortion"
             ],
             "additionalProperties": false
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "photo": {
+                "type": "object",
+                "properties": {
+                  "thumbnail": {
+                    "type": "string",
+                    "maxLength": 56000,
+                    "pattern": "^data:image\\/(jpeg|png|webp);base64,"
+                  },
+                  "comfyInputName": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "thumbnail"
+                ],
+                "additionalProperties": false
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "brand": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "store": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "generatedPhoto": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "labels": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            }
           }
         },
         "required": [

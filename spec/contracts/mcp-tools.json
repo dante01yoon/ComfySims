@@ -11,12 +11,13 @@
   "focus_room": { "required": [], "properties": { "room": "string" } },
   "set_scene": { "required": ["preset"], "properties": { "preset": "string" } },
   "set_view": { "required": ["view"], "properties": { "view": "string" } },
-  "add_product": { "required": ["image", "name", "width", "depth", "height"], "properties": { "image": "object", "name": "string", "width": "number", "depth": "number", "height": "number", "room": "string", "mode": "string" } },
+  "add_product": { "required": ["image", "name", "width", "depth", "height"], "properties": { "image": "object", "name": "string", "width": "number", "depth": "number", "height": "number", "room": "string", "mode": "string", "productUrl": "string", "brand": "string", "store": "string", "labels": "array" } },
   "render_room": { "required": [], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
   "photo3d": { "required": [], "properties": { "renderJobId": "string", "path": "string" } },
   "screenshot": { "required": [], "properties": {} },
   "get_jobs": { "required": [], "properties": {} },
   "view_360": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
-  "get_backend": { "required": [], "properties": {} }
+  "get_backend": { "required": [], "properties": {} },
+  "set_asset_labels": { "required": ["assetId", "labels"], "properties": { "assetId": "string", "labels": "array" } }
  }
 }

@@ -24,6 +24,7 @@ export type EditorState = {
   photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
   viewer360: Viewer360 | null
   backend: BackendState
+  libraryFilter: string | null
   undoLabels: string[]
   agentConnected: boolean
   wallCutCm: number
@@ -61,6 +62,10 @@ export type ProductRequest = {
   mode?: FitMode
   seed?: number
   zoneId?: string
+  productUrl?: string
+  brand?: string
+  store?: string
+  labels?: string[]
 }
 
 export type EditorView = 'editor' | 'studio'
@@ -116,6 +121,10 @@ export type RoomfitEditorApi = {
   setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState>
   checkBackend(): Promise<BackendState>
   jobWorkflow(jobId: string): JobWorkflow | null
+  setAssetLabels(assetId: string, labels: string[]): { ok: true } | { ok: false; reason: 'unknown-asset' | 'invalid-labels'; message: string }
+  setAssetProduct(assetId: string, fields: { url?: string | null; brand?: string | null; store?: string | null }): { ok: true } | { ok: false; reason: 'unknown-asset' | 'invalid-url'; message: string }
+  setLibraryFilter(label: string | null): void
+  selectItem(itemId: string | null): void
 }
 
 declare global {

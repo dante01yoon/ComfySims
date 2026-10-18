@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Draft |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
 | Decisions | — |
@@ -38,11 +38,11 @@ Non-goals (M7)
 
 ## 4. Screens and states
 
-- Add-product form: new fields **"Product link"** (URL), **"Brand"**, **"Store"**, **"Labels"** (comma or Enter to add). Invalid link (not http/https) → inline "Enter a web address starting with https://", Generate disabled.
+- Add-product form: new fields **"Product link"** (URL), **"Brand"**, **"Store"**, **"Labels"** (Enter or comma adds the typed label). Invalid link (not http/https) → inline "Enter a web address starting with https://", Generate disabled.
 - Library row: product photo thumbnail (falls back to the model thumbnail), name, size, "<brand> · <store>" or "AI-generated photo · no store", label chips, **"Open product page"** (link, `target=_blank`, `rel=noopener noreferrer`), **"Edit labels"**.
 - Library header: **"Filter by label"** select (All + every label in use, with counts).
-- Selection panel (studio and editor), when an item is selected: the asset's product card (same content as the library row) and **"Edit labels"**.
-- Edit labels: inline chip editor; Enter adds, × removes, Esc cancels.
+- Selection panel, when an item is selected: in the studio a small panel named **"Selected item"** over the scene; in the editor the existing **"Selected"** section. Both show the asset's product card (same content as the library row) and **"Edit labels"**.
+- Edit labels: an inline chip editor with a field labelled **"Add label"** (Enter adds) and a **"Remove label <label>"** button per chip; Esc closes the editor.
 
 ## 5. Behaviour rules
 
@@ -55,9 +55,9 @@ Non-goals (M7)
 
 ## 6. Contract and data changes
 
-- `packages/schema` `Asset` gains optional `product: { photo?: { thumbnail: string; comfyInputName?: string }, url?: string, brand?: string, store?: string, generatedPhoto?: boolean }` and `labels?: string[]`. `AssetSource.generated.productUrl` moves into `product.url` (old files: read `productUrl` into `product.url`). Breaking for nothing on disk today (no file sets `productUrl`).
+- `packages/schema` `Asset` gains optional `product: { photo?: { thumbnail, comfyInputName? }, url?, brand?, store?, generatedPhoto? }` and `labels?: string[]`. The unused `AssetSource.generated.productUrl` is removed (no file or code ever set it); `product.url` replaces it. The demo house fixture marks its assets `product.generatedPhoto: true`.
 - `ProductRequest` gains `productUrl?`, `brand?`, `store?`, `labels?`.
-- Editor API: `setAssetLabels(assetId, labels)`, `setAssetProduct(assetId, fields)`, `libraryFilter(label | null)`, `state().libraryFilter`.
+- Editor API: `setAssetLabels(assetId, labels)`, `setAssetProduct(assetId, { url?, brand?, store? })` (null clears), `setLibraryFilter(label | null)`, `selectItem(itemId | null)`, `state().libraryFilter`.
 - MCP: `add_product` gains `productUrl`, `brand`, `store`, `labels`; new `set_asset_labels({ assetId, labels })`; `list_assets` rows gain `product` and `labels`.
 
 ## 7. ComfyUI workflows
@@ -68,11 +68,11 @@ None.
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-77 | planned | The layout schema accepts assets with product fields and labels, rejects non-http(s) links and over-long/duplicate labels, and loads pre-M7 files unchanged |
-| AC-78 | planned | Adding a product with link, brand, store and labels stores them and a ≤ 40 KB photo thumbnail on the asset |
-| AC-79 | planned | The library row and the selected item's panel show the product photo, brand · store and an "Open product page" link that opens the URL in a new tab with noopener |
-| AC-80 | planned | Labels can be added and removed (undoably) from the library and the selection panel; the library filter shows only assets with the chosen label |
-| AC-81 | planned | MCP: `add_product` accepts the product fields, `set_asset_labels` changes labels with an `mcp:` undo label, `list_assets` returns product and labels |
+| AC-77 | active | The layout schema accepts assets with product fields and labels, rejects non-http(s) links and over-long/duplicate labels, and loads pre-M7 files unchanged |
+| AC-78 | active | Adding a product with link, brand, store and labels stores them and a ≤ 40 KB photo thumbnail on the asset |
+| AC-79 | active | The library row and the selected item's panel show the product photo, brand · store and an "Open product page" link that opens the URL in a new tab with noopener |
+| AC-80 | active | Labels can be added and removed (undoably) from the library and the selection panel; the library filter shows only assets with the chosen label |
+| AC-81 | active | MCP: `add_product` accepts the product fields, `set_asset_labels` changes labels with an `mcp:` undo label, `list_assets` returns product and labels |
 | AC-82 | manual | Recording: three real sofas from store links, labelled and filtered, one placed, then opened from the house |
 
 ## 9. Test plan
@@ -90,12 +90,14 @@ Risks
 - Store photos are copyrighted; roomfit keeps only a small thumbnail locally and never republishes it. The README will say so.
 - Links rot; we show the host so a dead link is still recognisable.
 
-Open questions (recommended answers in bold)
-1. Import from a link (paste URL → fetch name, photo, size): **not in M7; a separate spike later**, since store pages differ and scraping terms vary — vs try for a few big stores now.
-2. Labels: **free tags with suggestions from labels in use** vs a fixed category list (seating, lighting…).
-3. Brand/store: **two free text fields** vs one "Seller" field.
-4. Demo house backfill: **mark the 17 demo assets as AI-generated photos** vs attach real products to them.
+Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approve M7 on the recommended answers and implement it"):
+1. Import from a link: not in M7; a separate spike later.
+2. Labels: free tags with suggestions from labels in use.
+3. Brand and store: two free text fields.
+4. Demo house: the 17 demo assets are marked as AI-generated photos.
 
 ## Change log
 
 - 2026-10-18 Draft, from Dante's request for product photos, links, sources and labels on assets.
+- 2026-10-18 Approved on the recommended answers.
+- 2026-10-18 Spec session: schema, contracts (incl. `selectItem`), demo fixture marked AI-generated, AC-77~81 tests; ACs active.

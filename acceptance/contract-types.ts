@@ -53,3 +53,10 @@ export type M6Checks = [
   Assert<Equal<EditorState['backend'], BackendState>>,
   Assert<Equal<BackendState['kind'], BackendKind>>
 ]
+
+import type { AssetProduct, RoomLayout } from '../packages/schema/src/index.ts'
+
+export type M7Checks = [
+  Assert<Equal<EditorState['libraryFilter'], string | null>>,
+  Assert<Equal<NonNullable<RoomLayout['assets'][number]['product']>, AssetProduct>>
+]
