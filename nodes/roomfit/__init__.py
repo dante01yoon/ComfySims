@@ -24,7 +24,7 @@ class RoomfitFitMesh:
                 "width_cm": SIZE_CM,
                 "depth_cm": SIZE_CM,
                 "height_cm": SIZE_CM,
-                "mode": (["exact", "uniform"], {}),
+                "mode": (["auto", "exact", "uniform"], {}),
             }
         }
 

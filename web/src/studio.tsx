@@ -6,7 +6,7 @@ import { Color, SRGBColorSpace, type DirectionalLight, type HemisphereLight, typ
 
 import type { PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
 import type { Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
-import { api, snapshot, subscribe } from './editor.ts'
+import { api, isFinished, snapshot, subscribe } from './editor.ts'
 import { seededRandom } from './floors.ts'
 import { boundsCenter, compassDirection, roomBounds, type Bounds } from './framing.ts'
 
@@ -295,9 +295,17 @@ export function ZoneChips({ room }: { room: Room }) {
   )
 }
 
-/** Pill bar of scene presets over the studio view. */
-export function PresetBar() {
-  const { scene } = useSyncExternalStore(subscribe, snapshot)
+function studioPrompt(roomName: string | undefined, preset: ScenePreset): string {
+  const subject = roomName ? `the ${roomName.toLowerCase()} of a bright modern home` : 'a bright modern home'
+  return `Photograph of ${subject}, ${preset} light, photorealistic interior, natural materials, soft shadows`
+}
+
+/** Pill bar of scene presets over the studio view, with a button that renders the current view. */
+export function PresetBar({ room }: { room: Room }) {
+  const { scene, focusedZone, jobs } = useSyncExternalStore(subscribe, snapshot)
+  const job = jobs.at(-1)
+  const busy = job !== undefined && !isFinished(job)
+  const zoneName = room.kind === 'plan' ? room.zones.find(({ id }) => id === focusedZone)?.name : undefined
   return (
     <nav className="preset-bar" aria-label="Scene presets">
       {PRESET_BUTTONS.map(({ preset, label, dot }) => (
@@ -306,6 +314,7 @@ export function PresetBar() {
           {label}
         </button>
       ))}
+      <button disabled={busy} onClick={() => api.renderInComfy({ prompt: studioPrompt(zoneName, scene) })}>Render this view</button>
     </nav>
   )
 }

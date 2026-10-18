@@ -213,7 +213,7 @@ function state(): EditorState {
 function focusFrame(): { position: Vec3; target: Vec3 } {
   const { room } = editor.history.present
   const zone = room.kind === 'plan' ? room.zones.find(({ id }) => id === editor.focusedZone) : undefined
-  return studioCamera(zone ? polygonBounds(zone.polygon) : roomBounds(room))
+  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : studioCamera(roomBounds(room))
 }
 
 function focusZone(zoneId: string | null): void {
@@ -221,6 +221,10 @@ function focusZone(zoneId: string | null): void {
   if (zoneId !== null && (room.kind !== 'plan' || !room.zones.some(({ id }) => id === zoneId))) return
   update({ focusedZone: zoneId })
   api.setCamera(focusFrame())
+}
+
+export function isFinished(job: ComfyJob): boolean {
+  return job.status === 'done' || job.status === 'failed'
 }
 
 function reportJob(job: ComfyJob): void {

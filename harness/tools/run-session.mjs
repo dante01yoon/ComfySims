@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -6,6 +6,13 @@ const [name, promptFile] = process.argv.slice(2)
 if (!name || !promptFile) {
   console.error('usage: node harness/tools/run-session.mjs <session-name> <prompt-file>')
   process.exit(2)
+}
+
+const selfTest = spawnSync('pnpm', ['exec', 'vitest', 'run', 'harness/self-test', '--reporter=dot'], { encoding: 'utf8' })
+if (selfTest.status !== 0) {
+  console.error('Refusing to start: the harness self-tests fail, so the agent would inherit a broken harness. Fix them in the spec session first.\n')
+  console.error(selfTest.stdout.split('\n').slice(-25).join('\n'))
+  process.exit(3)
 }
 
 const prompt = readFileSync(promptFile, 'utf8')

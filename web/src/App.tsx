@@ -16,7 +16,7 @@ import {
   type Zone
 } from '../../packages/schema/src/index.ts'
 import type { ComfyJob, ComfyJobStatus, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
-import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
+import { api, attachControls, attachThree, beginDrag, endDrag, isFinished, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
@@ -325,10 +325,6 @@ const STEP_LABELS: Record<ComfyJob['kind'], Partial<Record<ComfyJobStatus, strin
   }
 }
 
-function isFinished(job: ComfyJob): boolean {
-  return job.status === 'done' || job.status === 'failed'
-}
-
 function runStartIndex(jobs: readonly ComfyJob[]): number {
   const earlier = jobs.slice(0, -1).map(isFinished)
   return earlier.lastIndexOf(true) + 1
@@ -513,7 +509,7 @@ export function App() {
           })}
         </Canvas>
         {studio && <ZoneChips room={layout.room} />}
-        {studio && <PresetBar />}
+        {studio && <PresetBar room={layout.room} />}
         <button className="view-toggle" onClick={() => api.setView(studio ? 'editor' : 'studio')}>
           {studio ? 'Editor' : 'Studio'}
         </button>

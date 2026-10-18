@@ -20,7 +20,7 @@ describe('harness workflow linter', () => {
     { name: 'a link to a missing node', change: (w: ApiWorkflow) => { w['2']!.inputs.images = ['9', 0] }, match: /missing node "9"/ },
     { name: 'a link to a missing output', change: (w: ApiWorkflow) => { w['2']!.inputs.images = ['1', 5] }, match: /has no output 5/ },
     { name: 'a type mismatch', change: (w: ApiWorkflow) => { w['2']!.inputs.images = ['1', 1] }, match: /expects IMAGE but LoadImage output 1 is MASK/ },
-    { name: 'a combo value outside the options', change: (w: ApiWorkflow) => { w['3'] = { class_type: 'RoomfitFitMesh', inputs: { mesh: ['1', 0], width_cm: 1, depth_cm: 1, height_cm: 1, mode: 'stretch' } } }, match: /"stretch" is not one of exact, uniform/ }
+    { name: 'a combo value outside the options', change: (w: ApiWorkflow) => { w['3'] = { class_type: 'RoomfitFitMesh', inputs: { mesh: ['1', 0], width_cm: 1, depth_cm: 1, height_cm: 1, mode: 'stretch' } } }, match: /"stretch" is not one of auto, exact, uniform/ }
   ])('rejects $name', ({ change, match }) => {
     const workflow = structuredClone(valid)
     change(workflow)
