@@ -1,0 +1,1 @@
+spec/M2-home-studio.md 의 빨간 AC들(AC-39~AC-42)을 초록으로 만들어줘. 집을 중심으로 쓰는 기능이야: findSpot(벽에 붙여 방을 향하게 자동 배치), 방 포커스와 스튜디오의 방 칩, 포커스한 방으로 들어가는 상품 생성, 스튜디오에서 렌더. 스펙의 "House-first editing" 절과 계약(packages/schema/src/domain.ts, spec/contracts/editor-api.ts)을 봐. AGENTS.md 규칙을 따르고, 끝나기 전에 스튜디오에서 방 하나를 포커스한 스크린샷을 직접 보고, 무엇을 했는지 짧게 알려줘.
