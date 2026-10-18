@@ -59,6 +59,7 @@
 | AC-10 데모 | 데모 스크립트 숫자 오류(x=150은 벽 안) — 에디터가 맞았음 | 스크립트 수정 |
 | 집 투어 1차 | 방 렌더가 위에서 본 미니어처 / 램프가 270cm 벽에 가림 | AC-45 컷어웨이, AC-46 눈높이 렌더 |
 | M3 실제 Cloud | 3D 사진이 검은 화면의 작은 카드 (시야각 60° 고정) | AC-62 메시 각도 범위로 시야각 |
+| impl-16 | 에이전트가 자기 스크린샷을 못 봄(실행기 허용 명령에 npx 없음) | 하네스 See 역할 보강 예정(`pnpm see`) |
 
 ## 데모 영상
 
@@ -68,7 +69,7 @@
 | [roomfit-cloud-live.mp4](../recordings/media/roomfit-cloud-live.mp4) | 에디터가 실제 Comfy Cloud 호출, 90초 |
 | [roomfit-studio.mp4](../recordings/media/roomfit-studio.mp4) | 홈 스튜디오, Cloud 생성 가구 15개, 조명 프리셋 |
 | [roomfit-walkthrough.mp4](../recordings/media/roomfit-walkthrough.mp4) | 집 투어: 눈높이 거실 렌더, 램프 자동 배치 |
-| M3 영상 (AC-62 수정 후 추가) | 작업 패널 동시 실행, 라이브러리, 이름 변경, 3D 사진 |
+| [roomfit-workspace.mp4](../recordings/media/roomfit-workspace.mp4) | M3: 작업 패널 동시 실행, 라이브러리, 이름 변경, 3D 사진 (실제 Cloud, 48초) |
 
 ## 강의 포인트 색인 (저널 기준)
 
