@@ -1,0 +1,1 @@
+spec/M6-backend-and-workflows.md 의 준비 상태 규칙이 바뀌었어(§5 Readiness: 빈 옵션 목록도 "설치된 모델 없음"으로 본다, 이미지 업로드 입력은 제외). 실제 로컬 ComfyUI의 카탈로그를 fixtures/catalogs/comfyui-no-models.json 으로 고정했고, acceptance/readiness.test.ts (AC-72)가 빨개. 이걸 초록으로 만들고 pnpm verify 전체가 통과하게 해줘. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.
