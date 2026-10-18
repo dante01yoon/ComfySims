@@ -1,11 +1,12 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
 import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Vector3, type Material, type Object3D } from 'three'
 
+import { DISTORTION_FLAG_THRESHOLD } from '../../packages/fit/src/index.ts'
 import { collisions, outOfBounds } from '../../packages/placement/src/index.ts'
-import { serializeLayout, type Asset, type FitMode, type PlacedItem, type Room as BoxRoom } from '../../packages/schema/src/index.ts'
-import type { ComfyJob } from '../../spec/contracts/editor-api.ts'
+import { serializeLayout, type Asset, type FitMode, type PlacedItem, type Room as BoxRoom, type RoomLayout } from '../../packages/schema/src/index.ts'
+import type { ComfyJob, ComfyJobStatus } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { meshKey } from './meshes.ts'
 
@@ -134,7 +135,7 @@ function removeSelected(): void {
 function useKeyboardShortcuts(): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement) return
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
       const key = event.key.toLowerCase()
       if ((event.metaKey || event.ctrlKey) && key === 'z') {
         event.preventDefault()
@@ -173,10 +174,10 @@ function Panel() {
 
   return (
     <aside>
-      <label>
-        Open layout <input type="file" accept=".json,application/json" onChange={open} />
-      </label>
-      <div>
+      <Field label="Open layout">
+        <input type="file" accept=".json,application/json" onChange={open} />
+      </Field>
+      <div className="button-row">
         <button onClick={download}>Save</button>
         <button onClick={api.undo} disabled={!canUndo}>Undo</button>
         <button onClick={api.redo} disabled={!canRedo}>Redo</button>
@@ -188,8 +189,8 @@ function Panel() {
       <div>{layout.name}: {layout.room.width} × {layout.room.depth} × {layout.room.height} cm</div>
       <h2>Selected</h2>
       {selectedId ? (
-        <div>
-          <div>{selectedId}</div>
+        <div className="button-row">
+          <div className="selected-id">{selectedId}</div>
           <button onClick={() => rotateSelected(1)}>Rotate ⟲ (Q)</button>
           <button onClick={() => rotateSelected(-1)}>Rotate ⟳ (E)</button>
           <button onClick={removeSelected}>Remove (Del)</button>
@@ -225,22 +226,107 @@ function base64Of(file: Blob): Promise<string> {
   })
 }
 
-function statusLine(job: ComfyJob | undefined): string {
+type SizeInput = Record<(typeof SIZE_FIELDS)[number][0], string>
+
+const STEP_LABELS: Record<ComfyJob['kind'], Partial<Record<ComfyJobStatus, string>>> = {
+  product: {
+    uploading: 'Uploading photo',
+    queued: 'Queued on ComfyUI',
+    in_progress: 'Generating 3D on ComfyUI',
+    downloading: 'Downloading the model'
+  },
+  render: {
+    uploading: 'Uploading depth pass',
+    queued: 'Queued on ComfyUI',
+    in_progress: 'Rendering on ComfyUI',
+    downloading: 'Downloading the render'
+  }
+}
+
+function isFinished(job: ComfyJob): boolean {
+  return job.status === 'done' || job.status === 'failed'
+}
+
+function runStartIndex(jobs: readonly ComfyJob[]): number {
+  const earlier = jobs.slice(0, -1).map(isFinished)
+  return earlier.lastIndexOf(true) + 1
+}
+
+function placedLine(layout: RoomLayout): string {
+  const fit = layout.assets.at(-1)?.fit
+  if (!fit) return 'Placed'
+  const flag = fit.distortion > DISTORTION_FLAG_THRESHOLD ? ' (flagged)' : ''
+  return `Placed — distortion ${fit.distortion.toFixed(2)}${flag}`
+}
+
+function fittingStep(size: SizeInput): string {
+  const listed = SIZE_FIELDS.map(([axis]) => size[axis])
+  return listed.every(Boolean) ? `Fitting to ${listed.join(' × ')} cm` : 'Fitting to the listed size'
+}
+
+function statusLine(job: ComfyJob | undefined, layout: RoomLayout, size: SizeInput, seconds: number): string {
   if (!job) return 'Ready'
-  if (job.status === 'done') return job.kind === 'product' ? 'Placed' : 'Rendered'
   if (job.status === 'failed') return `Failed: ${job.message ?? 'unknown error'}`
-  return `${job.kind === 'product' ? 'Generate 3D' : 'Render'}: ${job.status.replace('_', ' ')}…`
+  if (job.status === 'done') return job.kind === 'product' ? placedLine(layout) : `Rendered in ${seconds} s`
+  const step = job.status === 'fitting' ? fittingStep(size) : `${STEP_LABELS[job.kind][job.status]}…`
+  return `${step} ${seconds} s`
+}
+
+function useRunSeconds(jobs: readonly ComfyJob[], running: boolean): number {
+  const startedAt = useRef(new Map<number, number>())
+  const [now, setNow] = useState(Date.now)
+  const start = runStartIndex(jobs)
+  if (jobs.length > 0 && !startedAt.current.has(start)) startedAt.current.set(start, Date.now())
+
+  useEffect(() => {
+    if (!running) return
+    setNow(Date.now())
+    const timer = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(timer)
+  }, [running])
+
+  const began = startedAt.current.get(start)
+  return began === undefined ? 0 : Math.max(0, Math.floor((now - began) / 1000))
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function RenderOverlay({ image, prompt, onClose }: { image: string; prompt: string; onClose: () => void }) {
+  return (
+    <div className="render-overlay">
+      <figure>
+        <img src={image} alt="Render result" />
+        {prompt && <figcaption>{prompt}</figcaption>}
+      </figure>
+      <button onClick={onClose}>Close</button>
+    </div>
+  )
 }
 
 function ComfyPanel() {
-  const { jobs, lastRender } = useSyncExternalStore(subscribe, snapshot)
+  const { jobs, lastRender, history } = useSyncExternalStore(subscribe, snapshot)
   const [photo, setPhoto] = useState<File | null>(null)
   const [name, setName] = useState('')
-  const [size, setSize] = useState({ width: '', depth: '', height: '' })
+  const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
   const [mode, setMode] = useState<FitMode>('exact')
   const [prompt, setPrompt] = useState('')
+  const [renderedPrompt, setRenderedPrompt] = useState('')
+  const [closedRender, setClosedRender] = useState<string | null>(null)
   const job = jobs.at(-1)
-  const busy = job !== undefined && job.status !== 'done' && job.status !== 'failed'
+  const busy = job !== undefined && !isFinished(job)
+  const seconds = useRunSeconds(jobs, busy)
+
+  const render = () => {
+    setRenderedPrompt(prompt)
+    return api.renderInComfy({ prompt })
+  }
 
   const generate3d = async () => {
     if (!photo) return
@@ -251,33 +337,37 @@ function ComfyPanel() {
   return (
     <>
       <h2>Product from photo</h2>
-      <label>
-        Product photo <input type="file" accept="image/*" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
-      </label>
-      <label>
-        Product name <input value={name} onChange={(event) => setName(event.target.value)} />
-      </label>
-      {SIZE_FIELDS.map(([axis, label]) => (
-        <label key={axis}>
-          {label}{' '}
-          <input type="number" min="1" value={size[axis]} onChange={(event) => setSize({ ...size, [axis]: event.target.value })} />
-        </label>
-      ))}
-      <label>
-        Fit mode{' '}
+      <Field label="Product photo">
+        <input type="file" accept="image/*" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
+      </Field>
+      <Field label="Product name">
+        <input value={name} onChange={(event) => setName(event.target.value)} />
+      </Field>
+      <div className="size-row">
+        {SIZE_FIELDS.map(([axis, label]) => (
+          <Field key={axis} label={label}>
+            <input type="number" min="1" value={size[axis]} onChange={(event) => setSize({ ...size, [axis]: event.target.value })} />
+          </Field>
+        ))}
+      </div>
+      <Field label="Fit mode">
         <select value={mode} onChange={(event) => setMode(event.target.value === 'uniform' ? 'uniform' : 'exact')}>
           <option value="exact">exact</option>
           <option value="uniform">uniform</option>
         </select>
-      </label>
-      <button onClick={generate3d} disabled={busy || !photo}>Generate 3D</button>
+      </Field>
+      <button className="primary" onClick={generate3d} disabled={busy || !photo}>Generate 3D</button>
       <h2>Render</h2>
-      <label>
-        Render prompt <input value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-      </label>
-      <button onClick={() => api.renderInComfy({ prompt })} disabled={busy || !prompt.trim()}>Render</button>
-      <div role="status">{statusLine(job)}</div>
-      {lastRender && <img src={lastRender} alt="Render result" />}
+      <Field label="Render prompt">
+        <textarea rows={3} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+      </Field>
+      <button className="primary" onClick={render} disabled={busy || !prompt.trim()}>Render</button>
+      <div role="status" className={job?.status === 'failed' ? 'status problem' : 'status'}>
+        {statusLine(job, history.present, size, seconds)}
+      </div>
+      {lastRender && lastRender !== closedRender && (
+        <RenderOverlay image={lastRender} prompt={renderedPrompt} onClose={() => setClosedRender(lastRender)} />
+      )}
     </>
   )
 }
