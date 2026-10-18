@@ -1,0 +1,218 @@
+{
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "qwen_image_2512_fp8_e4m3fn.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "Qwen-Image 2512"
+  }
+ },
+ "2": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "1",
+    0
+   ],
+   "lora_name": "qwen-360-diffusion-2512-int8-bf16-v2.safetensors",
+   "strength_model": 1.0
+  },
+  "_meta": {
+   "title": "360 LoRA"
+  }
+ },
+ "3": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "lora_name": "Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors",
+   "strength_model": 1.0
+  },
+  "_meta": {
+   "title": "Lightning 4-step"
+  }
+ },
+ "4": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "model": [
+    "3",
+    0
+   ],
+   "shift": 3.1
+  },
+  "_meta": {
+   "title": "Sampling shift"
+  }
+ },
+ "5": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Text encoder"
+  }
+ },
+ "6": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  },
+  "_meta": {
+   "title": "VAE"
+  }
+ },
+ "7": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "5",
+    0
+   ],
+   "text": "equirectangular 360 image, photograph of a Scandinavian bedroom at evening seen from the middle of the room: queen bed with grey linen, oak nightstand, tall white wardrobe, a cozy reading corner with a light oak armchair with cream boucle upholstery and an oak tripod floor lamp with a white linen shade, walnut floor, warm white walls, two windows with dusk sky, an open door, soft warm lamp light, photorealistic"
+  },
+  "_meta": {
+   "title": "roomfit:prompt"
+  }
+ },
+ "8": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "5",
+    0
+   ],
+   "text": "low resolution, blurry, distorted, oversaturated, cartoon, text, watermark, seam"
+  },
+  "_meta": {
+   "title": "Negative"
+  }
+ },
+ "9": {
+  "class_type": "EmptySD3LatentImage",
+  "inputs": {
+   "width": 2048,
+   "height": 1024,
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "2048x1024"
+  }
+ },
+ "12": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "positive": [
+    "15",
+    0
+   ],
+   "negative": [
+    "15",
+    1
+   ],
+   "latent_image": [
+    "9",
+    0
+   ],
+   "seed": 42,
+   "steps": 4,
+   "cfg": 1.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "Sampler"
+  }
+ },
+ "13": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "12",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Decode"
+  }
+ },
+ "14": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "13",
+    0
+   ],
+   "filename_prefix": "roomfit/pano360-s0.6"
+  },
+  "_meta": {
+   "title": "roomfit:pano"
+  }
+ },
+ "10": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "f0ceea5b674462d9360a518a63e39f1e073417448de71b6b714f28313e879ba6.png"
+  },
+  "_meta": {
+   "title": "roomfit:depth"
+  }
+ },
+ "11": {
+  "class_type": "ControlNetLoader",
+  "inputs": {
+   "control_net_name": "Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors"
+  },
+  "_meta": {
+   "title": "Fun ControlNet Union"
+  }
+ },
+ "15": {
+  "class_type": "ControlNetApplyAdvanced",
+  "inputs": {
+   "positive": [
+    "7",
+    0
+   ],
+   "negative": [
+    "8",
+    0
+   ],
+   "control_net": [
+    "11",
+    0
+   ],
+   "image": [
+    "10",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ],
+   "strength": 0.6,
+   "start_percent": 0.0,
+   "end_percent": 1.0
+  },
+  "_meta": {
+   "title": "Depth control"
+  }
+ }
+}

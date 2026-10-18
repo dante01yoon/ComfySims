@@ -2,10 +2,10 @@
 
 | | |
 | --- | --- |
-| Status | Draft |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
-| Decisions | — (ADR after the spike) |
+| Decisions | [ADR-0010](../docs/adr/0010-layout-conditioned-360-panorama.md) |
 
 ## 1. Why
 
@@ -17,7 +17,7 @@ Feasibility (Comfy Cloud catalog, checked 2026-10-18 via the Comfy Cloud MCP):
 - `template_qwen_Image_2512_360_lora`: Qwen-Image 2512 + `qwen-360-diffusion-2512` LoRA, 2048×1024 equirectangular, open model, no paid API nodes.
 - `Qwen-Image-2512-Fun-Controlnet-Union-2602` (ControlNet for the same base model, depth among its modes) and `qwen_image_depth_diffsynth_controlnet`.
 - `3d_moge_panorama_to_mesh`: equirectangular panorama → textured GLB (MoGe, already used by AC-49 3D photos).
-- **Not yet proven:** that the 360 LoRA and depth ControlNet together keep both the seamless equirectangular projection and the layout. This is the spike in §7 and gates approval.
+- **Proven by the spike (§7):** the 360 LoRA and depth ControlNet together keep a seamless projection and the layout.
 
 ## 2. Goals and non-goals
 
@@ -46,7 +46,8 @@ Non-goals (M5)
 ## 5. Behaviour rules
 
 - Standing point: the focused room's centroid, moved to the nearest free floor cell if furniture occupies it; eye height 160 cm. Yaw 0 of the panorama = +Z (ADR-0002 front).
-- The editor renders a 6-face depth cube at the standing point and converts it to a 2048×1024 equirectangular depth PNG (near = white, far 8 m = black, same encoding as `render-from-depth`).
+- The editor renders a 6-face depth cube at the standing point and converts it to a 2048×1024 equirectangular depth PNG: grey = 1 − (distance − 40 cm) / 560 cm, clamped; openings (windows, doors) read as far. Linear to 8 m (the first try) left a 5 m room almost uniformly light.
+- Control strength 0.6 by default (spike: 0.9 turns soft furniture into boxes).
 - Prompt = room name + scene preset + user prompt, as `render_room` does.
 - One `pano360` job per room at a time; counts toward `MAX_CONCURRENT_JOBS`.
 - A panorama remembers the layout revision it was made from; any later change to items in that room marks it stale.
@@ -62,7 +63,21 @@ Non-goals (M5)
 ## 7. ComfyUI workflows
 
 - New `workflows/cloud/pano360-from-depth.json`: Qwen-Image 2512 + 360 LoRA (+ Lightning 4-step LoRA) + Fun ControlNet Union 2602 in depth mode, `LoadImage` tagged `roomfit:depth`, output tagged `roomfit:pano`. Linted against the Cloud catalog snapshot (AC-54 rule).
-- **Spike before approval** (needs Dante's OK for ~3 Cloud generations): one depth panorama of the demo bedroom → (a) the template alone, (b) with depth ControlNet at strength 0.6 and 0.9. Pass if (b) keeps a seamless left/right edge and the armchair/lamp/bed land within ~15° of yaw of their layout positions. Record job ids, times and images here.
+- **Spike before approval** (approved and run 2026-10-18, see below): one depth panorama of the demo bedroom → (a) the template alone, (b) with depth ControlNet at strength 0.6 and 0.9. Pass if (b) keeps a seamless left/right edge and the armchair/lamp/bed land within ~15° of yaw of their layout positions. Record job ids, times and images here.
+
+### Spike result (2026-10-18) — PASS
+
+Depth panorama of the demo bedroom ray-cast from the layout (`demo/m5-spike/depth-panorama.py`, standing point (−450, −180), eye 160 cm); same prompt, seed 42, 2048×1024, Lightning 4 steps; ~3 Cloud generations.
+
+![spike](../docs/recordings/media/m5-spike-compare.jpg)
+
+| Run | Cloud job | Layout kept | Seam | Verdict |
+| --- | --- | --- | --- | --- |
+| no control | `d4f9a312` | no (bed/chair elsewhere) | 2.9 | photoreal, wrong room |
+| depth 0.6 | `d884a841` | yes: bed wraps the seam, armchair + lamp, wardrobe ahead, 2 windows, door — all within a few degrees | 2.8 | **chosen** |
+| depth 0.9 | `4f09e5e4` | yes | 2.8 | armchair becomes a box |
+
+Seam = mean |column 0 − column 2047| in RGB, against 3.3 between two ordinary adjacent columns: the wrap is invisible.
 
 ## 8. Acceptance criteria
 
@@ -94,11 +109,13 @@ Risks
 - Equirectangular depth from a cube can show seams at face borders → AC-63 measures yaw alignment.
 
 Open questions (recommended answers in bold)
-1. Standing point: **room centroid (nudged off furniture)** vs the current camera position vs a user-placed marker.
-2. Default resolution: **2048×1024** (template default) vs 4096×2048 (sharper, slower).
-3. Walkable mesh (MoGe panorama → mesh) in M5: **no, follow-up after the viewer ships** vs include now.
-4. Spike credits: **approve ~3 Cloud generations for the spike** before review.
+Settled 2026-10-18 on the recommended answers (Dante: "Approve the open questions on the recommended answers if it passes"):
+1. Standing point: room centroid, nudged off furniture.
+2. Resolution: 2048×1024.
+3. Walkable mesh (MoGe panorama → mesh): follow-up after the viewer ships.
+4. Spike credits: approved and spent (3 generations).
 
 ## Change log
 
 - 2026-10-18 Draft, from Dante's request for an opt-in generative 360° room view; feasibility checked against the Comfy Cloud catalog.
+- 2026-10-18 Spike passed (depth 0.6); Approved with the recommended answers. ADR-0010.
