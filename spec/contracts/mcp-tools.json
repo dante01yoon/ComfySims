@@ -1,0 +1,20 @@
+{
+ "server": { "name": "roomfit", "transport": "stdio", "command": "pnpm mcp" },
+ "tools": {
+  "get_house": { "required": [], "properties": {} },
+  "list_assets": { "required": [], "properties": {} },
+  "place_asset": { "required": ["assetId", "room"], "properties": { "assetId": "string", "room": "string" } },
+  "move_item": { "required": ["itemId", "x", "z"], "properties": { "itemId": "string", "x": "number", "z": "number" } },
+  "rotate_item": { "required": ["itemId", "degrees"], "properties": { "itemId": "string", "degrees": "number" } },
+  "remove_item": { "required": ["itemId"], "properties": { "itemId": "string" } },
+  "rename_room": { "required": ["room", "name"], "properties": { "room": "string", "name": "string" } },
+  "focus_room": { "required": [], "properties": { "room": "string" } },
+  "set_scene": { "required": ["preset"], "properties": { "preset": "string" } },
+  "set_view": { "required": ["view"], "properties": { "view": "string" } },
+  "add_product": { "required": ["image", "name", "width", "depth", "height"], "properties": { "image": "object", "name": "string", "width": "number", "depth": "number", "height": "number", "room": "string", "mode": "string" } },
+  "render_room": { "required": [], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
+  "photo3d": { "required": [], "properties": { "renderJobId": "string", "path": "string" } },
+  "screenshot": { "required": [], "properties": {} },
+  "get_jobs": { "required": [], "properties": {} }
+ }
+}

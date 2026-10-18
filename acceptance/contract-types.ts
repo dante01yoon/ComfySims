@@ -33,3 +33,8 @@ export type M3Checks = [
   Assert<Equal<ReturnType<typeof expectedSeconds>, number>>,
   Assert<Equal<ReturnType<typeof itemsInZone>, string[]>>
 ]
+
+export type M4Checks = [
+  Assert<Equal<EditorState['undoLabels'], string[]>>,
+  Assert<Equal<EditorState['agentConnected'], boolean>>
+]

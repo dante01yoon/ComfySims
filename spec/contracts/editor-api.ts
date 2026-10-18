@@ -22,6 +22,8 @@ export type EditorState = {
   scene: ScenePreset
   focusedZone: string | null
   photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
+  undoLabels: string[]
+  agentConnected: boolean
   wallCutCm: number
   lastRenderCamera: { position: Vec3; target: Vec3 } | null
 }
@@ -32,7 +34,8 @@ export type ComfyFailure = { ok: false; jobId?: string; reason: 'unreachable' | 
 
 export type ProductRequest = {
   fileName: string
-  imageBase64: string
+  imageBase64?: string
+  imageName?: string
   name: string
   dimensions: { width: number; depth: number; height: number }
   mode?: FitMode
@@ -83,6 +86,8 @@ export type RoomfitEditorApi = {
   retryJob(jobId: string): Promise<{ ok: true; jobId: string } | ComfyFailure>
   openPhoto3d(jobId: string): void
   closePhoto3d(): void
+  screenshot(): Promise<string>
+  setActionLabel(label: string | null): void
 }
 
 declare global {

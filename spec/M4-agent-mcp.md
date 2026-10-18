@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | In review |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
 | Decisions | ADR-0009 (to be written on approval) |
@@ -55,6 +55,9 @@ Non-goals (M4)
 
 ## 6. Contract and data changes
 
+- `spec/contracts/mcp-tools.json` is the tool contract (names, required inputs, input types); the server's live tool list must match it (AC-56).
+- Editor API additions: `screenshot(): Promise<string>` (PNG data URL of the current view), `setActionLabel(label | null)` (the bridge labels the next edits), `state().undoLabels` (labels of the undo stack, newest last; user edits are `editor`), `state().agentConnected`.
+
 - `spec/contracts/mcp-tools.json`: the tool list with names, descriptions and JSON schemas (generated from the zod definitions; drift-checked like the layout schema).
 - `ProductRequest`: `imageBase64` becomes optional; new optional `imageName` (an existing ComfyUI input). Exactly one must be set.
 - Undo history entries gain an optional label.
@@ -67,11 +70,11 @@ No new workflows. Uses `workflows/cloud/product-to-glb-pixal3d.json`, `render-fr
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-56 | planned | `pnpm mcp` serves the tools in `spec/contracts/mcp-tools.json` over stdio; the contract file matches the zod definitions |
-| AC-57 | planned | With an editor open, `get_house` matches `window.roomfit.state()` and `place_asset`/`move_item`/`rename_room`/`focus_room` change the open editor, undoably, with the tool name on the undo step |
-| AC-58 | planned | `add_product` with a Comfy input name queues the product workflow with that name and no upload, and returns the placed item |
-| AC-59 | planned | `render_room` and `screenshot` return PNG image content; `render_room` also saves the file |
-| AC-60 | planned | With no editor connected every tool fails with the "No roomfit editor is connected…" message; the bridge refuses connections without the token or from other hosts |
+| AC-56 | active | `pnpm mcp` serves the tools in `spec/contracts/mcp-tools.json` over stdio; the contract file matches the zod definitions |
+| AC-57 | active | With an editor open, `get_house` matches `window.roomfit.state()` and `place_asset`/`move_item`/`rename_room`/`focus_room` change the open editor, undoably, with the tool name on the undo step |
+| AC-58 | active | `add_product` with a Comfy input name queues the product workflow with that name and no upload, and returns the placed item |
+| AC-59 | active | `render_room` and `screenshot` return PNG image content; `render_room` also saves the file |
+| AC-60 | active | With no editor connected every tool fails with the "No roomfit editor is connected…" message; the bridge refuses connections without the token or from other hosts |
 | AC-61 | manual | Recording: Claude Code with the Comfy Cloud MCP and the roomfit MCP completes scenario 1 from one sentence |
 
 ## 9. Test plan
@@ -89,7 +92,7 @@ Risks
 - Long-running tool calls (product ~60 s) may hit client timeouts; tools report progress notifications and the job id so an agent can poll `get_jobs`.
 - A local bridge is a new attack surface; 127.0.0.1 only, token, no file system access beyond `path` inputs the user's agent provides.
 
-Open questions (recommended answer first)
+Open questions (settled 2026-10-18 on the recommended answers)
 1. Live bridge to the open editor (**recommended**) vs a headless mode on a layout file.
 2. `add_product` waits for completion (**recommended**, with progress notifications) vs returns immediately with a job id.
 3. Publish the MCP server as an npm package now vs **after M4 is recorded** (recommended).
@@ -97,3 +100,14 @@ Open questions (recommended answer first)
 ## Change log
 
 - 2026-10-18 Draft, written after Dante asked to include Comfy MCP integration ("Comfy mcp랑 연동하는 작업도 있음 넣고").
+- 2026-10-18 Approved. Dante: "지금까지의 작업사항 기반으로 … 다음 작업도 계속 진행해" — taken as approval on the recommended answers: live bridge to the open editor; tools wait for completion with progress notifications; publish to npm after the M4 recording.
+
+## Bridge details (for implementation and tests)
+
+- Endpoint: `ws://127.0.0.1:5179/__roomfit-bridge?role=editor|agent&token=<token>`. The dev server creates a random 32-hex token at start in `.harness/bridge-token` and serves it to the editor at `GET /__roomfit-bridge/token` (same origin only). Connections without the right token close with code 4401; connections whose `Origin` is not the dev server's (when present) close with 4403; only 127.0.0.1.
+- Messages: `{ id, method, params }` → `{ id, result }` or `{ id, error: { message } }`. The editor executes them through `window.roomfit`, wrapping state-changing calls in `setActionLabel('mcp:<tool>')`.
+- `pnpm mcp` lists its tools without any editor or dev server; it connects to the bridge on the first tool call (`ROOMFIT_URL`, default `http://127.0.0.1:5179`).
+- No editor connected (or no dev server): the tool result is an error whose text starts with "No roomfit editor is connected".
+- `render_room` saves the PNG to `.harness/renders/<jobId>.png` and returns that path in its text content.
+- Result shapes (JSON text content): `get_house` → `{ rooms: [{ id, name, itemCount }], items: [{ id, assetId, room, position, rotationY }], assets, problems: { collisions, outOfBounds }, view, scene, focusedRoom }`; `place_asset` → `{ itemId }`; `add_product` → `{ itemId, jobId, report }`; `render_room` → `{ jobId, path }` plus image content; `photo3d` → `{ jobId }`; `screenshot` → image content only; failures → `isError: true` with the reason as text.
+- The editor shows the text "Agent connected" in the workspace rail while an agent is attached.

@@ -14,10 +14,12 @@
     "e2e": "playwright test",
     "web:build:nodepack": "vite build web --base /roomfit/ --outDir ../nodes/roomfit/editor --emptyOutDir",
     "comfy:snapshot": "node harness/tools/snapshot-object-info.mjs",
-    "see": "node harness/tools/see.mjs"
+    "see": "node harness/tools/see.mjs",
+    "mcp": "tsx mcp/server.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.2.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@playwright/test": "1.56.1",
     "@react-three/drei": "10.7.6",
     "@react-three/fiber": "9.4.0",
@@ -26,6 +28,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@types/three": "0.180.0",
+    "@types/ws": "8.18.1",
     "@vitejs/plugin-react": "5.1.0",
     "n8ao": "1.10.1",
     "postprocessing": "6.37.8",
@@ -36,6 +39,7 @@
     "typescript": "^5.7.2",
     "vite": "7.1.12",
     "vitest": "^3.0.0",
+    "ws": "8.18.3",
     "zod": "^4.1.0"
   },
   "license": "GPL-3.0-only",
