@@ -1,0 +1,197 @@
+{
+  "sofa": {
+    "mode": "exact",
+    "requested": "auto",
+    "yawDegrees": 0,
+    "scale": {
+      "x": 2.0990683838385578,
+      "y": 2.067529246681852,
+      "z": 2.3623249897119063
+    },
+    "distortion": 1.1425835902941484,
+    "flagged": false,
+    "ms": 61
+  },
+  "coffee-table": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 150,
+    "scale": {
+      "x": 1.0087931391886016,
+      "y": 1.0087931391886016,
+      "z": 1.0087931391886016
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 72
+  },
+  "tv-unit": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 28,
+    "scale": {
+      "x": 1.4745361487494406,
+      "y": 1.4745361487494406,
+      "z": 1.4745361487494406
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 79
+  },
+  "armchair": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 59.5,
+    "scale": {
+      "x": 0.98241945197092,
+      "y": 0.98241945197092,
+      "z": 0.98241945197092
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 84
+  },
+  "dining-table": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 148,
+    "scale": {
+      "x": 1.559130013493638,
+      "y": 1.559130013493638,
+      "z": 1.559130013493638
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 75
+  },
+  "dining-chair": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 157,
+    "scale": {
+      "x": 0.6702090030316861,
+      "y": 0.6702090030316861,
+      "z": 0.6702090030316861
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 74
+  },
+  "kitchen-counter": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 150,
+    "scale": {
+      "x": 1.6206176690094287,
+      "y": 1.6206176690094287,
+      "z": 1.6206176690094287
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 80
+  },
+  "bed": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 0,
+    "scale": {
+      "x": 1.4557443198545887,
+      "y": 1.4557443198545887,
+      "z": 1.4557443198545887
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 77
+  },
+  "nightstand": {
+    "mode": "exact",
+    "requested": "auto",
+    "yawDegrees": 154,
+    "scale": {
+      "x": 0.5900250362244371,
+      "y": 0.6132115487646213,
+      "z": 0.534826879792875
+    },
+    "distortion": 1.1465608254433708,
+    "flagged": false,
+    "ms": 72
+  },
+  "wardrobe": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 155.5,
+    "scale": {
+      "x": 1.894094698004604,
+      "y": 1.894094698004604,
+      "z": 1.894094698004604
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 65
+  },
+  "desk": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 32,
+    "scale": {
+      "x": 1.2012202642683971,
+      "y": 1.2012202642683971,
+      "z": 1.2012202642683971
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 63
+  },
+  "desk-chair": {
+    "mode": "exact",
+    "requested": "auto",
+    "yawDegrees": 4.5,
+    "scale": {
+      "x": 1.1346204875866868,
+      "y": 1.1031791989517663,
+      "z": 1.1626958498063453
+    },
+    "distortion": 1.0539501206251272,
+    "flagged": false,
+    "ms": 77
+  },
+  "bookshelf": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 154.5,
+    "scale": {
+      "x": 2.0418811001085597,
+      "y": 2.0418811001085597,
+      "z": 2.0418811001085597
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 80
+  },
+  "bathtub": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 52,
+    "scale": {
+      "x": 0.9254717271255146,
+      "y": 0.9254717271255146,
+      "z": 0.9254717271255146
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 71
+  },
+  "car": {
+    "mode": "uniform",
+    "requested": "auto",
+    "yawDegrees": 51.5,
+    "scale": {
+      "x": 3.419157019584178,
+      "y": 3.419157019584178,
+      "z": 3.419157019584178
+    },
+    "distortion": 1,
+    "flagged": false,
+    "ms": 84
+  }
+}

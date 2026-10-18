@@ -7,7 +7,7 @@ const layout = JSON.parse(readFileSync('demo/out/house/furnished-layout.json', '
 rmSync(`${OUT}/frames`, { recursive: true, force: true })
 mkdirSync(`${OUT}/frames`, { recursive: true })
 
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
+const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] })
 const page = await browser.newPage({ viewport: SIZE })
 await page.goto('http://127.0.0.1:5179/')
 await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')
