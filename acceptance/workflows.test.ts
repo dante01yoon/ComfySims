@@ -82,3 +82,13 @@ describe('AC-20 prompt builders', () => {
     expect(outcome).toEqual({ ok: false, missing: ['roomfit:positive', 'roomfit:negative', 'roomfit:seed'] })
   })
 })
+
+describe('AC-54 the 3D photo workflow matches the Comfy Cloud catalog', () => {
+  it('AC-54 photo-to-3d-moge lints against the pinned Cloud catalog and tags its photo and save nodes', () => {
+    const workflow: ApiWorkflow = JSON.parse(readFileSync('workflows/cloud/photo-to-3d-moge.json', 'utf8'))
+
+    expect(lintWorkflow(workflow, loadSnapshot('spec/contracts/comfy-cloud-object-info.json'))).toEqual([])
+    expect(byTitle(workflow, 'roomfit:photo').map((node) => node.class_type)).toEqual(['LoadImage'])
+    expect(byTitle(workflow, 'roomfit:save').map((node) => node.class_type)).toEqual(['SaveGLB'])
+  })
+})

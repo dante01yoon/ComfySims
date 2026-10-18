@@ -1,0 +1,236 @@
+{
+ "source": "Comfy Cloud live catalog via the comfy-cloud MCP get_node tool, 2026-10-18 (3795 nodes live); only the nodes Cloud workflows linted here use",
+ "classes": [
+  "LoadImage",
+  "LoadMoGeModel",
+  "MeshToFile3D",
+  "MoGeInference",
+  "MoGePointMapToMesh",
+  "SaveGLB"
+ ],
+ "nodes": {
+  "LoadImage": {
+   "input": {
+    "required": {
+     "image": [
+      [],
+      {
+       "image_upload": true
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "image"
+    ]
+   },
+   "output": [
+    "IMAGE",
+    "MASK"
+   ],
+   "output_name": [
+    "IMAGE",
+    "MASK"
+   ]
+  },
+  "LoadMoGeModel": {
+   "input": {
+    "required": {
+     "model_name": [
+      [],
+      {}
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "model_name"
+    ]
+   },
+   "output": [
+    "MOGE_MODEL"
+   ],
+   "output_name": [
+    "MOGE_MODEL"
+   ]
+  },
+  "MoGeInference": {
+   "input": {
+    "required": {
+     "moge_model": [
+      "MOGE_MODEL",
+      {}
+     ],
+     "image": [
+      "IMAGE",
+      {}
+     ],
+     "resolution_level": [
+      "INT",
+      {
+       "default": 9,
+       "min": 0,
+       "max": 9
+      }
+     ],
+     "fov_x_degrees": [
+      "FLOAT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 170
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "default": 4,
+       "min": 1,
+       "max": 64
+      }
+     ],
+     "force_projection": [
+      "BOOLEAN",
+      {
+       "default": true
+      }
+     ],
+     "apply_mask": [
+      "BOOLEAN",
+      {
+       "default": true
+      }
+     ],
+     "refine_steps": [
+      "INT",
+      {
+       "default": 3,
+       "min": 0,
+       "max": 8
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "moge_model",
+     "image",
+     "resolution_level",
+     "fov_x_degrees",
+     "batch_size",
+     "force_projection",
+     "apply_mask",
+     "refine_steps"
+    ]
+   },
+   "output": [
+    "MOGE_GEOMETRY"
+   ],
+   "output_name": [
+    "MOGE_GEOMETRY"
+   ]
+  },
+  "MoGePointMapToMesh": {
+   "input": {
+    "required": {
+     "moge_geometry": [
+      "MOGE_GEOMETRY",
+      {}
+     ],
+     "batch_index": [
+      "INT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 4096
+      }
+     ],
+     "decimation": [
+      "INT",
+      {
+       "default": 1,
+       "min": 1,
+       "max": 8
+      }
+     ],
+     "discontinuity_threshold": [
+      "FLOAT",
+      {
+       "default": 0.04,
+       "min": 0,
+       "max": 1
+      }
+     ],
+     "texture": [
+      "BOOLEAN",
+      {
+       "default": true
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "moge_geometry",
+     "batch_index",
+     "decimation",
+     "discontinuity_threshold",
+     "texture"
+    ]
+   },
+   "output": [
+    "MESH"
+   ],
+   "output_name": [
+    "MESH"
+   ]
+  },
+  "MeshToFile3D": {
+   "input": {
+    "required": {
+     "mesh": [
+      "MESH",
+      {}
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "mesh"
+    ]
+   },
+   "output": [
+    "FILE_3D_GLB"
+   ],
+   "output_name": [
+    "FILE_3D_GLB"
+   ]
+  },
+  "SaveGLB": {
+   "input": {
+    "required": {
+     "mesh": [
+      "MESH,FILE_3D_GLB,FILE_3D_GLTF,FILE_3D_OBJ,FILE_3D_FBX,FILE_3D_STL,FILE_3D_USDZ,FILE_3D_PLY,FILE_3D_SPLAT,FILE_3D_SPZ,FILE_3D_KSPLAT,FILE_3D_SPLAT_ANY,FILE_3D_POINT_CLOUD_ANY,FILE_3D",
+      {}
+     ],
+     "filename_prefix": [
+      "STRING",
+      {
+       "default": "3d/ComfyUI"
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "mesh",
+     "filename_prefix"
+    ]
+   },
+   "output": [],
+   "output_name": []
+  }
+ }
+}

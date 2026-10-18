@@ -106,8 +106,8 @@ test('AC-44 the studio Render button renders the current room with a prompt from
 
   const prompts = (await (await fetch('http://127.0.0.1:8199/__requests')).json()) as { method: string; url: string }[]
   expect(prompts.some((request) => request.method === 'POST' && request.url === '/api/prompt')).toBe(true)
-  const lastPositive = await page.evaluate(() => window.roomfit.state().jobs.at(-1))
-  expect(lastPositive).toMatchObject({ kind: 'render', status: 'done' })
+  const renders = (await page.evaluate(() => window.roomfit.state().jobs)).filter((job) => job.kind === 'render')
+  expect(renders.at(-1)!.steps.at(-1)!.status).toBe('done')
   await expect(page.getByText(/living/i).last()).toBeVisible()
   await expect(page.getByText(/evening/i).last()).toBeVisible()
 })

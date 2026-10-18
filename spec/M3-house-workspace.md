@@ -2,10 +2,10 @@
 
 | | |
 | --- | --- |
-| Status | In review |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
-| Decisions | [ADR-0008](../docs/adr/0008-job-model-and-3d-photos.md) (proposed) |
+| Decisions | [ADR-0008](../docs/adr/0008-job-model-and-3d-photos.md) |
 
 ## 1. Why
 
@@ -68,7 +68,7 @@ Non-goals (M3)
 **Workspace rail** (right, 320 px, both views; in the studio it replaces nothing because the editor side panel is hidden there). Toggle button "Workspace" collapses it. Two sections:
 
 Jobs section (heading "Jobs", with "(n running)" when any run)
-- One card per job, newest first. Card title: "3D model · <product name>", "Room render · <room or 'House'>", "3D photo · <room, 'Render' or file name>".
+- One card per job, newest first. Card title: "3D model · <product name>", "Room render · <room or 'House'>", "3D photo · <room of the source render, or House, or the uploaded file name>".
 - Step line: one of `uploading`, `queued`, `generating`, `downloading`, `fitting` (product), `meshing` (3D photo), `done`, `failed`, plus elapsed seconds and, while running, "~N s" expected.
 - Indeterminate progress bar while running.
 - Done: thumbnail (render image; product photo; 3D photo source image) and actions — product: "Show" (focuses its room, selects the item); render: "Open" (render overlay), "View as 3D photo"; 3D photo: "Open".
@@ -82,7 +82,7 @@ Library section (heading "Library (n)")
 - "Room photo → 3D" file input (label "Room photo") with the note "The photo is sent to your ComfyUI to build the 3D photo."
 - Empty state: "No assets yet."
 
-**Room labels** (3D overlay, both views, plan rooms only): one label per zone at the zone's polygon centroid on the floor, text "<name> · <n> items" (n = items whose position is inside the zone), clickable to focus; double-click opens an inline text field (label "Room name"), Enter saves, Escape cancels. When a room is focused the other labels dim.
+**Room labels** (3D overlay, both views, plan rooms only): one label per zone at the zone's polygon centroid on the floor, text "<name> · <n> items" ("1 item" when n = 1; n = items whose position is inside the zone), clickable to focus; double-click opens an inline text field (label "Room name"), Enter saves, Escape cancels. When a room is focused the other labels dim.
 
 **3D photo viewer** (full-screen overlay above the 3D view): the mesh lit flat (texture only), camera starting at the photo's camera; drag turns yaw within ±20° and pitch within ±10°; wheel moves forward/back within 0–40 % of the scene depth; "Back" button; caption with the source ("Render · Living, evening" or the file name). Loading state while the GLB downloads.
 
@@ -104,28 +104,27 @@ Library section (heading "Library (n)")
 `spec/contracts/editor-api.ts` — **breaking for `state().jobs`**:
 
 ```ts
+// packages/schema/src/domain.ts (contract package, protected, AC-38 gate)
 type JobKind = 'product' | 'render' | 'photo3d'
 type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'fitting' | 'meshing' | 'done' | 'failed'
-type Job = {
-  id: string
-  kind: JobKind
-  title: string
-  steps: { status: JobStep; at: number }[]
-  message?: string
-  result?: { image?: string; glb?: string; itemId?: string }
-  request: ProductRequest | RenderRequest | Photo3dRequest
-}
-type Photo3dRequest = { source: { kind: 'render'; jobId: string } | { kind: 'upload'; fileName: string; imageBase64: string } }
+type Job = { id; kind; title; steps: { status: JobStep; at: number }[]; message?; result?: { image?; glb?; itemId? } }
+type Photo3dSource = { kind: 'render'; jobId: string } | { kind: 'upload'; fileName: string; imageBase64: string }
+const MAX_CONCURRENT_JOBS = 3
+const DEFAULT_EXPECTED_SECONDS = { product: 60, render: 15, photo3d: 30 }
 
-state().jobs: Job[]                      // was: one entry per status change
-state().photoViewer: { jobId: string } | null
-placeAsset(assetId: string, zoneId?: string): { ok: true; itemId: string } | { ok: false; reason: 'unknown-asset' | 'unknown-zone' | 'no-space' }
-renameZone(zoneId: string, name: string): { ok: true } | { ok: false; reason: 'unknown-zone' | 'empty-name' }
-photo3d(request: Photo3dRequest): Promise<{ ok: true; jobId: string; glb: string } | ComfyFailure>
-retryJob(jobId: string): Promise<{ ok: true; jobId: string } | ComfyFailure>
-openPhoto3d(jobId: string): void
+// spec/contracts/editor-api.ts
+state().jobs: Job[]                                   // was: one entry per status change
+state().photoViewer: { jobId; yawDegrees; pitchDegrees } | null
+addProductFromPhoto(...) / renderInComfy(...)          // ok results gain jobId; ComfyFailure gains jobId?
+placeAsset(assetId, zoneId?): { ok: true; itemId } | { ok: false; reason: 'unknown-asset' | 'unknown-zone' | 'no-space' }
+renameZone(zoneId, name): { ok: true } | { ok: false; reason: 'unknown-zone' | 'empty-name' }
+photo3d(source: Photo3dSource): Promise<{ ok: true; jobId; glb } | ComfyFailure>
+retryJob(jobId): Promise<{ ok: true; jobId } | ComfyFailure>   // the editor keeps each job's request internally
+openPhoto3d(jobId): void
 closePhoto3d(): void
 ```
+
+Pure helpers (implementation packages, tested directly): `expectedSeconds(jobs, kind)` in `packages/comfy`, `itemsInZone(layout, zoneId)` (point in polygon) in `packages/placement`.
 
 `JobKind`, `JobStep` and `Job` live in `packages/schema/src/domain.ts` (contract gate AC-38 extends to them). `ComfyJob` and the old `jobs` shape are removed.
 
@@ -143,14 +142,14 @@ Verified on Comfy Cloud 2026-10-18: job `17f5c779-5840-4bde-a98b-4e9367f35926`, 
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-47 | planned | Every Comfy job appears as one card with kind, title, current step, elapsed and expected seconds; done cards show a thumbnail and their actions; failed cards show the Comfy message and Retry |
-| AC-48 | planned | Up to 3 jobs run at once (a render can start while a product generates); a 4th waits as queued; no control is disabled because a job runs |
-| AC-49 | planned | Expected seconds follow the median of earlier finished jobs of the same kind, with the documented defaults before any |
-| AC-50 | planned | Each plan room shows a label at its centroid with its name and item count (point in polygon); clicking focuses the room |
-| AC-51 | planned | Renaming a room from its label updates the chip, label and saved layout; empty names are rejected; Undo restores the name |
-| AC-52 | planned | The library lists every asset with size, source, fit mode and a local thumbnail; "Place in" puts it in the chosen room via `findSpot`, selects it, and is undoable; no space is reported and nothing changes |
+| AC-47 | active | Every Comfy job appears as one card with kind, title, current step, elapsed and expected seconds; done cards show a thumbnail and their actions; failed cards show the Comfy message and Retry |
+| AC-48 | active | Up to 3 jobs run at once (a render can start while a product generates); a 4th waits as queued; no control is disabled because a job runs |
+| AC-49 | active | Expected seconds follow the median of earlier finished jobs of the same kind, with the documented defaults before any |
+| AC-50 | active | Each plan room shows a label at its centroid with its name and item count (point in polygon); clicking focuses the room |
+| AC-51 | active | Renaming a room from its label updates the chip, label and saved layout; empty names are rejected; Undo restores the name |
+| AC-52 | active | The library lists every asset with size, source, fit mode and a local thumbnail; "Place in" puts it in the chosen room via `findSpot`, selects it, and is undoable; no space is reported and nothing changes |
 | AC-53 | planned | A finished render or an uploaded room photo becomes a 3D photo job through the MoGe workflow and opens in the viewer; the viewer limits turning to ±20° yaw and ±10° pitch and closes with Back |
-| AC-54 | planned | `workflows/cloud/photo-to-3d-moge.json` lints against the pinned catalog and tags its input and save nodes |
+| AC-54 | active | `workflows/cloud/photo-to-3d-moge.json` lints against the pinned Comfy Cloud catalog (`spec/contracts/comfy-cloud-object-info.json`, taken through the comfy-cloud MCP) and tags its input and save nodes |
 | AC-55 | manual | Recording on real Comfy Cloud: two jobs in parallel in the panel, an asset placed from the library, a room renamed, a render opened as a 3D photo, and a real room photo opened as a 3D photo |
 
 ## 9. Test plan
@@ -173,7 +172,7 @@ Risks
 - Real room photos are personal; they go to whatever ComfyUI is configured. The rail says so next to the upload.
 - 12 MB GLBs per 3D photo; decimation 2 is the default, adjustable later.
 
-Open questions (recommended answer first)
+Open questions (settled 2026-10-18 on the recommended answers)
 1. Concurrency limit: **3** (recommended) / 1 (keep serial) / unlimited.
 2. Library scope: **assets in the current layout** (recommended for M3) / a personal library across layouts (needs storage, M4).
 3. 3D photo placement: **standalone viewer** (recommended) / place the 3D photo into the house (needs alignment, later).
@@ -182,3 +181,4 @@ Open questions (recommended answer first)
 ## Change log
 
 - 2026-10-18 Draft, written after Dante asked for the job panel, room labels with asset placement, and 3D photos — and for features to be specified and documented before they are built. Feasibility of MoGe on Cloud checked first.
+- 2026-10-18 Approved. Dante: "알아서 해줘 어떻게 하는게 좋은지" — open questions settled on the recommended answers: 3 concurrent jobs; library = assets in the current layout; standalone 3D photo viewer; real photos allowed with the visible note.

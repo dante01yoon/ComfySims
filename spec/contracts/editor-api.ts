@@ -1,4 +1,4 @@
-import type { Collision, FitMode, FitReport, OutOfBoundsReason, RoomLayout } from '../../packages/schema/src/index.ts'
+import type { Collision, FitMode, FitReport, Job, OutOfBoundsReason, Photo3dSource, RoomLayout } from '../../packages/schema/src/index.ts'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -16,22 +16,19 @@ export type EditorState = {
   outOfBounds: { itemId: string; reason: OutOfBoundsReason }[]
   canUndo: boolean
   canRedo: boolean
-  jobs: ComfyJob[]
+  jobs: Job[]
   lastRender: string | null
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
+  photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
   wallCutCm: number
   lastRenderCamera: { position: Vec3; target: Vec3 } | null
 }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
-export type ComfyJobStatus = 'uploading' | 'queued' | 'in_progress' | 'downloading' | 'fitting' | 'done' | 'failed'
-
-export type ComfyJob = { kind: 'product' | 'render'; status: ComfyJobStatus; message?: string }
-
-export type ComfyFailure = { ok: false; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled' | 'unreadable' | 'no-space'; message: string }
+export type ComfyFailure = { ok: false; jobId?: string; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled' | 'unreadable' | 'no-space'; message: string }
 
 export type ProductRequest = {
   fileName: string
@@ -73,13 +70,19 @@ export type RoomfitEditorApi = {
   redo(): void
   setCamera(camera: { position: Vec3; target: Vec3 }): void
   exportPasses(size: { width: number; height: number }): Promise<RenderPasses>
-  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: Omit<FitReport, 'scale'> } | ComfyFailure>
-  renderInComfy(request: RenderRequest): Promise<{ ok: true; image: string } | ComfyFailure>
+  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; jobId: string; itemId: string; report: Omit<FitReport, 'scale'> } | ComfyFailure>
+  renderInComfy(request: RenderRequest): Promise<{ ok: true; jobId: string; image: string } | ComfyFailure>
   setView(view: EditorView): void
   setScene(preset: ScenePreset): void
   lighting(): Lighting
   camera(): { position: Vec3; target: Vec3 }
   focusZone(zoneId: string | null): void
+  placeAsset(assetId: string, zoneId?: string): { ok: true; itemId: string } | { ok: false; reason: 'unknown-asset' | 'unknown-zone' | 'no-space' }
+  renameZone(zoneId: string, name: string): { ok: true } | { ok: false; reason: 'unknown-zone' | 'empty-name' }
+  photo3d(source: Photo3dSource): Promise<{ ok: true; jobId: string; glb: string } | ComfyFailure>
+  retryJob(jobId: string): Promise<{ ok: true; jobId: string } | ComfyFailure>
+  openPhoto3d(jobId: string): void
+  closePhoto3d(): void
 }
 
 declare global {

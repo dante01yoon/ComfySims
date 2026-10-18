@@ -11,7 +11,8 @@ const DETAILED = [
   'ModelSamplingAuraFlow', 'KSampler', 'VAEDecodeHunyuan3D', 'VoxelToMesh', 'SaveGLB',
   'CheckpointLoaderSimple', 'CLIPTextEncode', 'ControlNetLoader', 'ControlNetApplyAdvanced', 'EmptyLatentImage',
   'VAEDecode', 'SaveImage', 'ImageScale',
-  'UNETLoader', 'CLIPLoader', 'VAELoader', 'ModelPatchLoader', 'QwenImageDiffsynthControlnet', 'EmptySD3LatentImage'
+  'UNETLoader', 'CLIPLoader', 'VAELoader', 'ModelPatchLoader', 'QwenImageDiffsynthControlnet', 'EmptySD3LatentImage',
+  'LoadMoGeModel', 'MoGeInference', 'MoGePointMapToMesh', 'MeshToFile3D'
 ]
 const contractNodes = JSON.parse(readFileSync('spec/contracts/roomfit-nodes.json', 'utf8'))
 const full = JSON.parse(readFileSync(fullPath, 'utf8'))

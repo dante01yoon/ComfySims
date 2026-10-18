@@ -23,3 +23,13 @@ import type { FindSpotOutcome } from '../packages/schema/src/index.ts'
 import type { findSpot } from '../packages/placement/src/index.ts'
 
 export type FindSpotCheck = Assert<Equal<ReturnType<typeof findSpot>, FindSpotOutcome>>
+
+import type { JobKind } from '../packages/schema/src/index.ts'
+import type { expectedSeconds } from '../packages/comfy/src/index.ts'
+import type { itemsInZone } from '../packages/placement/src/index.ts'
+
+export type M3Checks = [
+  Assert<Equal<Parameters<typeof expectedSeconds>[1], JobKind>>,
+  Assert<Equal<ReturnType<typeof expectedSeconds>, number>>,
+  Assert<Equal<ReturnType<typeof itemsInZone>, string[]>>
+]

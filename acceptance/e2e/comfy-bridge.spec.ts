@@ -34,10 +34,11 @@ test('AC-23 a product photo becomes a real-size item through ComfyUI', async ({ 
   expect(asset.uri).toBe('comfy-output:roomfit/product_00001_.glb')
   expect(item.meshLoaded).toBe(true)
   expect(item.worldBoundsCm.max.y).toBeCloseTo(85, 0)
-  expect(state.jobs.at(-1)).toMatchObject({ kind: 'product', status: 'done' })
-  expect(state.jobs.filter((job) => job.kind === 'product').map((job) => job.status)).toEqual(
-    expect.arrayContaining(['uploading', 'queued', 'in_progress', 'downloading', 'fitting', 'done'])
-  )
+  const job = state.jobs.find((candidate) => candidate.id === outcome.jobId)!
+  expect(job.kind).toBe('product')
+  expect(job.steps.map((step) => step.status)).toEqual(expect.arrayContaining(['uploading', 'queued', 'generating', 'downloading', 'fitting', 'done']))
+  expect(job.steps.at(-1)!.status).toBe('done')
+  expect(job.result?.itemId).toBe(outcome.itemId)
 })
 
 test('AC-23 a saved layout with a ComfyUI asset reloads and re-fits the mesh', async ({ page }) => {
@@ -63,8 +64,10 @@ test('AC-23 a failed ComfyUI job is reported and leaves the layout untouched', a
   expect(outcome).toMatchObject({ ok: false, reason: 'failed' })
   const state = await page.evaluate(() => window.roomfit.state())
   expect(state.layout).toEqual(emptyRoom)
-  expect(state.jobs.at(-1)).toMatchObject({ kind: 'product', status: 'failed' })
-  expect(state.jobs.at(-1)!.message).toContain('out of memory')
+  const job = state.jobs.find((candidate) => candidate.id === (outcome.ok ? '' : outcome.jobId))!
+  expect(job.kind).toBe('product')
+  expect(job.steps.at(-1)!.status).toBe('failed')
+  expect(job.message).toContain('out of memory')
 })
 
 test('AC-24 render sends the depth pass and prompt to ComfyUI and shows the result', async ({ page }) => {
@@ -74,7 +77,10 @@ test('AC-24 render sends the depth pass and prompt to ComfyUI and shows the resu
   const state = await page.evaluate(() => window.roomfit.state())
   expect(outcome.image.startsWith('data:image/png;base64,') || outcome.image.startsWith('blob:')).toBe(true)
   expect(state.lastRender).toBe(outcome.image)
-  expect(state.jobs.at(-1)).toMatchObject({ kind: 'render', status: 'done' })
+  const job = state.jobs.find((candidate) => candidate.id === outcome.jobId)!
+  expect(job.kind).toBe('render')
+  expect(job.steps.at(-1)!.status).toBe('done')
+  expect(job.result?.image).toBe(outcome.image)
   const prompts = (await fakeRequests()).filter((request) => request.method === 'POST' && request.url === '/api/prompt')
   expect(prompts.length).toBeGreaterThan(0)
 })

@@ -1883,6 +1883,190 @@
     "LATENT"
    ]
   },
+  "LoadMoGeModel": {
+   "input": {
+    "required": {
+     "model_name": [
+      "COMBO",
+      {
+       "multiselect": false,
+       "options": []
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "model_name"
+    ]
+   },
+   "output": [
+    "MOGE_MODEL"
+   ],
+   "output_name": [
+    "MOGE_MODEL"
+   ]
+  },
+  "MoGeInference": {
+   "input": {
+    "required": {
+     "moge_model": [
+      "MOGE_MODEL",
+      {}
+     ],
+     "image": [
+      "IMAGE",
+      {}
+     ],
+     "resolution_level": [
+      "INT",
+      {
+       "tooltip": "0 = fastest, 9 = most detail.",
+       "default": 9,
+       "min": 0,
+       "max": 9
+      }
+     ],
+     "fov_x_degrees": [
+      "FLOAT",
+      {
+       "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points.",
+       "advanced": true,
+       "default": 0,
+       "min": 0,
+       "max": 170,
+       "step": 0.1
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "tooltip": "Images per inference call. Lower if you OOM on a long video / image set.",
+       "default": 4,
+       "min": 1,
+       "max": 64
+      }
+     ],
+     "force_projection": [
+      "BOOLEAN",
+      {
+       "advanced": true,
+       "default": true
+      }
+     ],
+     "apply_mask": [
+      "BOOLEAN",
+      {
+       "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately.",
+       "advanced": true,
+       "default": true
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "moge_model",
+     "image",
+     "resolution_level",
+     "fov_x_degrees",
+     "batch_size",
+     "force_projection",
+     "apply_mask"
+    ]
+   },
+   "output": [
+    "MOGE_GEOMETRY"
+   ],
+   "output_name": [
+    "moge_geometry"
+   ]
+  },
+  "MoGePointMapToMesh": {
+   "input": {
+    "required": {
+     "moge_geometry": [
+      "MOGE_GEOMETRY",
+      {}
+     ],
+     "batch_index": [
+      "INT",
+      {
+       "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH.",
+       "default": 0,
+       "min": 0,
+       "max": 4096
+      }
+     ],
+     "decimation": [
+      "INT",
+      {
+       "tooltip": "Vertex stride; 1 = full resolution.",
+       "default": 1,
+       "min": 1,
+       "max": 8
+      }
+     ],
+     "discontinuity_threshold": [
+      "FLOAT",
+      {
+       "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off.",
+       "default": 0.04,
+       "min": 0,
+       "max": 1,
+       "step": 0.01
+      }
+     ],
+     "texture": [
+      "BOOLEAN",
+      {
+       "tooltip": "Carry the source image through as the baseColor texture.",
+       "default": true
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "moge_geometry",
+     "batch_index",
+     "decimation",
+     "discontinuity_threshold",
+     "texture"
+    ]
+   },
+   "output": [
+    "MESH"
+   ],
+   "output_name": [
+    "MESH"
+   ]
+  },
+  "MeshToFile3D": {
+   "input": {
+    "required": {
+     "mesh": [
+      "MESH",
+      {}
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "mesh"
+    ]
+   },
+   "output": [
+    "FILE_3D_GLB"
+   ],
+   "output_name": [
+    "model_3d"
+   ]
+  },
   "RoomfitFitMesh": {
    "input": {
     "required": {

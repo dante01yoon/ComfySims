@@ -40,14 +40,15 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     if (request.method === 'POST' && url.pathname === '/api/upload/image') {
       uploads += 1
       const original = body.toString('latin1').match(/filename="([^"]+)"/)?.[1] ?? ''
-      const name = `${original.includes('fail') ? 'fail-' : ''}upload-${uploads}.png`
+      const name = `${original.includes('fail') ? 'fail-' : original.includes('slow') ? 'slow-' : ''}upload-${uploads}.png`
       uploadNames.set(name, original)
       return json(200, { name, subfolder: '', type: 'input' })
     }
     if (request.method === 'POST' && url.pathname === '/api/prompt') {
       jobs += 1
       const id = `job-${jobs}`
-      prompts.set(id, { prompt: JSON.parse(body.toString('utf8')).prompt, polls: 0 })
+      const prompt = JSON.parse(body.toString('utf8')).prompt
+      prompts.set(id, { prompt, polls: 0, createdAt: Date.now(), slow: JSON.stringify(prompt).includes('slow-upload') })
       return json(200, { prompt_id: id, number: jobs })
     }
     const job = url.pathname.match(/^\/api\/jobs\/([^/]+)$/)
@@ -55,7 +56,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
       const entry = prompts.get(job[1])
       if (!entry) return json(404, { error: 'not found' })
       entry.polls += 1
-      if (entry.polls < 2) return json(200, { id: job[1], status: 'in_progress', create_time: 0, update_time: 0 })
+      if (entry.polls < 2 || (entry.slow && Date.now() - entry.createdAt < 3000)) return json(200, { id: job[1], status: 'in_progress', create_time: 0, update_time: 0 })
       if (failJobs || JSON.stringify(entry.prompt).includes('fail-upload')) {
         return json(200, { id: job[1], status: 'failed', create_time: 0, update_time: 0, execution_error: { node_id: '3', node_type: 'KSampler', exception_message: 'out of memory', exception_type: 'RuntimeError', traceback: [], current_inputs: {}, current_outputs: {} } })
       }

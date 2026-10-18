@@ -4,13 +4,13 @@ Date: 2026-10-18
 
 ## Status
 
-Proposed (with spec M3, in review)
+Accepted (2026-10-18, with spec M3)
 
 ## Context
 
 The editor logs Comfy work as a flat list of status events and runs one job at a time. M3 needs a jobs panel, parallel jobs, retries, and a new job kind (3D photo from MoGe).
 
-## Decision (proposed)
+## Decision
 
 - **One object per job** with an id, kind, title, timed steps, result and the original request. Panels, retries and expected durations read from it; nothing reconstructs jobs from a log.
 - **Local concurrency limit of 3**; Cloud may queue further. Controls are never disabled by a running job.
