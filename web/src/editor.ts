@@ -3,7 +3,7 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { Box3, type Object3D, type Scene } from 'three'
 
-import { buildPhotoTo3dPrompt, buildRenderPrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildRenderPrompt, buildRoomPhotoPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, findSpot, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
@@ -33,6 +33,7 @@ import type {
   ScenePreset,
   Vec3
 } from '../../spec/contracts/editor-api.ts'
+import photoWorkflow from '../../workflows/cloud/photo-to-3d-moge.json'
 import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
 import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
@@ -46,11 +47,14 @@ type Gesture = 'none' | 'started' | 'editing'
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 type Size = { width: number; height: number }
 type CameraPose = { position: Vec3; target: Vec3 }
+type PhotoViewer = EditorState['photoViewer']
 
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
 const PRODUCT_WORKFLOW = 'cloud/product-to-glb-pixal3d'
 const FOCUSED_WALL_CUT_CM = 110
+const PHOTO_YAW_LIMIT_DEG = 20
+const PHOTO_PITCH_LIMIT_DEG = 10
 
 export type Editor = {
   history: History<RoomLayout>
@@ -60,6 +64,7 @@ export type Editor = {
   jobs: readonly Job[]
   lastRender: string | null
   openedRender: { image: string; caption: string } | null
+  photoViewer: PhotoViewer
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
@@ -93,6 +98,7 @@ let editor: Editor = {
   jobs: [],
   lastRender: null,
   openedRender: null,
+  photoViewer: null,
   view: 'editor',
   scene: 'work',
   focusedZone: null,
@@ -226,7 +232,7 @@ function state(): EditorState {
     view: editor.view,
     scene: editor.scene,
     focusedZone: editor.focusedZone,
-    photoViewer: null,
+    photoViewer: editor.photoViewer,
     wallCutCm: wallCutCm(editor),
     lastRenderCamera: editor.lastRenderCamera
   }
@@ -280,11 +286,13 @@ function focusZone(zoneId: string | null): void {
 }
 
 type Step = (status: JobStep) => void
+type Work<T> = (step: Step, id: string) => Promise<Finished<T> | ComfyFailure>
 type Finished<T> = { ok: true; value: T; result: Job['result'] }
 type Started<T> = ({ ok: true; jobId: string } & T) | ComfyFailure
 type ProductPlaced = { itemId: string; report: Omit<FitReport, 'scale'> }
 
 const retries = new Map<string, () => Promise<Started<unknown>>>()
+const captions = new Map<string, string>()
 const waitingForSlot: (() => void)[] = []
 let runningJobs = 0
 let startedJobs = 0
@@ -338,14 +346,14 @@ async function settled<T>(work: () => Promise<Finished<T> | ComfyFailure>): Prom
 async function runJob<T>(
   kind: JobKind,
   title: string,
-  work: (step: Step) => Promise<Finished<T> | ComfyFailure>,
+  work: Work<T>,
   retry: () => Promise<Started<unknown>>
 ): Promise<Started<T>> {
   const id = `${kind}-${++startedJobs}`
   retries.set(id, retry)
   update({ jobs: [...editor.jobs, { id, kind, title, steps: [] }] })
   await takeSlot(id)
-  const outcome = await settled(() => work((status) => addStep(id, status)))
+  const outcome = await settled(() => work((status) => addStep(id, status), id))
   releaseSlot()
   if (!outcome.ok) {
     addStep(id, 'failed', { message: outcome.message })
@@ -466,16 +474,73 @@ async function renderShot(request: RenderRequest, zone: Zone | undefined, step: 
 }
 
 function renderZone(request: RenderRequest, zone: Zone | undefined): Promise<Started<{ image: string }>> {
-  return runJob('render', `Room render · ${zone?.name ?? 'House'}`, (step) => renderShot(request, zone, step), () => renderZone(request, zone))
+  const room = zone?.name ?? 'House'
+  const render: Work<{ image: string }> = (step, id) => {
+    captions.set(id, `Render · ${room}, ${editor.scene}`)
+    return renderShot(request, zone, step)
+  }
+  return runJob('render', `Room render · ${room}`, render, () => renderZone(request, zone))
 }
 
 function renderInComfy(request: RenderRequest): Promise<Started<{ image: string }>> {
   return renderZone(request, focusedZone())
 }
 
-function photo3d(source: Photo3dSource): Promise<Started<{ glb: string }>> {
+async function photoImage(source: Photo3dSource): Promise<{ ok: true; file: Blob; fileName: string; caption: string } | ComfyFailure> {
+  if (source.kind === 'upload') {
+    const file = await blobAt(`data:application/octet-stream;base64,${source.imageBase64}`)
+    return { ok: true, file, fileName: source.fileName, caption: source.fileName }
+  }
+  const image = editor.jobs.find(({ id, kind }) => id === source.jobId && kind === 'render')?.result?.image
+  if (!image) return rejection(`there is no finished render ${source.jobId}`)
+  return { ok: true, file: await blobAt(image), fileName: 'roomfit-render.png', caption: captions.get(source.jobId) ?? 'Render' }
+}
+
+async function meshPhoto(source: Photo3dSource, step: Step, id: string): Promise<Finished<{ glb: string }> | ComfyFailure> {
+  const photo = await photoImage(source)
+  if (!photo.ok) return photo
+  captions.set(id, photo.caption)
+  const meshing: Step = (status) => step(status === 'generating' ? 'meshing' : status)
+  const generated = await generate(meshing, photo, (imageName) => buildRoomPhotoPrompt(photoWorkflow, { imageName }))
+  if (!generated.ok) return generated
+  const glb = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'model/gltf-binary' }))
+  return { ok: true, value: { glb }, result: { image: URL.createObjectURL(photo.file), glb } }
+}
+
+async function photo3d(source: Photo3dSource): Promise<Started<{ glb: string }>> {
   const subject = source.kind === 'upload' ? source.fileName : (editor.jobs.find(({ id }) => id === source.jobId)?.title.split(' · ')[1] ?? 'House')
-  return runJob<{ glb: string }>('photo3d', `3D photo · ${subject}`, async () => rejection('3D photos are not available yet'), () => photo3d(source))
+  const opened = { render: editor.openedRender, photo: editor.photoViewer }
+  const outcome = await runJob('photo3d', `3D photo · ${subject}`, (step, id) => meshPhoto(source, step, id), () => photo3d(source))
+  const openedSince = editor.openedRender !== opened.render || editor.photoViewer !== opened.photo
+  if (outcome.ok && !openedSince) openPhoto3d(outcome.jobId)
+  return outcome
+}
+
+function openPhoto3d(jobId: string): void {
+  const job = editor.jobs.find(({ id, kind }) => id === jobId && kind === 'photo3d')
+  if (job?.result?.glb) update({ photoViewer: { jobId, yawDegrees: 0, pitchDegrees: 0 } })
+}
+
+function clamped(value: number, limit: number): number {
+  return Math.min(limit, Math.max(-limit, value))
+}
+
+/** Turns the open 3D photo by the given degrees, kept within ±20° yaw and ±10° pitch. */
+export function turnPhoto(yawDegrees: number, pitchDegrees: number): void {
+  const viewer = editor.photoViewer
+  if (!viewer) return
+  update({
+    photoViewer: {
+      jobId: viewer.jobId,
+      yawDegrees: clamped(viewer.yawDegrees + yawDegrees, PHOTO_YAW_LIMIT_DEG),
+      pitchDegrees: clamped(viewer.pitchDegrees + pitchDegrees, PHOTO_PITCH_LIMIT_DEG)
+    }
+  })
+}
+
+/** The caption of a job's source: the render's room and scene, or the uploaded file name. */
+export function captionOf(jobId: string): string {
+  return captions.get(jobId) ?? ''
 }
 
 async function retryJob(jobId: string): ReturnType<RoomfitEditorApi['retryJob']> {
@@ -538,8 +603,8 @@ export const api: RoomfitEditorApi = {
   renameZone,
   photo3d,
   retryJob,
-  openPhoto3d: () => {},
-  closePhoto3d: () => {},
+  openPhoto3d,
+  closePhoto3d: () => update({ photoViewer: null }),
   setView: (view) => {
     update({ view })
     if (view === 'studio') api.setCamera(focusFrame())

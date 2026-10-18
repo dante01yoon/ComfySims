@@ -68,7 +68,13 @@
       .render-overlay figure { margin: 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 0; }
       .render-overlay img { width: 100%; max-height: calc(100vh - 170px); object-fit: contain; }
       .render-overlay figcaption { max-width: 70ch; text-align: center; color: #cfccc8; font-size: 14px; }
-      .render-overlay button { font: inherit; color: #fff; background: #2f3338; border: 1px solid #4a4e54; border-radius: 6px; padding: 8px 22px; cursor: pointer; }
+      .render-overlay button, .photo-viewer button { font: inherit; color: #fff; background: #2f3338; border: 1px solid #4a4e54; border-radius: 6px; padding: 8px 22px; cursor: pointer; }
+      .photo-viewer { position: fixed; inset: 0; z-index: 40; background: #0c0d0f; }
+      .photo-stage { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+      .photo-stage:active { cursor: grabbing; }
+      .photo-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #cfccc8; }
+      .photo-back { position: absolute; top: 16px; left: 16px; }
+      .photo-caption { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); padding: 6px 14px; border-radius: 6px; background: rgba(12, 13, 15, .7); color: #cfccc8; font-size: 14px; pointer-events: none; }
     </style>
   </head>
   <body>

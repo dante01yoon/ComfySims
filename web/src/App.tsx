@@ -34,6 +34,7 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
+import { PhotoViewer } from './photo-viewer.tsx'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
 import { base64Of, elapsedSeconds, RoomLabels, useClock, WorkspaceRail } from './workspace.tsx'
 
@@ -375,19 +376,26 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function OpenedRender({ studio }: { studio: boolean }) {
-  const { openedRender } = useSyncExternalStore(subscribe, snapshot)
+  const { openedRender, jobs } = useSyncExternalStore(subscribe, snapshot)
   if (!openedRender) return null
-  return <RenderOverlay image={openedRender.image} prompt={openedRender.caption} studio={studio} onClose={closeRender} />
+  const renderJob = jobs.find(({ kind, result }) => kind === 'render' && result?.image === openedRender.image)
+  const viewAs3d = renderJob ? () => void api.photo3d({ kind: 'render', jobId: renderJob.id }) : undefined
+  return <RenderOverlay image={openedRender.image} prompt={openedRender.caption} studio={studio} onClose={closeRender} onViewAs3d={viewAs3d} />
 }
 
-function RenderOverlay({ image, prompt, studio, onClose }: { image: string; prompt: string; studio: boolean; onClose: () => void }) {
+type RenderOverlayProps = { image: string; prompt: string; studio: boolean; onClose: () => void; onViewAs3d: (() => void) | undefined }
+
+function RenderOverlay({ image, prompt, studio, onClose, onViewAs3d }: RenderOverlayProps) {
   return (
     <div className={studio ? 'render-overlay studio-render' : 'render-overlay'}>
       <figure>
         <img src={image} alt="Render result" />
         {prompt && <figcaption>{prompt}</figcaption>}
       </figure>
-      <button onClick={onClose}>Close</button>
+      <div className="button-row">
+        {onViewAs3d && <button onClick={onViewAs3d}>View as 3D photo</button>}
+        <button onClick={onClose}>Close</button>
+      </div>
     </div>
   )
 }
@@ -515,6 +523,7 @@ export function App() {
       <Panel hidden={studio} />
       {railOpen && <WorkspaceRail />}
       <OpenedRender studio={studio} />
+      <PhotoViewer />
     </>
   )
 }

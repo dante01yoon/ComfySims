@@ -44,6 +44,11 @@ export function buildPhotoTo3dPrompt(workflow: ApiWorkflow, input: { imageName: 
   })
 }
 
+/** Fills the tagged inputs of a photo-to-3D-photo (MoGe) workflow; the template is never mutated. */
+export function buildRoomPhotoPrompt(workflow: ApiWorkflow, input: { imageName: string }): PromptOutcome {
+  return wireTaggedInputs(workflow, { 'roomfit:photo': { image: input.imageName }, 'roomfit:save': {} })
+}
+
 /** Fills the tagged inputs of a render-from-depth workflow; the template is never mutated. */
 export function buildRenderPrompt(
   workflow: ApiWorkflow,
