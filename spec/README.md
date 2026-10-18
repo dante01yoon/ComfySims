@@ -2,6 +2,10 @@
 
 Specs are the source of truth. Code is done when the harness says the spec is met.
 
+## Before the loop
+
+New features start as a copy of `spec/TEMPLATE.md` with status `Draft`, go to the owner as `In review`, and only become `Approved` when the owner says so. Implementation sessions run only against approved specs; ACs stay `planned` until then. (Adopted 2026-10-18 at Dante's request: specify and document features before building them.)
+
 ## The loop
 
 1. A **spec session** (human + agent) writes or changes a milestone spec and its acceptance criteria (ACs).

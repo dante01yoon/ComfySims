@@ -1,0 +1,8 @@
+{
+ "1": { "class_type": "LoadImage", "inputs": { "image": "roomfit-photo.png" }, "_meta": { "title": "roomfit:photo" } },
+ "2": { "class_type": "LoadMoGeModel", "inputs": { "model_name": "moge_2_vitl_normal_fp16.safetensors" }, "_meta": { "title": "Load MoGe" } },
+ "3": { "class_type": "MoGeInference", "inputs": { "moge_model": ["2", 0], "image": ["1", 0], "resolution_level": 9, "fov_x_degrees": 0, "batch_size": 1, "force_projection": true, "apply_mask": true, "refine_steps": 3 }, "_meta": { "title": "MoGe" } },
+ "4": { "class_type": "MoGePointMapToMesh", "inputs": { "moge_geometry": ["3", 0], "batch_index": 0, "decimation": 2, "discontinuity_threshold": 0.04, "texture": true }, "_meta": { "title": "Point map to mesh" } },
+ "5": { "class_type": "MeshToFile3D", "inputs": { "mesh": ["4", 0] }, "_meta": { "title": "To GLB" } },
+ "6": { "class_type": "SaveGLB", "inputs": { "mesh": ["5", 0], "filename_prefix": "roomfit/photo3d" }, "_meta": { "title": "roomfit:save" } }
+}
