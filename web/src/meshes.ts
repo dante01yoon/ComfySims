@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import type { Asset } from '../../packages/schema/src/index.ts'
-import { comfy, comfyOutputFile } from './comfy.ts'
+import { comfyHolding, comfyOutputFile } from './comfy.ts'
 
 const loader = new GLTFLoader()
 const loads = new Map<string, Promise<Object3D | null>>()
@@ -16,7 +16,7 @@ export function meshKey({ uri, dimensions, fit }: Asset): string {
 
 async function loadComfyOutput(asset: Asset): Promise<Object3D | null> {
   const file = comfyOutputFile(asset.uri)
-  const downloaded = file && (await comfy.download(file))
+  const downloaded = file && (await comfyHolding(asset.uri).download(file))
   if (!downloaded?.ok) return null
   const fitted = await fitGlbBytes(downloaded.bytes, asset.dimensions, asset.fit?.mode)
   if (!fitted.ok) return null

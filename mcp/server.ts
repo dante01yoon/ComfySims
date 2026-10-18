@@ -236,4 +236,9 @@ server.registerTool('get_jobs', { description: 'List the editor\'s ComfyUI jobs 
   return json((await editorFor('get_jobs')('state')).jobs)
 })
 
+server.registerTool('get_backend', { description: 'Which ComfyUI the editor queues new jobs on (local or cloud, with its URL), whether it is reachable, and which job kinds it cannot run. Switching is left to the user.' }, async () => {
+  const { kind, url, status, unavailable } = await editorFor('get_backend')('backend')
+  return json({ kind, url, ready: status === 'ready', unavailable: unavailable.map((entry) => entry.kind) })
+})
+
 await server.connect(new StdioServerTransport())

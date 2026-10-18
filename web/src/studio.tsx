@@ -7,7 +7,7 @@ import { Color, SRGBColorSpace, type DirectionalLight, type HemisphereLight, typ
 import { expectedSeconds, studioPrompt } from '../../packages/comfy/src/index.ts'
 import type { PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
 import type { Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
-import { api, snapshot, subscribe } from './editor.ts'
+import { api, cannotRun, snapshot, subscribe } from './editor.ts'
 import { seededRandom } from './floors.ts'
 import { boundsCenter, compassDirection, roomBounds, type Bounds } from './framing.ts'
 
@@ -298,8 +298,10 @@ export function ZoneChips({ room }: { room: Room }) {
 
 /** Pill bar of scene presets over the studio view, with a button that renders the current view. */
 export function PresetBar({ room }: { room: Room }) {
-  const { scene, focusedZone, jobs } = useSyncExternalStore(subscribe, snapshot)
+  const { scene, focusedZone, jobs, backend } = useSyncExternalStore(subscribe, snapshot)
   const zoneName = room.kind === 'plan' ? room.zones.find(({ id }) => id === focusedZone)?.name : undefined
+  const noRender = cannotRun(backend, 'render')
+  const noPanorama = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'pano360')
   return (
     <nav className="preset-bar" aria-label="Scene presets">
       {PRESET_BUTTONS.map(({ preset, label, dot }) => (
@@ -308,10 +310,12 @@ export function PresetBar({ room }: { room: Room }) {
           {label}
         </button>
       ))}
-      <button onClick={() => api.renderInComfy({ prompt: studioPrompt(zoneName, scene) })}>Render this view</button>
+      <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: studioPrompt(zoneName, scene) })}>
+        Render this view
+      </button>
       <button
-        disabled={zoneName === undefined}
-        title={zoneName === undefined ? 'Focus a room first' : `A photoreal view all around ${zoneName}, about ${Math.round(expectedSeconds(jobs, 'pano360'))} s on ComfyUI`}
+        disabled={noPanorama !== undefined}
+        title={noPanorama ?? `A photoreal view all around ${zoneName}, about ${Math.round(expectedSeconds(jobs, 'pano360'))} s on ComfyUI`}
         onClick={() => void api.view360()}
       >
         360° view

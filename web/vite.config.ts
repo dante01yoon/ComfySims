@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
-import { bridge } from './bridge.ts'
+import { bridge, isLocal } from './bridge.ts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const fixturesDir = fileURLToPath(new URL('../fixtures', import.meta.url))
@@ -46,15 +46,66 @@ async function sendBack(upstream: Response, response: ServerResponse): Promise<v
   response.end(Buffer.from(await upstream.arrayBuffer()))
 }
 
-function proxyComfy({ target, apiKey }: { target: string; apiKey: string | undefined }): Plugin {
+type BackendKind = 'local' | 'cloud'
+type Backends = { cloudUrl: string; localUrl: string; startUrl: string; apiKey: string | undefined }
+
+function isBackendKind(kind: unknown): kind is BackendKind {
+  return kind === 'local' || kind === 'cloud'
+}
+
+function isHttpUrl(url: unknown): url is string {
+  return typeof url === 'string' && URL.canParse(url) && ['http:', 'https:'].includes(new URL(url).protocol)
+}
+
+function choiceOf(text: string): { kind: BackendKind; url?: string } | null {
+  try {
+    const { kind, url }: { kind?: unknown; url?: unknown } = JSON.parse(text)
+    if (!isBackendKind(kind) || (url !== undefined && !isHttpUrl(url))) return null
+    return url === undefined ? { kind } : { kind, url }
+  } catch {
+    return null
+  }
+}
+
+function sendJson(response: ServerResponse, status: number, value: unknown): void {
+  response.statusCode = status
+  response.setHeader('Content-Type', 'application/json')
+  response.setHeader('Cache-Control', 'no-store')
+  response.end(JSON.stringify(value))
+}
+
+function routeOf(url: string, current: BackendKind): { kind: BackendKind; path: string } {
+  const pinned = /^\/(local|cloud)(\/.*)$/.exec(url)
+  return pinned && isBackendKind(pinned[1]) ? { kind: pinned[1], path: pinned[2] ?? '/' } : { kind: current, path: url }
+}
+
+function comfyBackends({ cloudUrl, localUrl, startUrl, apiKey }: Backends): Plugin {
+  let current: BackendKind = startUrl === cloudUrl ? 'cloud' : 'local'
+  let local = current === 'local' ? startUrl : localUrl
+  const targetOf = (kind: BackendKind) => (kind === 'cloud' ? cloudUrl : local)
+  const view = () => ({ kind: current, url: targetOf(current), localUrl: local, cloudConfigured: apiKey !== undefined })
   return {
-    name: 'roomfit-comfy-proxy',
+    name: 'roomfit-comfy-backends',
     configureServer(server) {
+      server.middlewares.use('/__roomfit/backend', async (request, response) => {
+        if (!isLocal(request)) return sendJson(response, 403, { error: 'the backend can only be changed from the roomfit editor' })
+        if (request.method === 'POST') {
+          const choice = choiceOf(await (await bodyOf(request))?.text() ?? '')
+          if (!choice) return sendJson(response, 400, { error: 'expected { kind: "local" | "cloud", url?: "http(s)://…" }' })
+          if (choice.kind === 'cloud' && !apiKey) return sendJson(response, 409, { error: 'No Cloud key in .env.local' })
+          current = choice.kind
+          if (choice.kind === 'local' && choice.url) local = choice.url
+        }
+        sendJson(response, 200, view())
+      })
+
       server.middlewares.use('/comfy', async (request, response) => {
+        const { kind, path } = routeOf(request.url ?? '/', current)
+        const target = targetOf(kind)
         try {
-          const headers = new Headers(apiKey ? { 'X-API-Key': apiKey } : {})
+          const headers = new Headers(kind === 'cloud' && apiKey ? { 'X-API-Key': apiKey } : {})
           if (request.headers['content-type']) headers.set('Content-Type', request.headers['content-type'])
-          const upstream = await fetch(new URL(request.url ?? '/', target), {
+          const upstream = await fetch(new URL(path, target), {
             method: request.method,
             headers,
             body: await bodyOf(request),
@@ -78,7 +129,12 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       serveFixtures(),
-      proxyComfy({ target: env.ROOMFIT_COMFY_URL || 'http://127.0.0.1:8188', apiKey: env.COMFY_CLOUD_API_KEY || undefined }),
+      comfyBackends({
+        cloudUrl: env.ROOMFIT_CLOUD_URL || 'https://cloud.comfy.org',
+        localUrl: env.ROOMFIT_LOCAL_URL || 'http://127.0.0.1:8188',
+        startUrl: env.ROOMFIT_COMFY_URL || env.ROOMFIT_LOCAL_URL || 'http://127.0.0.1:8188',
+        apiKey: env.COMFY_CLOUD_API_KEY || undefined
+      }),
       bridge({ tokenFile: resolve(repoRoot, '.harness/bridge-token') })
     ],
     server: { host: '127.0.0.1' }

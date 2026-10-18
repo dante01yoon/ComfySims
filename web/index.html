@@ -21,6 +21,15 @@
       .workspace { width: var(--rail); }
       .rail-section { display: flex; flex-direction: column; gap: 8px; }
       .agent-badge { align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 22%, transparent); color: #cfe0ff; font-size: 12px; }
+      .backend { position: relative; align-self: flex-start; }
+      .backend-chip { border-radius: 999px; padding: 4px 12px; font-size: 12px; }
+      .backend-chip.unreachable { border-color: #7a3a33; }
+      .backend-menu { left: 0; right: auto; min-width: 240px; gap: 6px; padding: 8px; }
+      .workflow-dialog { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(12, 13, 15, .7); }
+      .workflow-dialog > div { display: flex; flex-direction: column; gap: 10px; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: #1f2225; }
+      .workflow-dialog h2 { margin: 0; font-size: 16px; }
+      .workflow-dialog table { border-collapse: collapse; font-size: 12px; }
+      .workflow-dialog td, .workflow-dialog th { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-word; }
       .muted { color: var(--muted); font-size: 12px; }
       .job { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #24272b; }
       .job header { font-weight: 600; }

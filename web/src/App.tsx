@@ -22,6 +22,7 @@ import {
   attachControls,
   attachThree,
   beginDrag,
+  cannotRun,
   closeRender,
   endDrag,
   isFinished,
@@ -383,10 +384,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function OpenedRender({ studio }: { studio: boolean }) {
-  const { openedRender, jobs } = useSyncExternalStore(subscribe, snapshot)
+  const { openedRender, jobs, backend } = useSyncExternalStore(subscribe, snapshot)
   if (!openedRender) return null
   const renderJob = jobs.find(({ kind, result }) => kind === 'render' && result?.image === openedRender.image)
-  const viewAs3d = renderJob ? () => void api.photo3d({ kind: 'render', jobId: renderJob.id }) : undefined
+  const viewAs3d = renderJob && !cannotRun(backend, 'photo3d') ? () => void api.photo3d({ kind: 'render', jobId: renderJob.id }) : undefined
   return <RenderOverlay image={openedRender.image} prompt={openedRender.caption} studio={studio} onClose={closeRender} onViewAs3d={viewAs3d} />
 }
 
@@ -408,7 +409,9 @@ function RenderOverlay({ image, prompt, studio, onClose, onViewAs3d }: RenderOve
 }
 
 function ComfyPanel() {
-  const { jobs } = useSyncExternalStore(subscribe, snapshot)
+  const { jobs, backend } = useSyncExternalStore(subscribe, snapshot)
+  const noProduct = cannotRun(backend, 'product')
+  const noRender = cannotRun(backend, 'render')
   const [photo, setPhoto] = useState<File | null>(null)
   const [name, setName] = useState('')
   const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
@@ -452,12 +455,12 @@ function ComfyPanel() {
           <option value="uniform">uniform</option>
         </select>
       </Field>
-      <button className="primary" onClick={generate3d} disabled={!photo}>Generate 3D</button>
+      <button className="primary" onClick={generate3d} disabled={!photo || noProduct !== undefined} title={noProduct}>Generate 3D</button>
       <h2>Render</h2>
       <Field label="Render prompt">
         <textarea rows={3} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
       </Field>
-      <button className="primary" onClick={render} disabled={!prompt.trim()}>Render</button>
+      <button className="primary" onClick={render} disabled={!prompt.trim() || noRender !== undefined} title={noRender}>Render</button>
       <div role="status" className={job?.steps.at(-1)?.status === 'failed' ? 'status problem' : 'status'}>
         {statusLine(job, placedFit, size, seconds)}
       </div>

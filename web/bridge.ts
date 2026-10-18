@@ -36,7 +36,8 @@ function isSameOrigin(request: IncomingMessage): boolean {
   return origin === undefined || origin === `http://${request.headers.host}`
 }
 
-function isLocal(request: IncomingMessage): boolean {
+/** A request from this machine to a loopback host whose Origin, if any, is the dev server itself. */
+export function isLocal(request: IncomingMessage): boolean {
   return LOOPBACK_ADDRESSES.has(request.socket.remoteAddress ?? '') && isLoopbackHost(request) && isSameOrigin(request)
 }
 

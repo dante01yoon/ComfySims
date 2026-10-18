@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent, t
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
-import type { Asset, Job, Room, Zone } from '../../packages/schema/src/index.ts'
-import { api, clearFinishedJobs, isFinished, isStalePanorama, openRender, select, snapshot, subscribe } from './editor.ts'
+import type { Asset, BackendKind, Job, Room, Zone } from '../../packages/schema/src/index.ts'
+import type { BackendState, JobWorkflow } from '../../spec/contracts/editor-api.ts'
+import { api, cannotRun, clearFinishedJobs, isFinished, isStalePanorama, openRender, ranWorkflow, select, snapshot, subscribe } from './editor.ts'
 import { polygonCentroid } from './framing.ts'
 import { meshKey } from './meshes.ts'
 import { thumbnailOf } from './thumbnails.ts'
@@ -59,10 +60,126 @@ function runAction(job: Job): void {
   if (job.kind === 'pano360') api.open360(job.id)
 }
 
+const BACKEND_NAMES: Record<BackendKind, string> = { local: 'Local', cloud: 'Cloud' }
+
+function backendLabel({ kind, status, unavailable }: BackendState): string {
+  const count = unavailable.length
+  const detail = status !== 'ready' ? status : count === 0 ? 'ready' : `${count} ${count === 1 ? 'workflow' : 'workflows'} unavailable`
+  return `${BACKEND_NAMES[kind]} · ${detail}`
+}
+
+function BackendChip() {
+  const { backend, localUrl } = useSyncExternalStore(subscribe, snapshot)
+  const [open, setOpen] = useState(false)
+  const [url, setUrl] = useState(localUrl)
+  useEffect(() => setUrl(localUrl), [localUrl])
+  return (
+    <div className="backend">
+      <button className={`backend-chip ${backend.status}`} aria-expanded={open} onClick={() => setOpen(!open)}>
+        {backendLabel(backend)}
+      </button>
+      {open && (
+        <div role="group" aria-label="ComfyUI backend" className="place-menu backend-menu">
+          <button
+            disabled={!backend.cloudConfigured}
+            title={backend.cloudConfigured ? 'Run new jobs on Comfy Cloud' : 'No Cloud key in .env.local'}
+            onClick={() => void api.setBackend({ kind: 'cloud' })}
+          >
+            Use Cloud
+          </button>
+          <button onClick={() => void api.setBackend({ kind: 'local', url: url.trim() })}>Use Local</button>
+          <label className="field">
+            <span>Local ComfyUI URL</span>
+            <input value={url} onChange={(event) => setUrl(event.target.value)} />
+          </label>
+          <button onClick={() => void api.checkBackend()}>Check again</button>
+          {backend.unavailable.map(({ kind, missing }) => (
+            <div key={kind} className="problem">{`${kind}: needs ${missing.join(', ')}`}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function fileNameOf(path: string): string {
+  return path.split('/').at(-1) ?? path
+}
+
+function filledInputs(prompt: JobWorkflow['submitted']): [string, string][] {
+  return Object.values(prompt).flatMap(({ _meta, inputs }) =>
+    _meta?.title?.startsWith('roomfit:')
+      ? Object.entries(inputs)
+          .filter(([, value]) => !Array.isArray(value))
+          .map(([name, value]): [string, string] => [`${_meta.title} · ${name}`, String(value)])
+      : []
+  )
+}
+
+function WorkflowDialog({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+  const [notice, setNotice] = useState('')
+  const ran = ranWorkflow(jobId)
+  if (!ran) return null
+  const json = JSON.stringify(ran.submitted, null, 2)
+
+  const download = () => {
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    link.download = fileNameOf(ran.file)
+    link.click()
+    URL.revokeObjectURL(link.href)
+  }
+
+  const openInComfy = () => {
+    window.open(new URL('/', ran.url).href, '_blank', 'noopener')
+    navigator.clipboard.writeText(json).then(
+      () => setNotice('Paste into ComfyUI (Ctrl+V)'),
+      () => setNotice('Copy failed: use Download JSON and drop the file into ComfyUI')
+    )
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Workflow" className="workflow-dialog" onKeyDown={(event) => event.key === 'Escape' && onClose()}>
+      <div>
+        <h2>Workflow</h2>
+        <div>
+          <strong>{ran.file}</strong> <span className="muted">on {BACKEND_NAMES[ran.backend]}</span>
+        </div>
+        <table aria-label="Nodes">
+          <thead>
+            <tr><th>Node</th><th>Class</th></tr>
+          </thead>
+          <tbody>
+            {Object.entries(ran.submitted).map(([id, node]) => (
+              <tr key={id}><td>{node._meta?.title ?? id}</td><td>{node.class_type}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <table aria-label="Inputs roomfit filled">
+          <tbody>
+            {filledInputs(ran.submitted).map(([name, value]) => (
+              <tr key={name}><th>{name}</th><td>{value}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        {notice && <div role="status">{notice}</div>}
+        <div className="button-row">
+          <button onClick={download}>Download JSON</button>
+          <button onClick={openInComfy}>Open in ComfyUI</button>
+          <button onClick={onClose} autoFocus>Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: number }) {
+  const { backend } = useSyncExternalStore(subscribe, snapshot)
+  const [showWorkflow, setShowWorkflow] = useState(false)
   const step = job.steps.at(-1)?.status ?? 'queued'
   const finished = isFinished(job)
   const image = job.result?.image
+  const noPhoto3d = cannotRun(backend, 'photo3d')
   return (
     <article aria-label={job.title} className={`job ${step}`}>
       <header>
@@ -86,11 +203,19 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
           {job.kind === 'pano360' && isStalePanorama(job.id) && <div className="problem">Layout changed since this view</div>}
           <div className="button-row">
             <button onClick={() => runAction(job)}>{ACTION_LABELS[job.kind]}</button>
-            {job.kind === 'render' && <button onClick={() => void api.photo3d({ kind: 'render', jobId: job.id })}>View as 3D photo</button>}
+            {job.kind === 'render' && (
+              <button disabled={noPhoto3d !== undefined} title={noPhoto3d} onClick={() => void api.photo3d({ kind: 'render', jobId: job.id })}>
+                View as 3D photo
+              </button>
+            )}
             {job.kind === 'pano360' && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
           </div>
         </div>
       )}
+      <div className="button-row">
+        <button onClick={() => setShowWorkflow(true)}>Workflow</button>
+      </div>
+      {showWorkflow && <WorkflowDialog jobId={job.id} onClose={() => setShowWorkflow(false)} />}
     </article>
   )
 }
@@ -166,6 +291,7 @@ function LibrarySection() {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const { assets, room } = editor.history.present
   const targets = placeTargets(room, editor.focusedZone)
+  const noPhoto3d = cannotRun(editor.backend, 'photo3d')
 
   const uploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -184,7 +310,7 @@ function LibrarySection() {
       </ul>
       <label className="field">
         <span>Room photo → 3D</span>
-        <input type="file" accept="image/*" aria-label="Room photo" onChange={uploadPhoto} />
+        <input type="file" accept="image/*" aria-label="Room photo" onChange={uploadPhoto} disabled={noPhoto3d !== undefined} title={noPhoto3d} />
       </label>
       <div className="muted">The photo is sent to your ComfyUI to build the 3D photo.</div>
     </section>
@@ -196,6 +322,7 @@ export function WorkspaceRail() {
   const { agentConnected } = useSyncExternalStore(subscribe, snapshot)
   return (
     <aside className="workspace" aria-label="Workspace">
+      <BackendChip />
       {agentConnected && <div className="agent-badge" role="status">Agent connected</div>}
       <JobsSection />
       <LibrarySection />

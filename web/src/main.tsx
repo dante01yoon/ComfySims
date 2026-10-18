@@ -6,6 +6,7 @@ import { api } from './editor.ts'
 
 window.roomfit = api
 void connectBridge()
+void api.checkBackend()
 
 const root = document.getElementById('root')
 if (root) createRoot(root).render(<App />)

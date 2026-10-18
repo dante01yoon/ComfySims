@@ -3,7 +3,10 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { Box3, type Object3D, type Scene } from 'three'
 
-import { buildPhotoTo3dPrompt, buildRenderPrompt, buildRoomPhotoPrompt, studioPrompt } from '../../packages/comfy/src/index.ts'
+import { z } from 'zod'
+
+import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
+import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, missingFromCatalog, studioPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, findSpot, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
@@ -11,6 +14,7 @@ import {
   MAX_CONCURRENT_JOBS,
   parseLayout,
   type Asset,
+  type BackendKind,
   type FitReport,
   type Job,
   type JobKind,
@@ -21,10 +25,12 @@ import {
   type Zone
 } from '../../packages/schema/src/index.ts'
 import type {
+  BackendState,
   ComfyFailure,
   DepthPanorama,
   EditorState,
   EditorView,
+  JobWorkflow,
   Lighting,
   ProductRequest,
   RenderPasses,
@@ -35,11 +41,14 @@ import type {
   Vec3,
   Viewer360
 } from '../../spec/contracts/editor-api.ts'
-import panoramaWorkflow from '../../workflows/cloud/pano360-from-depth.json'
-import photoWorkflow from '../../workflows/cloud/photo-to-3d-moge.json'
-import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
+import cloudPanorama from '../../workflows/cloud/pano360-from-depth.json'
+import cloudPhoto from '../../workflows/cloud/photo-to-3d-moge.json'
+import cloudProduct from '../../workflows/cloud/product-to-glb-pixal3d.json'
+import localPhoto from '../../workflows/local/photo-to-3d-moge.json'
+import localProduct from '../../workflows/product-to-glb.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
-import { comfyOutputUri, generate, randomSeed, type ComfyInput } from './comfy.ts'
+import workflowSets from '../../workflows/sets.json'
+import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyInput, type ComfyRun } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
@@ -55,7 +64,18 @@ type PanoramaViewer = Omit<Viewer360, 'stale'>
 
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
-const PRODUCT_WORKFLOW = 'cloud/product-to-glb-pixal3d'
+const BACKEND_PATH = '/__roomfit/backend'
+const WORKFLOW_FILES: Record<string, ApiWorkflow> = {
+  'cloud/pano360-from-depth.json': cloudPanorama,
+  'cloud/photo-to-3d-moge.json': cloudPhoto,
+  'cloud/product-to-glb-pixal3d.json': cloudProduct,
+  'local/photo-to-3d-moge.json': localPhoto,
+  'product-to-glb.json': localProduct,
+  'render-from-depth.json': renderWorkflow
+}
+const JOB_KINDS: readonly JobKind[] = ['product', 'render', 'photo3d', 'pano360']
+const ServerBackend = z.object({ kind: z.enum(['local', 'cloud']), url: z.string(), localUrl: z.string(), cloudConfigured: z.boolean() })
+const DEFAULT_LOCAL_URL = 'http://127.0.0.1:8188'
 const FOCUSED_WALL_CUT_CM = 110
 const PHOTO_YAW_LIMIT_DEG = 20
 const PHOTO_PITCH_LIMIT_DEG = 10
@@ -81,6 +101,8 @@ export type Editor = {
   shootingEyeLevel: boolean
   lastRenderCamera: CameraPose | null
   agentConnected: boolean
+  backend: BackendState
+  localUrl: string
   revision: number
 }
 
@@ -117,6 +139,8 @@ let editor: Editor = {
   shootingEyeLevel: false,
   lastRenderCamera: null,
   agentConnected: false,
+  backend: { kind: 'local', url: DEFAULT_LOCAL_URL, status: 'checking', unavailable: [], cloudConfigured: false },
+  localUrl: DEFAULT_LOCAL_URL,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -260,7 +284,8 @@ function state(): EditorState {
     wallCutCm: wallCutCm(editor),
     lastRenderCamera: editor.lastRenderCamera,
     undoLabels: labels(history),
-    agentConnected: editor.agentConnected
+    agentConnected: editor.agentConnected,
+    backend: editor.backend
   }
 }
 
@@ -339,13 +364,15 @@ function focusZone(zoneId: string | null): void {
 }
 
 type Step = (status: JobStep) => void
-type Work<T> = (step: Step, id: string) => Promise<Finished<T> | ComfyFailure>
+type JobRun = ComfyRun & { id: string; backend: BackendKind; file: string; workflow: ApiWorkflow }
+type Work<T> = (run: JobRun) => Promise<Finished<T> | ComfyFailure>
 type Finished<T> = { ok: true; value: T; result: Job['result'] }
 type Started<T> = ({ ok: true; jobId: string } & T) | ComfyFailure
 type ProductPlaced = { itemId: string; report: Omit<FitReport, 'scale'> }
 
 const retries = new Map<string, () => Promise<Started<unknown>>>()
 const captions = new Map<string, string>()
+const workflows = new Map<string, JobWorkflow & { url: string }>()
 const waitingForSlot: (() => void)[] = []
 let runningJobs = 0
 let startedJobs = 0
@@ -402,11 +429,27 @@ async function runJob<T>(
   work: Work<T>,
   retry: () => Promise<Started<unknown>>
 ): Promise<Started<T>> {
+  const backend = editor.backend
+  const blocked = cannotRun(backend, kind)
+  if (blocked) return rejection(blocked)
   const id = `${kind}-${++startedJobs}`
+  const file = workflowSets[backend.kind][kind]
+  const workflow = WORKFLOW_FILES[file]
+  if (!workflow) return rejection(`workflows/${file} is not bundled with the editor`)
   retries.set(id, retry)
-  update({ jobs: [...editor.jobs, { id, kind, title, steps: [] }] })
+  workflows.set(id, { file, backend: backend.kind, submitted: workflow, url: backend.url })
+  update({ jobs: [...editor.jobs, { id, kind, title, backend: backend.kind, steps: [] }] })
   await takeSlot(id)
-  const outcome = await settled(() => work((status) => addStep(id, status), id))
+  const run: JobRun = {
+    id,
+    backend: backend.kind,
+    file,
+    workflow,
+    comfy: comfyOn(backend.kind),
+    step: (status) => addStep(id, status),
+    submitted: (submitted) => workflows.set(id, { file, backend: backend.kind, submitted, url: backend.url })
+  }
+  const outcome = await settled(() => work(run))
   releaseSlot()
   if (!outcome.ok) {
     addStep(id, 'failed', { message: outcome.message })
@@ -470,7 +513,11 @@ function productInput({ imageBase64, imageName, fileName }: ProductRequest): Pro
   return blobAt(`data:application/octet-stream;base64,${imageBase64}`).then((file) => ({ file, fileName }))
 }
 
-async function generateProduct(request: ProductRequest, step: Step, label: string): Promise<Finished<ProductPlaced> | ComfyFailure> {
+function hasTag(workflow: ApiWorkflow, tag: string): boolean {
+  return Object.values(workflow).some((node) => node._meta?.title === tag)
+}
+
+async function generateProduct(request: ProductRequest, run: JobRun, label: string): Promise<Finished<ProductPlaced> | ComfyFailure> {
   const mode = request.mode ?? 'exact'
   const name = request.name.trim()
   if (!name) return rejection('the product needs a name')
@@ -483,12 +530,15 @@ async function generateProduct(request: ProductRequest, step: Step, label: strin
   if (!pending) return rejection('the product needs exactly one of imageBase64 or imageName')
   const input = await pending
   const seed = request.seed ?? randomSeed()
-  const generated = await generate(step, input, (imageName) =>
-    buildPhotoTo3dPrompt(productWorkflow, { imageName, seed })
+  const { workflow } = run
+  const generated = await generate(run, input, (imageName) =>
+    hasTag(workflow, 'roomfit:fit')
+      ? buildProductPrompt(workflow, { imageName, dimensions: request.dimensions, mode, seed })
+      : buildPhotoTo3dPrompt(workflow, { imageName, seed })
   )
   if (!generated.ok) return generated
 
-  step('fitting')
+  run.step('fitting')
   const fitted = await fitGlbBytes(generated.bytes, request.dimensions, mode)
   if (!fitted.ok) return { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.reason}` }
   const { flagged, requested, yawDegrees } = fitted.report
@@ -499,9 +549,9 @@ async function generateProduct(request: ProductRequest, step: Step, label: strin
   const asset: Asset = {
     id: uniqueId(name, layout.assets),
     name,
-    uri: comfyOutputUri(generated.file),
+    uri: comfyOutputUri(generated.file, run.backend),
     dimensions: request.dimensions,
-    source: { kind: 'generated', workflow: PRODUCT_WORKFLOW },
+    source: { kind: 'generated', workflow: run.file.replace(/\.json$/, '') },
     fit: { mode, distortion }
   }
   const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement, label)
@@ -514,10 +564,10 @@ async function generateProduct(request: ProductRequest, step: Step, label: strin
 
 function addProductFromPhoto(request: ProductRequest): Promise<Started<ProductPlaced>> {
   const label = currentLabel()
-  return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (step) => generateProduct(request, step, label), () => addProductFromPhoto(request))
+  return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (run) => generateProduct(request, run, label), () => addProductFromPhoto(request))
 }
 
-async function renderShot(request: RenderRequest, zone: Zone | undefined, step: Step): Promise<Finished<{ image: string }> | ComfyFailure> {
+async function renderShot(request: RenderRequest, zone: Zone | undefined, run: JobRun): Promise<Finished<{ image: string }> | ComfyFailure> {
   const size = request.size ?? DEFAULT_RENDER_SIZE
   if (!isPassSize(size)) return rejection(`the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
   const seed = request.seed ?? randomSeed()
@@ -525,8 +575,8 @@ async function renderShot(request: RenderRequest, zone: Zone | undefined, step: 
   update({ lastRenderCamera: shot })
   const passes = await oneAtATime(() => (zone ? passesFrom(shot, size) : api.exportPasses(size)))
   const depth = await blobAt(passes.depth)
-  const generated = await generate(step, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
-    buildRenderPrompt(renderWorkflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
+  const generated = await generate(run, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
+    buildRenderPrompt(run.workflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
   )
   if (!generated.ok) return generated
 
@@ -537,9 +587,9 @@ async function renderShot(request: RenderRequest, zone: Zone | undefined, step: 
 
 function renderZone(request: RenderRequest, zone: Zone | undefined): Promise<Started<{ image: string }>> {
   const room = zone?.name ?? 'House'
-  const render: Work<{ image: string }> = (step, id) => {
-    captions.set(id, `Render · ${room}, ${editor.scene}`)
-    return renderShot(request, zone, step)
+  const render: Work<{ image: string }> = (run) => {
+    captions.set(run.id, `Render · ${room}, ${editor.scene}`)
+    return renderShot(request, zone, run)
   }
   return runJob('render', `Room render · ${room}`, render, () => renderZone(request, zone))
 }
@@ -558,12 +608,12 @@ async function photoImage(source: Photo3dSource): Promise<{ ok: true; file: Blob
   return { ok: true, file: await blobAt(image), fileName: 'roomfit-render.png', caption: captions.get(source.jobId) ?? 'Render' }
 }
 
-async function meshPhoto(source: Photo3dSource, step: Step, id: string): Promise<Finished<{ glb: string }> | ComfyFailure> {
+async function meshPhoto(source: Photo3dSource, run: JobRun): Promise<Finished<{ glb: string }> | ComfyFailure> {
   const photo = await photoImage(source)
   if (!photo.ok) return photo
-  captions.set(id, photo.caption)
-  const meshing: Step = (status) => step(status === 'generating' ? 'meshing' : status)
-  const generated = await generate(meshing, photo, (imageName) => buildRoomPhotoPrompt(photoWorkflow, { imageName }))
+  captions.set(run.id, photo.caption)
+  const meshing: Step = (status) => run.step(status === 'generating' ? 'meshing' : status)
+  const generated = await generate({ ...run, step: meshing }, photo, (imageName) => buildRoomPhotoPrompt(run.workflow, { imageName }))
   if (!generated.ok) return generated
   const glb = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'model/gltf-binary' }))
   return { ok: true, value: { glb }, result: { image: URL.createObjectURL(photo.file), glb } }
@@ -572,7 +622,7 @@ async function meshPhoto(source: Photo3dSource, step: Step, id: string): Promise
 async function photo3d(source: Photo3dSource): Promise<Started<{ glb: string }>> {
   const subject = source.kind === 'upload' ? source.fileName : (editor.jobs.find(({ id }) => id === source.jobId)?.title.split(' · ')[1] ?? 'House')
   const opened = { render: editor.openedRender, photo: editor.photoViewer }
-  const outcome = await runJob('photo3d', `3D photo · ${subject}`, (step, id) => meshPhoto(source, step, id), () => photo3d(source))
+  const outcome = await runJob('photo3d', `3D photo · ${subject}`, (run) => meshPhoto(source, run), () => photo3d(source))
   const openedSince = editor.openedRender !== opened.render || editor.photoViewer !== opened.photo
   if (outcome.ok && !openedSince) openPhoto3d(outcome.jobId)
   return outcome
@@ -620,13 +670,13 @@ function panoramaPrompt(zone: Zone, prompt: string | undefined): string {
   return text.startsWith(PANORAMA_PREFIX) ? text : `${PANORAMA_PREFIX}, ${text}`
 }
 
-async function panoramaShot(zone: Zone, prompt: string, step: Step, id: string): Promise<Finished<{ image: string }> | ComfyFailure> {
+async function panoramaShot(zone: Zone, prompt: string, run: JobRun): Promise<Finished<{ image: string }> | ComfyFailure> {
   const depth = await oneAtATime(() => {
-    panoramas.set(id, { zoneId: zone.id, itemsWhenTaken: itemsSignature(editor.history.present, zone.id) })
+    panoramas.set(run.id, { zoneId: zone.id, itemsWhenTaken: itemsSignature(editor.history.present, zone.id) })
     return depthPanoramaOf(zone)
   })
-  const generated = await generate(step, { file: await blobAt(depth.image), fileName: 'roomfit-depth-pano.png' }, (depthImageName) =>
-    buildRenderPrompt(panoramaWorkflow, { depthImageName, prompt, negativePrompt: '', seed: randomSeed() })
+  const generated = await generate(run, { file: await blobAt(depth.image), fileName: 'roomfit-depth-pano.png' }, (depthImageName) =>
+    buildRenderPrompt(run.workflow, { depthImageName, prompt, negativePrompt: '', seed: randomSeed() })
   )
   if (!generated.ok) return generated
   const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
@@ -638,7 +688,7 @@ async function panoramaOf(zoneId: string, prompt: string | undefined): Promise<S
   if (!zone) return rejection(`there is no room called ${zoneId}`)
   const title = `360° view · ${zone.name}`
   if (editor.jobs.some((job) => job.kind === 'pano360' && job.title === title && !isFinished(job))) return rejection(`a 360° view of ${zone.name} is already being made`)
-  const outcome = await runJob('pano360', title, (step, id) => panoramaShot(zone, panoramaPrompt(zone, prompt), step, id), () => panoramaOf(zoneId, prompt))
+  const outcome = await runJob('pano360', title, (run) => panoramaShot(zone, panoramaPrompt(zone, prompt), run), () => panoramaOf(zoneId, prompt))
   if (outcome.ok) open360(outcome.jobId)
   return outcome
 }
@@ -713,6 +763,68 @@ function renameZone(zoneId: string, name: string): ReturnType<RoomfitEditorApi['
   return { ok: true }
 }
 
+/** Why a backend cannot run a job kind (the node classes or model files its ComfyUI lacks), or undefined when it can. */
+export function cannotRun(backend: BackendState, kind: JobKind): string | undefined {
+  const blocked = backend.unavailable.find((entry) => entry.kind === kind)
+  return blocked && `This ComfyUI does not have ${blocked.missing.join(', ')}`
+}
+
+type ServerBackend = z.infer<typeof ServerBackend>
+
+let backendChecks = 0
+
+async function jsonAt(url: string, init?: RequestInit): Promise<unknown> {
+  try {
+    const response = await fetch(url, init)
+    return response.ok ? await response.json() : null
+  } catch {
+    return null
+  }
+}
+
+async function readinessOf(kind: BackendKind): Promise<Pick<BackendState, 'status' | 'unavailable'>> {
+  const catalog = z.record(z.string(), z.unknown()).safeParse(await jsonAt(catalogUrl(kind)))
+  if (!catalog.success) return { status: 'unreachable', unavailable: [] }
+  const unavailable = JOB_KINDS.flatMap((job) => {
+    const workflow = WORKFLOW_FILES[workflowSets[kind][job]]
+    const missing = workflow ? missingFromCatalog(workflow, catalog.data) : [workflowSets[kind][job]]
+    return missing.length > 0 ? [{ kind: job, missing }] : []
+  })
+  return { status: 'ready', unavailable }
+}
+
+async function serverBackend(init?: RequestInit): Promise<ServerBackend> {
+  const parsed = ServerBackend.safeParse(await jsonAt(BACKEND_PATH, init))
+  if (parsed.success) return parsed.data
+  return init ? serverBackend() : { kind: 'local', url: location.origin, localUrl: location.origin, cloudConfigured: false }
+}
+
+async function checked({ localUrl, ...server }: ServerBackend): Promise<BackendState> {
+  const check = ++backendChecks
+  update({ backend: { ...server, status: 'checking', unavailable: [] }, localUrl })
+  const backend = { ...server, ...(await readinessOf(server.kind)) }
+  if (check === backendChecks) update({ backend })
+  return backend
+}
+
+async function checkBackend(): Promise<BackendState> {
+  return checked(await serverBackend())
+}
+
+async function setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState> {
+  return checked(await serverBackend({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(choice) }))
+}
+
+/** The job's workflow file, backend and its URL, and the graph it submitted (its template until roomfit has filled it). */
+export function ranWorkflow(jobId: string): (JobWorkflow & { url: string }) | null {
+  return workflows.get(jobId) ?? null
+}
+
+function jobWorkflow(jobId: string): JobWorkflow | null {
+  const ran = workflows.get(jobId)
+  return ran ? { file: ran.file, backend: ran.backend, submitted: ran.submitted } : null
+}
+
 async function screenshot(): Promise<string> {
   const { gl, scene, camera } = await rendered()
   gl.render(scene, camera)
@@ -772,6 +884,10 @@ export const api: RoomfitEditorApi = {
   view360,
   open360,
   close360: () => update({ viewer360: null }),
+  backend: () => editor.backend,
+  setBackend,
+  checkBackend,
+  jobWorkflow,
   setActionLabel: (label) => {
     actionLabel = label
   }

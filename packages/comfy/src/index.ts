@@ -68,6 +68,35 @@ export function buildRenderPrompt(
   })
 }
 
+const InputSpecs = z.record(z.string(), z.unknown())
+const CatalogNode = z.object({ input: z.object({ required: InputSpecs.optional(), optional: InputSpecs.optional() }).optional() })
+
+function modelOptions(spec: unknown): unknown[] | null {
+  if (!Array.isArray(spec)) return null
+  const [type, extra] = spec
+  const options: unknown = Array.isArray(type) ? type : type === 'COMBO' ? z.object({ options: z.array(z.unknown()) }).safeParse(extra).data?.options : null
+  const isUpload = z.object({ image_upload: z.literal(true) }).safeParse(extra).success
+  return Array.isArray(options) && options.length > 0 && !isUpload ? options : null
+}
+
+/** Node classes and model files a workflow uses that a ComfyUI's `/api/object_info` catalog does not have. */
+export function missingFromCatalog(workflow: ApiWorkflow, catalog: Record<string, unknown>): string[] {
+  const missing = new Set<string>()
+  for (const { class_type, inputs } of Object.values(workflow)) {
+    if (!Object.hasOwn(catalog, class_type)) {
+      missing.add(class_type)
+      continue
+    }
+    const input = CatalogNode.safeParse(catalog[class_type]).data?.input
+    const specs = { ...input?.required, ...input?.optional }
+    for (const [name, value] of Object.entries(inputs)) {
+      const options = modelOptions(specs[name])
+      if (typeof value === 'string' && options && !options.includes(value)) missing.add(value)
+    }
+  }
+  return [...missing]
+}
+
 export type Failure = { ok: false; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled'; message: string }
 
 export type JobStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
