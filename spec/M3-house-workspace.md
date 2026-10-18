@@ -150,6 +150,7 @@ Verified on Comfy Cloud 2026-10-18: job `17f5c779-5840-4bde-a98b-4e9367f35926`, 
 | AC-52 | active | The library lists every asset with size, source, fit mode and a local thumbnail; "Place in" puts it in the chosen room via `findSpot`, selects it, and is undoable; no space is reported and nothing changes |
 | AC-53 | active | A finished render or an uploaded room photo becomes a 3D photo job through the MoGe workflow and opens in the viewer; the viewer limits turning to ±20° yaw and ±10° pitch and closes with Back |
 | AC-54 | active | `workflows/cloud/photo-to-3d-moge.json` lints against the pinned Comfy Cloud catalog (`spec/contracts/comfy-cloud-object-info.json`, taken through the comfy-cloud MCP) and tags its input and save nodes |
+| AC-62 | active | A 3D photo opens from the photo's camera with a field of view taken from the mesh's angular extent, so the photo fills the viewer (cover, like the original image cropped to the viewer) |
 | AC-55 | manual | Recording on real Comfy Cloud: two jobs in parallel in the panel, an asset placed from the library, a room renamed, a render opened as a 3D photo, and a real room photo opened as a 3D photo |
 
 ## 9. Test plan
@@ -182,3 +183,7 @@ Open questions (settled 2026-10-18 on the recommended answers)
 
 - 2026-10-18 Draft, written after Dante asked for the job panel, room labels with asset placement, and 3D photos — and for features to be specified and documented before they are built. Feasibility of MoGe on Cloud checked first.
 - 2026-10-18 Approved. Dante: "알아서 해줘 어떻게 하는게 좋은지" — open questions settled on the recommended answers: 3 concurrent jobs; library = assets in the current layout; standalone 3D photo viewer; real photos allowed with the visible note.
+
+## Found by recording on real Comfy Cloud (AC-62)
+
+The first real-Cloud M3 recording (2026-10-18) showed 3D photos as a small card floating in black: the viewer used a fixed 60° vertical field of view, much wider than the photo's own. A MoGe mesh sits in camera space in front of the origin (glTF −Z, Y up; living-room render: z −6.2 … −2.3 m), and every vertex lies on its pixel's ray, so the largest |x/z| and |y/z| over the vertices give the photo's half-angles. The viewer starts at the origin, looking down −Z, with a field of view chosen so those angles cover the viewer (object-fit: cover). The viewer background is near-black (#0b0c0e). Turning limits (±20° / ±10°) are unchanged.

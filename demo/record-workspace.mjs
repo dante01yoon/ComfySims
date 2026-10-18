@@ -21,7 +21,7 @@ await page.evaluate(() => { window.roomfit.setView('studio'); window.roomfit.set
 await page.evaluate(() => {
   const caption = document.createElement('div')
   caption.id = 'demo-caption'
-  Object.assign(caption.style, { position: 'fixed', left: '24px', top: '24px', maxWidth: '760px', padding: '10px 16px', background: 'rgba(20,22,26,.85)', color: '#fff', font: '600 22px/1.35 system-ui,sans-serif', borderRadius: '10px', zIndex: 60 })
+  Object.assign(caption.style, { position: 'fixed', left: '24px', top: '24px', maxWidth: '760px', padding: '10px 16px', background: 'rgba(20,22,26,.85)', color: '#fff', font: '600 22px/1.35 system-ui,sans-serif', borderRadius: '10px', zIndex: 60, pointerEvents: 'none' })
   document.body.appendChild(caption)
 })
 const say = (text) => page.evaluate((t) => { document.getElementById('demo-caption').textContent = t }, text)

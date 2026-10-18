@@ -42,6 +42,20 @@ for (const [name, box] of Object.entries(fixtureBoxes)) {
   console.log(`wrote fixtures/glb/${name}`)
 }
 
+function cameraSpacePlane(): Document {
+  const document = new Document()
+  const buffer = document.createBuffer()
+  const corners = [-2, -1.5, -4, 2, -1.5, -4, 2, 1.5, -4, -2, 1.5, -4]
+  const position = document.createAccessor().setType('VEC3').setArray(new Float32Array(corners)).setBuffer(buffer)
+  const indices = document.createAccessor().setType('SCALAR').setArray(new Uint16Array([0, 1, 2, 0, 2, 3])).setBuffer(buffer)
+  const mesh = document.createMesh().addPrimitive(document.createPrimitive().setAttribute('POSITION', position).setIndices(indices))
+  document.getRoot().setDefaultScene(document.createScene().addChild(document.createNode().setMesh(mesh)))
+  return document
+}
+
+await io.write(fileURLToPath(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url)), cameraSpacePlane())
+console.log('wrote fixtures/glb/photo3d-plane.glb')
+
 const sceneless = new Document()
 sceneless.createBuffer()
 sceneless.createMesh()

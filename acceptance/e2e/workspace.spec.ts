@@ -175,3 +175,25 @@ test('AC-53 an uploaded room photo becomes a 3D photo job, with the upload note 
   await expect(card(page, '3D photo · my-room.jpg')).toContainText('done')
   expect((await page.evaluate(() => window.roomfit.state().photoViewer))?.jobId).toBe(outcome.jobId)
 })
+
+test('AC-62 a 3D photo opens filling the viewer, seen from the photo camera', async ({ page }) => {
+  const outcome = await page.evaluate((imageBase64) => window.roomfit.photo3d({ kind: 'upload', fileName: 'wide-room.jpg', imageBase64 }), PHOTO)
+  if (!outcome.ok) throw new Error(outcome.message)
+  const viewer = page.getByRole('dialog', { name: '3D photo' })
+  await expect(viewer).toBeVisible()
+  await page.waitForTimeout(500)
+
+  const shot = await viewer.locator('canvas').screenshot()
+  const covered = await page.evaluate(async (base64) => {
+    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+    const context = canvas.getContext('2d')!
+    context.drawImage(bitmap, 0, 0)
+    const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data
+    let lit = 0
+    for (let i = 0; i < data.length; i += 4) if (0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]! > 60) lit++
+    return lit / (data.length / 4)
+  }, shot.toString('base64'))
+
+  expect(covered).toBeGreaterThanOrEqual(0.9)
+})
