@@ -17,9 +17,9 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-29 | active | The layout contract accepts plan rooms (walls, door and window openings, named floor zones) and rejects broken plans with the failing path |
 | AC-30 | active | In plan rooms, an item is out of bounds when its footprint leaves the zones, hits a wall (doors are passable, everything else is solid), or rises above the walls; touching a wall face is fine |
 | AC-31 | active | The editor loads the demo house with every item at its listed size and reports no problems |
-| AC-32 | planned | Studio view frames the whole house from above at three-quarters (elevation 30–65°) |
-| AC-33 | planned | Scene presets Reading / Work / Movie / Evening set the lighting from the table below, the bottom bar shows the active one, and evening is visibly darker than work |
-| AC-34 | planned | The studio loads nothing from the network |
+| AC-32 | active | Studio view frames the whole house from above at three-quarters (elevation 30–65°) |
+| AC-33 | active | Scene presets Reading / Work / Movie / Evening set the lighting from the table below, the bottom bar shows the active one, and evening is visibly darker than work |
+| AC-34 | active | The studio loads nothing from the network |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence: recording) |
 
 ## Plan rooms (AC-29 ~ AC-31)
