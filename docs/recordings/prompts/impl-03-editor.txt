@@ -1,0 +1,1 @@
+spec/M1-scaled-furniture.md 의 에디터 AC들(AC-9, AC-14~AC-17)을 초록으로 만들어줘. web/ 아래에 에디터를 새로 만들어야 해. 계약은 spec/contracts/editor-api.ts, 결정은 docs/adr/0004 를 봐. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.

@@ -2,3 +2,4 @@ node_modules/
 .harness/
 *.log
 .recordings/
+web/dist/

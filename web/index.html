@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>roomfit editor</title>
+    <style>
+      html, body, #root { margin: 0; height: 100%; }
+      body { font: 13px/1.4 system-ui, sans-serif; background: #1d1f22; color: #e8e6e3; }
+      #root { display: grid; grid-template-columns: 1fr 260px; }
+      aside { padding: 12px; border-left: 1px solid #33363a; overflow: auto; }
+      aside h2 { font-size: 12px; text-transform: uppercase; color: #9a9da1; margin: 16px 0 6px; }
+      aside button, aside label { margin: 0 6px 6px 0; }
+      .problem { color: #ff8a7a; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
