@@ -1,0 +1,1 @@
+spec/M2-home-studio.md 의 빨간 AC들(AC-45, AC-46)을 초록으로 만들어줘. 실제 Cloud로 집 투어를 녹화해 보니 (1) 방 렌더가 위에서 내려다본 미니어처처럼 나오고 (2) 벽에 붙인 램프가 270cm 벽에 가려 안 보였어. 스펙의 "Found by recording the walkthrough" 절을 봐. AGENTS.md 규칙을 따르고, 끝나기 전에 오피스를 포커스한 스튜디오 스크린샷을 직접 확인하고 짧게 알려줘.
