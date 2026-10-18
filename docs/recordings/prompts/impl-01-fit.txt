@@ -1,0 +1,1 @@
+spec/M1-scaled-furniture.md 의 AC-3, AC-4, AC-11, AC-12 를 구현해줘. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.

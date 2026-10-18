@@ -1,3 +1,4 @@
 node_modules/
 .harness/
 *.log
+.recordings/
