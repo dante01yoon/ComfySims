@@ -6,3 +6,5 @@ web/dist/
 nodes/roomfit/editor/
 __pycache__/
 demo/out/
+.env.local
+.env

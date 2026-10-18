@@ -39,6 +39,13 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-18 | active | The node pack fits ComfyUI MESH vertices like `fitGlb` (same sizes, pivot and report), per item of a padded batch, drops normals after non-uniform scale, and returns a reason for flat meshes |
 | AC-19 | active | ComfyUI started with the node pack registers `RoomfitFitMesh` exactly as `spec/contracts/roomfit-nodes.json` says and serves the built editor at `/roomfit/` |
 | AC-20 | active | `buildProductPrompt` and `buildRenderPrompt` wire inputs into the tagged nodes of a workflow without mutating it, and list every missing tag |
+| AC-21 | active | A ComfyUI client uploads, queues, follows a job through its statuses and downloads saved files from local ComfyUI or Comfy Cloud, returning failures (job errors, unknown jobs, unreachable server) as data |
+| AC-22 | active | GLB bytes can be fitted without a file system, with the same result as the file-based fit |
+| AC-23 | active | In the editor, a product photo plus listed size becomes a placed, real-size item through ComfyUI, with visible job statuses; the saved layout reloads and re-fits it; a failed job is reported and changes nothing |
+| AC-24 | active | In the editor, Render sends the depth pass and prompt to ComfyUI and shows the resulting image |
+| AC-25 | active | The Comfy Cloud API key is added by the local dev server only: it never appears in browser requests or served code, and it is not forwarded to the signed storage redirect |
+| AC-26 | active | The side panel exposes the product and render flows with labelled controls and a status line |
+| AC-27 | manual | A screen recording of the real editor driving Comfy Cloud end to end: photo → 3D → placed → render (evidence: recording) |
 
 ## Decisions behind this spec
 
@@ -47,6 +54,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 - Harness-first, spec-driven workflow: [ADR-0003](../docs/adr/0003-harness-first-spec-driven.md)
 - Editor stack and agent-legible API: [ADR-0004](../docs/adr/0004-editor-stack-and-agent-api.md)
 - Node pack, workflow contract and local ComfyUI in the harness: [ADR-0005](../docs/adr/0005-node-pack-and-workflow-contract.md)
+- Editor drives ComfyUI / Comfy Cloud, key stays server-side: [ADR-0006](../docs/adr/0006-editor-drives-comfy-cloud.md)
 
 ## Spec changes
 
@@ -132,3 +140,36 @@ buildRenderPrompt(workflow, { depthImageName, prompt, negativePrompt, seed }): P
 ```
 
 `ApiWorkflow` is the type in `harness/tools/lint-workflow.ts`. `missing` lists absent tags in the order the builder needs them (product: image, fit, seed; render: depth, positive, negative, seed).
+
+## Editor ↔ ComfyUI / Comfy Cloud bridge (AC-21 ~ AC-27)
+
+**Client** — `packages/comfy/src/index.ts` adds, pure apart from `fetch`:
+
+```ts
+createComfyClient({ baseUrl, fetch?, pollMs? }): {
+  upload(file: Blob, fileName: string): Promise<{ ok: true; name: string } | Failure>
+  queue(prompt: ApiWorkflow): Promise<{ ok: true; id: string } | Failure>
+  waitForJob(id, { onStatus?, signal? }?): Promise<{ ok: true; outputs: Record<string, unknown> } | Failure>
+  download(file: { filename: string; subfolder: string; type: string }): Promise<{ ok: true; bytes: Uint8Array } | Failure>
+}
+buildPhotoTo3dPrompt(workflow, { imageName, seed }): PromptOutcome   // tags: roomfit:product-image, roomfit:seed, roomfit:save
+savedFiles(prompt, outputs): { filename, subfolder, type }[]          // files of the node tagged roomfit:save ("3d" or "images")
+```
+
+- Endpoints (same on local ComfyUI and Comfy Cloud v1): `POST /api/upload/image` (multipart `image`, `type=input`, `overwrite=true`), `POST /api/prompt` `{ prompt }` → `prompt_id`, `GET /api/jobs/{id}` (`pending | in_progress | completed | failed | cancelled`, `outputs`, `execution_error.exception_message`), `GET /api/view?filename&subfolder&type`. A 404 on `/api/jobs/{id}` falls back to `GET /api/history/{id}` for older local ComfyUI.
+- `Failure` = `{ ok: false; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled'; message }`.
+
+**Fit in the browser** — `packages/fit` adds `fitGlbBytes(bytes, dimensions, mode)` → `{ ok: true; bytes; report } | { ok: false; reason }`; `fitGlb` becomes a file wrapper around it.
+
+**Editor** (contract: `addProductFromPhoto`, `renderInComfy`, `state().jobs`, `state().lastRender`):
+- ComfyUI base URL: `''` when the editor is served from the node pack under `/roomfit/` (same origin), `/comfy` otherwise.
+- Product flow: upload photo → `workflows/cloud/product-to-glb-pixal3d.json` via `buildPhotoTo3dPrompt` → wait → download the saved GLB → `fitGlbBytes` with the listed size (default `exact`) → new asset `{ uri: 'comfy-output:<subfolder>/<filename>', dimensions, fit: { mode, distortion } }` and an item at the room center (snapped). Statuses in order: uploading, queued, in_progress, downloading, fitting, done (or failed with the ComfyUI message). Nothing is added on failure.
+- `comfy-output:` URIs are resolved through `/api/view` and re-fitted on load (fitting is a pure function of source, size and mode).
+- Render flow: `exportPasses` depth at the requested size (default 1152×896) → upload → `workflows/render-from-depth.json` via `buildRenderPrompt` → wait → download → `lastRender` (data or blob URL).
+- Side panel: "Product photo" (file), "Product name", "Width (cm)", "Depth (cm)", "Height (cm)", fit mode, button "Generate 3D", a `role="status"` line ("Placed" when done), "Render prompt", button "Render", and the result as an image named "Render result".
+
+**Dev server proxy** — `pnpm web:dev` proxies `/comfy/*` to `ROOMFIT_COMFY_URL` (default `http://127.0.0.1:8188`) and adds `X-API-Key: $COMFY_CLOUD_API_KEY` when set (read from the environment or `.env.local`, never from `VITE_*`). For `/api/view` it follows the 302 itself, without the key, and streams the bytes back.
+
+**Harness** — `harness/tools/fake-comfy.mjs` stands in for Comfy Cloud (records requests, requires the key, answers jobs, redirects views to a fake storage server). Playwright starts it next to the dev server with a test key.
+
+**Cloud workflow** — `workflows/cloud/product-to-glb-pixal3d.json` is the API graph Comfy Cloud ran for the `3d_pixal3d_trellis2_image_to_model` template (Pixal3D branch), with preview-only nodes removed, `SaveGLB` instead of `Save3DAdvanced` (known `"3d"` output shape) and texture size 2048. Verified on Cloud 2026-10-18 (job `ad9f4464-53e9-4b62-937b-2b70f5192b8d`). Not linted against the local catalog: Cloud runs nodes the local checkout lacks.
