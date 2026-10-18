@@ -76,7 +76,7 @@ Non-goals (M6)
 | AC-73 | active | Every job card opens its workflow: node list, filled inputs, and "Download JSON" returns exactly the graph that was submitted |
 | AC-74 | active | `get_backend` MCP tool returns kind, url, ready and unavailable kinds |
 | AC-75 | active | Each workflow in `workflows/local/` lints against the local catalog snapshot, each in `workflows/cloud/` against the Cloud snapshot |
-| AC-76 | manual | Recording: the same product placed on Local and on Cloud, with the workflow panel opened for each |
+| AC-76 | manual | Recording: the same product placed on Local and on Cloud, with the workflow panel opened for each (pending 2026-10-18: Dante's local ComfyUI has no models installed — every local kind is correctly reported unavailable; needs his OK to download ~25 GB of models) |
 
 ## 9. Test plan
 
