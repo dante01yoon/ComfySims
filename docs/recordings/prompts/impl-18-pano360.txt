@@ -1,0 +1,1 @@
+spec/M5-room-360.md (Approved) 의 빨간 AC들(AC-63~AC-67, 타입 검사 포함)을 초록으로 만들어줘. 에디터의 깊이 파노라마(서 있는 점 → 등장방형 2048×1024, 인코딩과 축은 스펙 §5), 스튜디오의 "360° view" 버튼과 pano360 작업 카드, 360° 뷰어 다이얼로그, 오래된 뷰 표시와 Regenerate, MCP `view_360` 도구야. 워크플로는 workflows/cloud/pano360-from-depth.json(기존 render 프롬프트 빌더와 같은 태그), 결정 배경은 docs/adr/0010. 화면은 `pnpm see`로 확인할 수 있어. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.
