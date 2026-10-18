@@ -1,0 +1,1 @@
+spec/M1-scaled-furniture.md 의 빨간 AC들(AC-21~AC-26)을 초록으로 만들어줘. 에디터가 ComfyUI / Comfy Cloud를 직접 부르는 브리지야. 계약은 spec/contracts/editor-api.ts, 결정은 docs/adr/0006 을 봐. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.
