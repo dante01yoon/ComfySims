@@ -11,6 +11,7 @@ describe('harness guard', () => {
     { name: 'editing an acceptance test by absolute path', call: edit(`${process.cwd()}/acceptance/layout-contract.test.ts`) },
     { name: 'editing the harness itself', call: edit('harness/verify.mjs') },
     { name: 'editing hook settings', call: edit('.claude/settings.json') },
+    { name: 'editing the layout contract package', call: edit('packages/schema/src/domain.ts') },
     { name: 'deleting fixtures from the shell', call: bash('rm -rf fixtures/glb') },
     { name: 'rewriting a test with sed', call: bash("sed -i '' 's/200/100/' acceptance/glb-fitting.test.ts") }
   ])('blocks $name', ({ call }) => {
@@ -18,7 +19,7 @@ describe('harness guard', () => {
   })
 
   it.for([
-    { name: 'editing package source', call: edit('packages/schema/src/layout.ts') },
+    { name: 'editing package source', call: edit('packages/fit/src/index.ts') },
     { name: 'reading a spec from the shell', call: bash('cat spec/M1-scaled-furniture.md') },
     { name: 'running verify', call: bash('pnpm verify') }
   ])('allows $name', ({ call }) => {

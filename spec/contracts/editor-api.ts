@@ -1,4 +1,4 @@
-import type { RoomLayout } from '../../packages/schema/src/index.ts'
+import type { Collision, FitMode, FitReport, OutOfBoundsReason, RoomLayout } from '../../packages/schema/src/index.ts'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -12,8 +12,8 @@ export type SceneItem = {
 export type EditorState = {
   layout: RoomLayout
   selectedId: string | null
-  collisions: { a: string; b: string }[]
-  outOfBounds: { itemId: string; reason: 'outside-room' | 'hits-wall' | 'above-ceiling' }[]
+  collisions: Collision[]
+  outOfBounds: { itemId: string; reason: OutOfBoundsReason }[]
   canUndo: boolean
   canRedo: boolean
   jobs: ComfyJob[]
@@ -35,7 +35,7 @@ export type ProductRequest = {
   imageBase64: string
   name: string
   dimensions: { width: number; depth: number; height: number }
-  mode?: 'exact' | 'uniform' | 'auto'
+  mode?: FitMode
   seed?: number
 }
 
@@ -69,7 +69,7 @@ export type RoomfitEditorApi = {
   redo(): void
   setCamera(camera: { position: Vec3; target: Vec3 }): void
   exportPasses(size: { width: number; height: number }): Promise<RenderPasses>
-  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: { mode: 'exact' | 'uniform'; requested: 'exact' | 'uniform' | 'auto'; yawDegrees: number; distortion: number; flagged: boolean } } | ComfyFailure>
+  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: Omit<FitReport, 'scale'> } | ComfyFailure>
   renderInComfy(request: RenderRequest): Promise<{ ok: true; image: string } | ComfyFailure>
   setView(view: EditorView): void
   setScene(preset: ScenePreset): void

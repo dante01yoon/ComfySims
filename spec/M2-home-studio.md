@@ -22,6 +22,7 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-34 | active | The studio loads nothing from the network |
 | AC-36 | active | Before fitting, a generated model is turned about Y to its smallest footprint with its long side on the longer listed axis, so a model generated from a three-quarter photo fits without distortion; the applied yaw is reported and alignment can be switched off |
 | AC-37 | active | Fit mode `auto` uses `exact` when the aligned distortion is at most 1.15 and `uniform` otherwise, reporting both the requested and the chosen mode |
+| AC-38 | active | Shared domain types (out-of-bounds reasons, collisions, fit modes, fit report) are defined once in `packages/schema`; a type-level check fails typecheck when placement, fit or the editor contract drift from them |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence 2026-10-18: `docs/recordings/demo-ac35-studio.md`) |
 
 ## Plan rooms (AC-29 ~ AC-31)
@@ -62,3 +63,7 @@ Found on 2026-10-18 by generating the demo-house furniture on Comfy Cloud: 13 of
 - `FitMode` adds `auto`: aligned exact distortion ≤ 1.15 → `exact`, else `uniform`. Assets store the requested mode; re-fitting on load is deterministic.
 - The editor panel defaults to `auto`; `addProductFromPhoto` keeps `exact` as its default.
 - Open: the Python node pack does not align yet (AC-18 parity covers axis-aligned meshes only).
+
+## Contract gate (AC-38)
+
+Added after the spec session left the editor contract behind three times (impl-05, impl-07, impl-09 each ended `BLOCKED:`). `packages/schema/src/domain.ts` owns `OutOfBoundsReason`, `Collision`, `AppliedFitMode`, `FitReport`; `spec/contracts/editor-api.ts` uses them; `acceptance/contract-types.ts` asserts the public signatures of `outOfBounds`, `collisions`, `fitGlbBytes` and the editor contract are equal to them. `packages/schema/` is now protected like `spec/` (it is the contract). Mutation-checked: removing `hits-wall` from the shared type fails typecheck in `contract-types.ts`.
