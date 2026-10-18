@@ -38,7 +38,7 @@ for (let i = 0; i <= 50; i++) {
   await pause(60)
 }
 
-await say('Living room, evening light → render this exact view on Comfy Cloud')
+await say('Living room, evening light → render an eye-level photo on Comfy Cloud')
 await chip('Living')
 await pause(1200)
 await chip('Evening')
@@ -47,7 +47,7 @@ mark('render-click')
 await page.getByRole('button', { name: 'Render this view' }).click()
 await page.getByRole('img', { name: 'Render result' }).waitFor({ timeout: 10 * 60_000 })
 mark('rendered')
-await say('Rendered on Comfy Cloud from the room’s depth')
+await say('Rendered on Comfy Cloud from an eye-level shot of that room')
 await pause(4500)
 await page.getByRole('button', { name: 'Close' }).click()
 
