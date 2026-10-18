@@ -148,7 +148,7 @@ Verified on Comfy Cloud 2026-10-18: job `17f5c779-5840-4bde-a98b-4e9367f35926`, 
 | AC-50 | active | Each plan room shows a label at its centroid with its name and item count (point in polygon); clicking focuses the room |
 | AC-51 | active | Renaming a room from its label updates the chip, label and saved layout; empty names are rejected; Undo restores the name |
 | AC-52 | active | The library lists every asset with size, source, fit mode and a local thumbnail; "Place in" puts it in the chosen room via `findSpot`, selects it, and is undoable; no space is reported and nothing changes |
-| AC-53 | planned | A finished render or an uploaded room photo becomes a 3D photo job through the MoGe workflow and opens in the viewer; the viewer limits turning to ±20° yaw and ±10° pitch and closes with Back |
+| AC-53 | active | A finished render or an uploaded room photo becomes a 3D photo job through the MoGe workflow and opens in the viewer; the viewer limits turning to ±20° yaw and ±10° pitch and closes with Back |
 | AC-54 | active | `workflows/cloud/photo-to-3d-moge.json` lints against the pinned Comfy Cloud catalog (`spec/contracts/comfy-cloud-object-info.json`, taken through the comfy-cloud MCP) and tags its input and save nodes |
 | AC-55 | manual | Recording on real Comfy Cloud: two jobs in parallel in the panel, an asset placed from the library, a room renamed, a render opened as a 3D photo, and a real room photo opened as a 3D photo |
 
