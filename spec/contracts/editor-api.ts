@@ -35,7 +35,7 @@ export type ProductRequest = {
   imageBase64: string
   name: string
   dimensions: { width: number; depth: number; height: number }
-  mode?: 'exact' | 'uniform'
+  mode?: 'exact' | 'uniform' | 'auto'
   seed?: number
 }
 
@@ -69,7 +69,7 @@ export type RoomfitEditorApi = {
   redo(): void
   setCamera(camera: { position: Vec3; target: Vec3 }): void
   exportPasses(size: { width: number; height: number }): Promise<RenderPasses>
-  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: { mode: 'exact' | 'uniform'; distortion: number; flagged: boolean } } | ComfyFailure>
+  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: { mode: 'exact' | 'uniform'; requested: 'exact' | 'uniform' | 'auto'; yawDegrees: number; distortion: number; flagged: boolean } } | ComfyFailure>
   renderInComfy(request: RenderRequest): Promise<{ ok: true; image: string } | ComfyFailure>
   setView(view: EditorView): void
   setScene(preset: ScenePreset): void

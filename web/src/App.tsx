@@ -9,14 +9,13 @@ import {
   serializeLayout,
   type Asset,
   type BoxRoom,
-  type FitMode,
   type PlacedItem,
   type PlanRoom,
   type Room,
   type RoomLayout,
   type Zone
 } from '../../packages/schema/src/index.ts'
-import type { ComfyJob, ComfyJobStatus } from '../../spec/contracts/editor-api.ts'
+import type { ComfyJob, ComfyJobStatus, ProductRequest } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
@@ -398,7 +397,7 @@ function ComfyPanel() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [name, setName] = useState('')
   const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
-  const [mode, setMode] = useState<FitMode>('exact')
+  const [mode, setMode] = useState<ProductRequest['mode']>('exact')
   const [prompt, setPrompt] = useState('')
   const [renderedPrompt, setRenderedPrompt] = useState('')
   const [closedRender, setClosedRender] = useState<string | null>(null)
