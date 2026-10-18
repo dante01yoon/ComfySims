@@ -1,0 +1,1 @@
+spec/M2-home-studio.md 의 빨간 AC들(AC-36, AC-37)을 초록으로 만들어줘. 실제 Comfy Cloud로 만든 가구 13/15개가 사진 각도 때문에 돌아가 있어서 맞춤이 찌그러졌던 문제야(스펙의 "Fitting real generated furniture" 절). packages/fit 과 에디터 패널 기본값을 바꾸면 돼. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.
