@@ -45,6 +45,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-24 | active | In the editor, Render sends the depth pass and prompt to ComfyUI and shows the resulting image |
 | AC-25 | active | The Comfy Cloud API key is added by the local dev server only: it never appears in browser requests or served code, and it is not forwarded to the signed storage redirect |
 | AC-26 | active | The side panel exposes the product and render flows with labelled controls and a status line |
+| AC-28 | active | The render result opens as a large overlay over the 3D view (at least half the viewport wide) that can be closed; while a ComfyUI job runs, the status line shows the step and elapsed seconds |
 | AC-27 | manual | A screen recording of the real editor driving Comfy Cloud end to end: photo → 3D → placed → render (evidence: recording) |
 
 ## Decisions behind this spec
@@ -173,3 +174,5 @@ savedFiles(prompt, outputs): { filename, subfolder, type }[]          // files o
 **Harness** — `harness/tools/fake-comfy.mjs` stands in for Comfy Cloud (records requests, requires the key, answers jobs, redirects views to a fake storage server). Playwright starts it next to the dev server with a test key.
 
 **Cloud workflow** — `workflows/cloud/product-to-glb-pixal3d.json` is the API graph Comfy Cloud ran for the `3d_pixal3d_trellis2_image_to_model` template (Pixal3D branch), with preview-only nodes removed, `SaveGLB` instead of `Save3DAdvanced` (known `"3d"` output shape) and texture size 2048. Verified on Cloud 2026-10-18 (job `ad9f4464-53e9-4b62-937b-2b70f5192b8d`). Not linted against the local catalog: Cloud runs nodes the local checkout lacks.
+
+**Panel layout (AC-26, AC-28, checked by screenshot):** every control sits under its own label in one column; the size fields share one row; the status line reads like "Generating 3D on ComfyUI… 42 s" / "Fitting to 200 × 90 × 85 cm" / "Placed — distortion 1.16 (flagged)". The render result overlay has a "Close" button and shows the prompt underneath the image.

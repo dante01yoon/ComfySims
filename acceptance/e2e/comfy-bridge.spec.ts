@@ -117,3 +117,32 @@ test('AC-26 the side panel drives the same flow with labelled controls', async (
   await page.getByRole('button', { name: 'Render' }).click()
   await expect(page.getByRole('img', { name: 'Render result' })).toBeVisible({ timeout: 20_000 })
 })
+
+test('AC-28 the render result opens large over the view and closes', async ({ page }) => {
+  await page.getByLabel('Render prompt').fill('cozy living room')
+  await page.getByRole('button', { name: 'Render' }).click()
+  const result = page.getByRole('img', { name: 'Render result' })
+  await expect(result).toBeVisible({ timeout: 20_000 })
+
+  const box = await result.boundingBox()
+  expect(box!.width).toBeGreaterThanOrEqual(page.viewportSize()!.width / 2)
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(result).toBeHidden()
+})
+
+test('AC-28 the status line shows the step and elapsed seconds while a job runs', async ({ page }) => {
+  await page.getByLabel('Product photo').setInputFiles({ name: 'sofa.png', mimeType: 'image/png', buffer: Buffer.from(PHOTO, 'base64') })
+  await page.getByLabel('Product name').fill('Sofa')
+  await page.getByLabel('Width (cm)').fill('200')
+  await page.getByLabel('Depth (cm)').fill('90')
+  await page.getByLabel('Height (cm)').fill('85')
+  const seen: string[] = []
+  const poll = setInterval(async () => { seen.push((await page.getByRole('status').textContent().catch(() => '')) ?? '') }, 50)
+  await page.getByRole('button', { name: 'Generate 3D' }).click()
+  await expect(page.getByRole('status')).toContainText('Placed', { timeout: 20_000 })
+  clearInterval(poll)
+
+  expect(seen.some((text) => /\d+\s?s\b/.test(text))).toBe(true)
+  await expect(page.getByRole('status')).toContainText('distortion')
+})
