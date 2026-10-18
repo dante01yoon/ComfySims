@@ -1,0 +1,1 @@
+spec/M1-scaled-furniture.md 의 빨간 AC들(AC-8, AC-18, AC-19, AC-20)을 초록으로 만들어줘. 노드팩(nodes/roomfit), 워크플로 두 개(workflows/), 프롬프트 빌더(packages/comfy)가 필요해. 결정은 docs/adr/0005 를 봐. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.

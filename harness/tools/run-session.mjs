@@ -18,7 +18,8 @@ const child = spawn('claude', [
   '-p', prompt,
   '--output-format', 'stream-json', '--verbose',
   '--permission-mode', 'acceptEdits',
-  '--allowedTools', 'Bash(pnpm:*)', 'Bash(node:*)', 'Bash(ls:*)', 'Bash(cat:*)', 'Bash(grep:*)', 'Bash(git status:*)', 'Bash(git diff:*)', 'Bash(git log:*)'
+  '--allowedTools', 'Bash(pnpm:*)', 'Bash(node:*)', 'Bash(ls:*)', 'Bash(cat:*)', 'Bash(grep:*)', 'Bash(git status:*)', 'Bash(git diff:*)', 'Bash(git log:*)',
+  `Bash(${process.env.ROOMFIT_COMFYUI_DIR ?? `${process.env.HOME}/Desktop/github/ComfyUI`}/venv/bin/python:*)`
 ], { stdio: ['ignore', 'pipe', 'inherit'] })
 
 child.stdout.pipe(out)
