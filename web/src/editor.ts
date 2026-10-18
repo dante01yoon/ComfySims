@@ -6,7 +6,7 @@ import { Box3, type Object3D, type Scene } from 'three'
 import { buildPhotoTo3dPrompt, buildRenderPrompt, type Failure } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, findSpot, outOfBounds } from '../../packages/placement/src/index.ts'
-import { Dimensions, parseLayout, type Asset, type PlacedItem, type RoomLayout } from '../../packages/schema/src/index.ts'
+import { Dimensions, parseLayout, type Asset, type PlacedItem, type RoomLayout, type Zone } from '../../packages/schema/src/index.ts'
 import type {
   ComfyFailure,
   ComfyJob,
@@ -14,6 +14,7 @@ import type {
   EditorView,
   Lighting,
   ProductRequest,
+  RenderPasses,
   RenderRequest,
   RoomfitEditorApi,
   SceneItem,
@@ -26,16 +27,18 @@ import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { polygonBounds, roomBounds, studioCamera } from './framing.ts'
+import { eyeLevelCamera, polygonBounds, roomBounds, studioCamera } from './framing.ts'
 import { exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 type Size = { width: number; height: number }
+type CameraPose = { position: Vec3; target: Vec3 }
 
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
 const PRODUCT_WORKFLOW = 'cloud/product-to-glb-pixal3d'
+const FOCUSED_WALL_CUT_CM = 110
 
 export type Editor = {
   history: History<RoomLayout>
@@ -47,6 +50,8 @@ export type Editor = {
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
+  shootingEyeLevel: boolean
+  lastRenderCamera: CameraPose | null
   renderPrompt: string
   revision: number
 }
@@ -78,6 +83,8 @@ let editor: Editor = {
   view: 'editor',
   scene: 'work',
   focusedZone: null,
+  shootingEyeLevel: false,
+  lastRenderCamera: null,
   renderPrompt: '',
   revision: 0
 }
@@ -206,14 +213,50 @@ function state(): EditorState {
     lastRender: editor.lastRender,
     view: editor.view,
     scene: editor.scene,
-    focusedZone: editor.focusedZone
+    focusedZone: editor.focusedZone,
+    wallCutCm: wallCutCm(editor),
+    lastRenderCamera: editor.lastRenderCamera
   }
 }
 
-function focusFrame(): { position: Vec3; target: Vec3 } {
+/** Height above which walls are not drawn: a dollhouse cutaway while a room is focused, except during its eye-level shot. */
+export function wallCutCm({ history, focusedZone, shootingEyeLevel }: Editor): number {
+  const { room } = history.present
+  const full = room.kind === 'plan' ? room.wallHeight : room.height
+  return focusedZone !== null && !shootingEyeLevel ? Math.min(FOCUSED_WALL_CUT_CM, full) : full
+}
+
+function focusedZone(): Zone | undefined {
   const { room } = editor.history.present
-  const zone = room.kind === 'plan' ? room.zones.find(({ id }) => id === editor.focusedZone) : undefined
-  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : studioCamera(roomBounds(room))
+  return room.kind === 'plan' ? room.zones.find(({ id }) => id === editor.focusedZone) : undefined
+}
+
+function focusFrame(): CameraPose {
+  const zone = focusedZone()
+  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : studioCamera(roomBounds(editor.history.present.room))
+}
+
+function eyeLevelShot(zone: Zone): CameraPose {
+  const { items, assets } = editor.history.present
+  const { min, max } = polygonBounds(zone.polygon)
+  const footprints = items.flatMap(({ assetId, position: { x, z } }) => {
+    const asset = assets.find(({ id }) => id === assetId)
+    const inZone = x >= min.x && x <= max.x && z >= min.z && z <= max.z
+    return asset && inZone ? [{ x, z, area: asset.dimensions.width * asset.dimensions.depth }] : []
+  })
+  return eyeLevelCamera(zone.polygon, footprints)
+}
+
+async function passesFrom(shot: CameraPose, size: Size): Promise<RenderPasses> {
+  const previous = api.camera()
+  update({ shootingEyeLevel: true })
+  api.setCamera(shot)
+  try {
+    return await api.exportPasses(size)
+  } finally {
+    api.setCamera(previous)
+    update({ shootingEyeLevel: false })
+  }
 }
 
 function focusZone(zoneId: string | null): void {
@@ -318,7 +361,10 @@ async function renderInComfy(request: RenderRequest): ReturnType<RoomfitEditorAp
   const size = request.size ?? DEFAULT_RENDER_SIZE
   if (!isPassSize(size)) return rejected('render', `the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
   const seed = request.seed ?? randomSeed()
-  const depth = await blobAt((await api.exportPasses(size)).depth)
+  const zone = focusedZone()
+  const shot = zone ? eyeLevelShot(zone) : api.camera()
+  update({ lastRenderCamera: shot })
+  const depth = await blobAt((zone ? await passesFrom(shot, size) : await api.exportPasses(size)).depth)
   const generated = await generate('render', reportJob, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
     buildRenderPrompt(renderWorkflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
   )

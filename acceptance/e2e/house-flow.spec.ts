@@ -13,6 +13,13 @@ const inside = (id: string, p: { x: number; z: number }) => {
   return p.x >= Math.min(...xs) && p.x <= Math.max(...xs) && p.z >= Math.min(...zs) && p.z <= Math.max(...zs)
 }
 
+type Camera = { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } }
+function expectSameCamera(actual: Camera, expected: Camera) {
+  for (const point of ['position', 'target'] as const) {
+    for (const axis of ['x', 'y', 'z'] as const) expect(actual[point][axis]).toBeCloseTo(expected[point][axis], 6)
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
   await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')
@@ -76,7 +83,7 @@ test('AC-42 render from a focused room in the studio uses that view', async ({ p
   const outcome = await page.evaluate(() => window.roomfit.renderInComfy({ prompt: 'warm living room', seed: 3, size: { width: 576, height: 448 } }))
   if (!outcome.ok) throw new Error(outcome.message)
 
-  expect(await page.evaluate(() => window.roomfit.camera())).toEqual(camera)
+  expectSameCamera(await page.evaluate(() => window.roomfit.camera()), camera)
   expect(await page.evaluate(() => window.roomfit.state().view)).toBe('studio')
   await expect(page.getByRole('img', { name: 'Render result' })).toBeVisible()
 })
@@ -124,12 +131,12 @@ test('AC-46 rendering a focused room shoots it at eye level from inside the room
   expect(shot.position.y).toBeLessThanOrEqual(160)
   expect(inside('living', shot.position)).toBe(true)
   expect(inside('living', shot.target)).toBe(true)
-  expect(await page.evaluate(() => window.roomfit.camera())).toEqual(before)
+  expectSameCamera(await page.evaluate(() => window.roomfit.camera()), before)
 })
 
 test('AC-46 rendering without a focused room uses the current view', async ({ page }) => {
   const before = await page.evaluate(() => window.roomfit.camera())
   const outcome = await page.evaluate(() => window.roomfit.renderInComfy({ prompt: 'house', seed: 1, size: { width: 576, height: 448 } }))
   if (!outcome.ok) throw new Error(outcome.message)
-  expect(await page.evaluate(() => window.roomfit.state().lastRenderCamera)).toEqual(before)
+  expectSameCamera((await page.evaluate(() => window.roomfit.state().lastRenderCamera))!, before)
 })

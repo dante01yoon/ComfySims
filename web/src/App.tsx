@@ -16,7 +16,7 @@ import {
   type Zone
 } from '../../packages/schema/src/index.ts'
 import type { ComfyJob, ComfyJobStatus, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
-import { api, attachControls, attachThree, beginDrag, endDrag, isFinished, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
+import { api, attachControls, attachThree, beginDrag, endDrag, isFinished, loadUnknown, markCommitted, select, snapshot, subscribe, wallCutCm } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
@@ -43,6 +43,15 @@ function roomSummary(room: Room): string {
 }
 
 type WallBox = { key: string; center: [number, number, number]; size: [number, number, number]; rotationY: number }
+
+function cutAt(cut: number) {
+  return (wall: WallBox): WallBox[] => {
+    const bottom = wall.center[1] - wall.size[1] / 2
+    const top = Math.min(wall.center[1] + wall.size[1] / 2, cut)
+    if (top <= bottom) return []
+    return [{ ...wall, center: [wall.center[0], (bottom + top) / 2, wall.center[2]], size: [wall.size[0], top - bottom, wall.size[2]] }]
+  }
+}
 
 function wallBoxes(room: PlanRoom): WallBox[] {
   return room.walls.flatMap((wall) => {
@@ -80,8 +89,8 @@ function zoneShape(zone: Zone): Shape {
   return new Shape(zone.polygon.map(({ x, z }) => new Vector2(x, -z)))
 }
 
-function PlanRoomView({ room }: { room: PlanRoom }) {
-  const boxes = useMemo(() => wallBoxes(room), [room])
+function PlanRoomView({ room, cut }: { room: PlanRoom; cut: number }) {
+  const boxes = useMemo(() => wallBoxes(room).flatMap(cutAt(cut)), [room, cut])
   const shapes = useMemo(() => room.zones.map((zone) => ({ zone, shape: zoneShape(zone) })), [room])
   return (
     <group>
@@ -101,8 +110,8 @@ function PlanRoomView({ room }: { room: PlanRoom }) {
   )
 }
 
-function RoomView({ room }: { room: Room }) {
-  return room.kind === 'plan' ? <PlanRoomView room={room} /> : <BoxRoomView room={room} />
+function RoomView({ room, cut }: { room: Room; cut: number }) {
+  return room.kind === 'plan' ? <PlanRoomView room={room} cut={cut} /> : <BoxRoomView room={room} />
 }
 
 function BoxRoomView({ room }: { room: BoxRoom }) {
@@ -494,7 +503,7 @@ export function App() {
             </>
           )}
           <OrbitControls makeDefault ref={attachControls} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />
-          <RoomView room={layout.room} />
+          <RoomView room={layout.room} cut={wallCutCm(editor)} />
           {layout.items.map((item) => {
             const asset = assets.get(item.assetId)
             return asset ? (
