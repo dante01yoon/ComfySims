@@ -1,0 +1,1 @@
+spec/M1-scaled-furniture.md 의 빨간 AC들(AC-3~7, AC-11~13)을 모두 초록으로 만들어줘. 스펙이 바뀐 부분(fitGlb 반환 타입)과 새 placement 패키지가 있어. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.
