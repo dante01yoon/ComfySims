@@ -3,13 +3,25 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { Box3, type Object3D, type Scene } from 'three'
 
-import { buildPhotoTo3dPrompt, buildRenderPrompt, type Failure } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildRenderPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
-import { collisions, findSpot, outOfBounds } from '../../packages/placement/src/index.ts'
-import { Dimensions, parseLayout, type Asset, type PlacedItem, type RoomLayout, type Zone } from '../../packages/schema/src/index.ts'
+import { collisions, findSpot, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
+import {
+  Dimensions,
+  MAX_CONCURRENT_JOBS,
+  parseLayout,
+  type Asset,
+  type FitReport,
+  type Job,
+  type JobKind,
+  type JobStep,
+  type Photo3dSource,
+  type PlacedItem,
+  type RoomLayout,
+  type Zone
+} from '../../packages/schema/src/index.ts'
 import type {
   ComfyFailure,
-  ComfyJob,
   EditorState,
   EditorView,
   Lighting,
@@ -27,7 +39,7 @@ import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { eyeLevelCamera, polygonBounds, roomBounds, studioCamera } from './framing.ts'
+import { boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, studioCamera } from './framing.ts'
 import { exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -45,14 +57,14 @@ export type Editor = {
   selectedId: string | null
   meshes: ReadonlyMap<string, Object3D | null>
   gesture: Gesture
-  jobs: readonly ComfyJob[]
+  jobs: readonly Job[]
   lastRender: string | null
+  openedRender: { image: string; caption: string } | null
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
   shootingEyeLevel: boolean
   lastRenderCamera: CameraPose | null
-  renderPrompt: string
   revision: number
 }
 
@@ -80,12 +92,12 @@ let editor: Editor = {
   gesture: 'none',
   jobs: [],
   lastRender: null,
+  openedRender: null,
   view: 'editor',
   scene: 'work',
   focusedZone: null,
   shootingEyeLevel: false,
   lastRenderCamera: null,
-  renderPrompt: '',
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -214,6 +226,7 @@ function state(): EditorState {
     view: editor.view,
     scene: editor.scene,
     focusedZone: editor.focusedZone,
+    photoViewer: null,
     wallCutCm: wallCutCm(editor),
     lastRenderCamera: editor.lastRenderCamera
   }
@@ -266,16 +279,89 @@ function focusZone(zoneId: string | null): void {
   api.setCamera(focusFrame())
 }
 
-export function isFinished(job: ComfyJob): boolean {
-  return job.status === 'done' || job.status === 'failed'
+type Step = (status: JobStep) => void
+type Finished<T> = { ok: true; value: T; result: Job['result'] }
+type Started<T> = ({ ok: true; jobId: string } & T) | ComfyFailure
+type ProductPlaced = { itemId: string; report: Omit<FitReport, 'scale'> }
+
+const retries = new Map<string, () => Promise<Started<unknown>>>()
+const waitingForSlot: (() => void)[] = []
+let runningJobs = 0
+let startedJobs = 0
+let passExports: Promise<unknown> = Promise.resolve()
+
+export function isFinished(job: Job): boolean {
+  const last = job.steps.at(-1)?.status
+  return last === 'done' || last === 'failed'
 }
 
-function reportJob(job: ComfyJob): void {
-  update({ jobs: [...editor.jobs, job] })
+export function clearFinishedJobs(): void {
+  update({ jobs: editor.jobs.filter((job) => !isFinished(job)) })
 }
 
-function rejected(kind: ComfyJob['kind'], message: string): Failure {
-  reportJob({ kind, status: 'failed', message })
+export function openRender(image: string, caption: string): void {
+  update({ openedRender: { image, caption } })
+}
+
+export function closeRender(): void {
+  update({ openedRender: null })
+}
+
+function addStep(id: string, status: JobStep, change: Partial<Job> = {}): void {
+  const at = Date.now()
+  update({ jobs: editor.jobs.map((job) => (job.id === id ? { ...job, ...change, steps: [...job.steps, { status, at }] } : job)) })
+}
+
+async function takeSlot(id: string): Promise<void> {
+  if (runningJobs < MAX_CONCURRENT_JOBS) {
+    runningJobs += 1
+    return
+  }
+  addStep(id, 'queued')
+  await new Promise<void>((resolve) => waitingForSlot.push(resolve))
+}
+
+function releaseSlot(): void {
+  const next = waitingForSlot.shift()
+  if (next) next()
+  else runningJobs -= 1
+}
+
+async function settled<T>(work: () => Promise<Finished<T> | ComfyFailure>): Promise<Finished<T> | ComfyFailure> {
+  try {
+    return await work()
+  } catch (error) {
+    return { ok: false, reason: 'failed', message: String(error) }
+  }
+}
+
+async function runJob<T>(
+  kind: JobKind,
+  title: string,
+  work: (step: Step) => Promise<Finished<T> | ComfyFailure>,
+  retry: () => Promise<Started<unknown>>
+): Promise<Started<T>> {
+  const id = `${kind}-${++startedJobs}`
+  retries.set(id, retry)
+  update({ jobs: [...editor.jobs, { id, kind, title, steps: [] }] })
+  await takeSlot(id)
+  const outcome = await settled(() => work((status) => addStep(id, status)))
+  releaseSlot()
+  if (!outcome.ok) {
+    addStep(id, 'failed', { message: outcome.message })
+    return { ...outcome, jobId: id }
+  }
+  addStep(id, 'done', { result: outcome.result })
+  return { ok: true, jobId: id, ...outcome.value }
+}
+
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const turn = passExports.then(task, task)
+  passExports = turn.catch(() => undefined)
+  return turn
+}
+
+function rejection(message: string): ComfyFailure {
   return { ok: false, reason: 'rejected', message }
 }
 
@@ -295,88 +381,132 @@ async function blobAt(url: string): Promise<Blob> {
   return (await fetch(url)).blob()
 }
 
+function zoneName(zoneId: string): string {
+  const { room } = editor.history.present
+  return (room.kind === 'plan' ? room.zones.find(({ id }) => id === zoneId)?.name : undefined) ?? zoneId
+}
+
 type Placement = { ok: true; position: PlacedItem['position']; rotationY: number }
 
 function placementIn(zoneId: string | null, dimensions: Dimensions): Placement | ComfyFailure {
   if (zoneId === null) return { ok: true, position: { x: 0, y: 0, z: 0 }, rotationY: 0 }
   const spot = findSpot(editor.history.present, zoneId, dimensions)
   if (spot.ok) return spot
-  const failure: ComfyFailure =
-    spot.reason === 'no-space'
-      ? { ok: false, reason: 'no-space', message: `no free wall in ${zoneId} for ${dimensions.width} × ${dimensions.depth} cm` }
-      : { ok: false, reason: 'rejected', message: `there is no room called ${zoneId}` }
-  reportJob({ kind: 'product', status: 'failed', message: failure.message })
-  return failure
+  return spot.reason === 'no-space' ? { ok: false, reason: 'no-space', message: `No space in ${zoneName(zoneId)}` } : rejection(`there is no room called ${zoneId}`)
 }
 
-function placeItem(asset: Asset, { position, rotationY }: Placement): PlacedItem {
-  const layout = editor.history.present
-  const item: PlacedItem = { id: uniqueId(asset.id, layout.items), assetId: asset.id, position, rotationY }
-  const next = { ...layout, assets: [...layout.assets, asset], items: [...layout.items, item] }
+function placeItem(layout: RoomLayout, assetId: string, { position, rotationY }: Placement): PlacedItem {
+  const item: PlacedItem = { id: uniqueId(assetId, layout.items), assetId, position, rotationY }
+  const next = { ...layout, items: [...layout.items, item] }
   setHistory(commit(editor.history, next), 'none')
   requestMeshes(next)
   return item
 }
 
-async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitEditorApi['addProductFromPhoto']> {
+async function generateProduct(request: ProductRequest, step: Step): Promise<Finished<ProductPlaced> | ComfyFailure> {
   const mode = request.mode ?? 'exact'
   const name = request.name.trim()
-  if (!name) return rejected('product', 'the product needs a name')
-  if (!Dimensions.safeParse(request.dimensions).success) return rejected('product', 'width, depth and height must be positive centimeters')
+  if (!name) return rejection('the product needs a name')
+  if (!Dimensions.safeParse(request.dimensions).success) return rejection('width, depth and height must be positive centimeters')
   const zoneId = request.zoneId ?? editor.focusedZone
   const planned = placementIn(zoneId, request.dimensions)
   if (!planned.ok) return planned
 
   const photo = await blobAt(`data:application/octet-stream;base64,${request.imageBase64}`)
   const seed = request.seed ?? randomSeed()
-  const generated = await generate('product', reportJob, { file: photo, fileName: request.fileName }, (imageName) =>
+  const generated = await generate(step, { file: photo, fileName: request.fileName }, (imageName) =>
     buildPhotoTo3dPrompt(productWorkflow, { imageName, seed })
   )
   if (!generated.ok) return generated
 
-  reportJob({ kind: 'product', status: 'fitting' })
+  step('fitting')
   const fitted = await fitGlbBytes(generated.bytes, request.dimensions, mode)
-  if (!fitted.ok) {
-    const failure: ComfyFailure = { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.reason}` }
-    reportJob({ kind: 'product', status: 'failed', message: failure.message })
-    return failure
-  }
+  if (!fitted.ok) return { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.reason}` }
   const { flagged, requested, yawDegrees } = fitted.report
   const distortion = roundedToFloat32Noise(fitted.report.distortion)
   const placement = placementIn(zoneId, request.dimensions)
   if (!placement.ok) return placement
-  const item = placeItem({
-    id: uniqueId(name, editor.history.present.assets),
+  const layout = editor.history.present
+  const asset: Asset = {
+    id: uniqueId(name, layout.assets),
     name,
     uri: comfyOutputUri(generated.file),
     dimensions: request.dimensions,
     source: { kind: 'generated', workflow: PRODUCT_WORKFLOW },
     fit: { mode, distortion }
-  }, placement)
-  reportJob({ kind: 'product', status: 'done' })
-  return { ok: true, itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } }
+  }
+  const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement)
+  return {
+    ok: true,
+    value: { itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } },
+    result: { image: URL.createObjectURL(photo), itemId: item.id }
+  }
 }
 
-async function renderInComfy(request: RenderRequest): ReturnType<RoomfitEditorApi['renderInComfy']> {
+function addProductFromPhoto(request: ProductRequest): Promise<Started<ProductPlaced>> {
+  return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (step) => generateProduct(request, step), () => addProductFromPhoto(request))
+}
+
+async function renderShot(request: RenderRequest, zone: Zone | undefined, step: Step): Promise<Finished<{ image: string }> | ComfyFailure> {
   const size = request.size ?? DEFAULT_RENDER_SIZE
-  if (!isPassSize(size)) return rejected('render', `the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
+  if (!isPassSize(size)) return rejection(`the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
   const seed = request.seed ?? randomSeed()
-  const zone = focusedZone()
   const shot = zone ? eyeLevelShot(zone) : api.camera()
   update({ lastRenderCamera: shot })
-  const depth = await blobAt((zone ? await passesFrom(shot, size) : await api.exportPasses(size)).depth)
-  const generated = await generate('render', reportJob, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
+  const passes = await oneAtATime(() => (zone ? passesFrom(shot, size) : api.exportPasses(size)))
+  const depth = await blobAt(passes.depth)
+  const generated = await generate(step, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
     buildRenderPrompt(renderWorkflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
   )
   if (!generated.ok) return generated
 
   const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
-  if (editor.lastRender) URL.revokeObjectURL(editor.lastRender)
-  update({ lastRender: image, renderPrompt: request.prompt })
-  reportJob({ kind: 'render', status: 'done' })
-  return { ok: true, image }
+  update({ lastRender: image, openedRender: { image, caption: request.prompt } })
+  return { ok: true, value: { image }, result: { image } }
 }
 
+function renderZone(request: RenderRequest, zone: Zone | undefined): Promise<Started<{ image: string }>> {
+  return runJob('render', `Room render · ${zone?.name ?? 'House'}`, (step) => renderShot(request, zone, step), () => renderZone(request, zone))
+}
+
+function renderInComfy(request: RenderRequest): Promise<Started<{ image: string }>> {
+  return renderZone(request, focusedZone())
+}
+
+function photo3d(source: Photo3dSource): Promise<Started<{ glb: string }>> {
+  const subject = source.kind === 'upload' ? source.fileName : (editor.jobs.find(({ id }) => id === source.jobId)?.title.split(' · ')[1] ?? 'House')
+  return runJob<{ glb: string }>('photo3d', `3D photo · ${subject}`, async () => rejection('3D photos are not available yet'), () => photo3d(source))
+}
+
+async function retryJob(jobId: string): ReturnType<RoomfitEditorApi['retryJob']> {
+  const retry = retries.get(jobId)
+  if (!retry) return rejection(`there is no job ${jobId}`)
+  const outcome = await retry()
+  return outcome.ok ? { ok: true, jobId: outcome.jobId } : outcome
+}
+
+function placeAsset(assetId: string, zoneId?: string): ReturnType<RoomfitEditorApi['placeAsset']> {
+  const layout = editor.history.present
+  const asset = layout.assets.find(({ id }) => id === assetId)
+  if (!asset) return { ok: false, reason: 'unknown-asset' }
+  const target = zoneId ?? editor.focusedZone ?? zoneAt(layout, boundsCenter(roomBounds(layout.room))) ?? ''
+  const spot = findSpot(layout, target, asset.dimensions)
+  if (!spot.ok) return spot
+  const item = placeItem(layout, asset.id, spot)
+  update({ selectedId: item.id })
+  return { ok: true, itemId: item.id }
+}
+
+function renameZone(zoneId: string, name: string): ReturnType<RoomfitEditorApi['renameZone']> {
+  const layout = editor.history.present
+  const { room } = layout
+  if (room.kind !== 'plan' || !room.zones.some(({ id }) => id === zoneId)) return { ok: false, reason: 'unknown-zone' }
+  const trimmed = name.trim()
+  if (!trimmed) return { ok: false, reason: 'empty-name' }
+  const zones = room.zones.map((zone) => (zone.id === zoneId ? { ...zone, name: trimmed } : zone))
+  setHistory(commit(editor.history, { ...layout, room: { ...room, zones } }), 'none')
+  return { ok: true }
+}
 /** The `window.roomfit` implementation; UI gestures call these same functions. */
 export const api: RoomfitEditorApi = {
   ready: () => threeReady,
@@ -404,6 +534,12 @@ export const api: RoomfitEditorApi = {
   },
   addProductFromPhoto,
   renderInComfy,
+  placeAsset,
+  renameZone,
+  photo3d,
+  retryJob,
+  openPhoto3d: () => {},
+  closePhoto3d: () => {},
   setView: (view) => {
     update({ view })
     if (view === 'studio') api.setCamera(focusFrame())

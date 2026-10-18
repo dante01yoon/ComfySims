@@ -25,6 +25,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.roomfit.ready())
   await page.evaluate((layout) => window.roomfit.load(layout), house)
   await page.evaluate(() => window.roomfit.setView('studio'))
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
 })
 
 test('AC-47 finished product and render jobs get cards with a thumbnail and their actions', async ({ page }) => {

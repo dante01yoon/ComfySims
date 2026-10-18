@@ -96,6 +96,17 @@ function inPolygon(point: Point, polygon: readonly Point[]): boolean {
   return crossings.length % 2 === 1
 }
 
+/** Ids of the items whose footprint centre lies inside the zone's polygon; empty for an unknown zone or a box room. */
+export function itemsInZone(layout: RoomLayout, zoneId: string): string[] {
+  const zone = layout.room.kind === 'plan' ? layout.room.zones.find(({ id }) => id === zoneId) : undefined
+  return zone ? layout.items.filter(({ position }) => inPolygon(position, zone.polygon)).map(({ id }) => id) : []
+}
+
+/** The first zone whose polygon contains the point, or null. */
+export function zoneAt(layout: RoomLayout, point: Point): string | null {
+  return layout.room.kind === 'plan' ? (layout.room.zones.find(({ polygon }) => inPolygon(point, polygon))?.id ?? null) : null
+}
+
 /** Solid stretches of a wall's centre line as [start, end] distances from `from`, minus openings of the given kinds (doors by default). */
 export function solidStretches(wall: Wall, openings: readonly Opening[], kinds: readonly Opening['kind'][] = ['door']): [number, number][] {
   const length = Math.hypot(wall.to.x - wall.from.x, wall.to.z - wall.from.z)

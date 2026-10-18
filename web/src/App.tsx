@@ -15,11 +15,27 @@ import {
   type RoomLayout,
   type Zone
 } from '../../packages/schema/src/index.ts'
-import type { ComfyJob, ComfyJobStatus, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
-import { api, attachControls, attachThree, beginDrag, endDrag, isFinished, loadUnknown, markCommitted, select, snapshot, subscribe, wallCutCm } from './editor.ts'
+import type { Job, JobKind, JobStep } from '../../packages/schema/src/index.ts'
+import type { RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
+import {
+  api,
+  attachControls,
+  attachThree,
+  beginDrag,
+  closeRender,
+  endDrag,
+  isFinished,
+  loadUnknown,
+  markCommitted,
+  select,
+  snapshot,
+  subscribe,
+  wallCutCm
+} from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
+import { base64Of, elapsedSeconds, RoomLabels, useClock, WorkspaceRail } from './workspace.tsx'
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -308,35 +324,22 @@ const SIZE_FIELDS = [
   ['height', 'Height (cm)']
 ] as const
 
-function base64Of(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
-
 type SizeInput = Record<(typeof SIZE_FIELDS)[number][0], string>
 
-const STEP_LABELS: Record<ComfyJob['kind'], Partial<Record<ComfyJobStatus, string>>> = {
+const STEP_LABELS: Record<JobKind, Partial<Record<JobStep, string>>> = {
   product: {
     uploading: 'Uploading photo',
     queued: 'Queued on ComfyUI',
-    in_progress: 'Generating 3D on ComfyUI',
+    generating: 'Generating 3D on ComfyUI',
     downloading: 'Downloading the model'
   },
   render: {
     uploading: 'Uploading depth pass',
     queued: 'Queued on ComfyUI',
-    in_progress: 'Rendering on ComfyUI',
+    generating: 'Rendering on ComfyUI',
     downloading: 'Downloading the render'
-  }
-}
-
-function runStartIndex(jobs: readonly ComfyJob[]): number {
-  const earlier = jobs.slice(0, -1).map(isFinished)
-  return earlier.lastIndexOf(true) + 1
+  },
+  photo3d: {}
 }
 
 type FitSummary = Extract<Awaited<ReturnType<RoomfitEditorApi['addProductFromPhoto']>>, { ok: true }>['report']
@@ -353,29 +356,13 @@ function fittingStep(size: SizeInput): string {
   return listed.every(Boolean) ? `Fitting to ${listed.join(' × ')} cm` : 'Fitting to the listed size'
 }
 
-function statusLine(job: ComfyJob | undefined, fit: FitSummary | null, size: SizeInput, seconds: number): string {
+function statusLine(job: Job | undefined, fit: FitSummary | null, size: SizeInput, seconds: number): string {
   if (!job) return 'Ready'
-  if (job.status === 'failed') return `Failed: ${job.message ?? 'unknown error'}`
-  if (job.status === 'done') return job.kind === 'product' ? placedLine(fit) : `Rendered in ${seconds} s`
-  const step = job.status === 'fitting' ? fittingStep(size) : `${STEP_LABELS[job.kind][job.status]}…`
+  const status = job.steps.at(-1)?.status ?? 'queued'
+  if (status === 'failed') return `Failed: ${job.message ?? 'unknown error'}`
+  if (status === 'done') return job.kind === 'product' ? placedLine(fit) : `Rendered in ${seconds} s`
+  const step = status === 'fitting' ? fittingStep(size) : `${STEP_LABELS[job.kind][status] ?? status}…`
   return `${step} ${seconds} s`
-}
-
-function useRunSeconds(jobs: readonly ComfyJob[], running: boolean): number {
-  const startedAt = useRef(new Map<number, number>())
-  const [now, setNow] = useState(Date.now)
-  const start = runStartIndex(jobs)
-  if (jobs.length > 0 && !startedAt.current.has(start)) startedAt.current.set(start, Date.now())
-
-  useEffect(() => {
-    if (!running) return
-    setNow(Date.now())
-    const timer = setInterval(() => setNow(Date.now()), 250)
-    return () => clearInterval(timer)
-  }, [running])
-
-  const began = startedAt.current.get(start)
-  return began === undefined ? 0 : Math.max(0, Math.floor((now - began) / 1000))
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -387,11 +374,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function LastRender({ studio }: { studio: boolean }) {
-  const { lastRender, renderPrompt } = useSyncExternalStore(subscribe, snapshot)
-  const [closedRender, setClosedRender] = useState<string | null>(null)
-  if (!lastRender || lastRender === closedRender) return null
-  return <RenderOverlay image={lastRender} prompt={renderPrompt} studio={studio} onClose={() => setClosedRender(lastRender)} />
+function OpenedRender({ studio }: { studio: boolean }) {
+  const { openedRender } = useSyncExternalStore(subscribe, snapshot)
+  if (!openedRender) return null
+  return <RenderOverlay image={openedRender.image} prompt={openedRender.caption} studio={studio} onClose={closeRender} />
 }
 
 function RenderOverlay({ image, prompt, studio, onClose }: { image: string; prompt: string; studio: boolean; onClose: () => void }) {
@@ -415,8 +401,8 @@ function ComfyPanel() {
   const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
   const [prompt, setPrompt] = useState('')
   const job = jobs.at(-1)
-  const busy = job !== undefined && !isFinished(job)
-  const seconds = useRunSeconds(jobs, busy)
+  const now = useClock(job !== undefined && !isFinished(job))
+  const seconds = job ? elapsedSeconds(job, now) : 0
 
   const render = () => api.renderInComfy({ prompt })
 
@@ -451,13 +437,13 @@ function ComfyPanel() {
           <option value="uniform">uniform</option>
         </select>
       </Field>
-      <button className="primary" onClick={generate3d} disabled={busy || !photo}>Generate 3D</button>
+      <button className="primary" onClick={generate3d} disabled={!photo}>Generate 3D</button>
       <h2>Render</h2>
       <Field label="Render prompt">
         <textarea rows={3} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
       </Field>
-      <button className="primary" onClick={render} disabled={busy || !prompt.trim()}>Render</button>
-      <div role="status" className={job?.status === 'failed' ? 'status problem' : 'status'}>
+      <button className="primary" onClick={render} disabled={!prompt.trim()}>Render</button>
+      <div role="status" className={job?.steps.at(-1)?.status === 'failed' ? 'status problem' : 'status'}>
         {statusLine(job, placedFit, size, seconds)}
       </div>
     </>
@@ -487,6 +473,7 @@ export function App() {
     [layout]
   )
   const studio = editor.view === 'studio'
+  const [railOpen, setRailOpen] = useState(true)
   useKeyboardShortcuts()
 
   return (
@@ -516,15 +503,18 @@ export function App() {
               />
             ) : null
           })}
+          <RoomLabels />
         </Canvas>
         {studio && <ZoneChips room={layout.room} />}
         {studio && <PresetBar room={layout.room} />}
-        <button className="view-toggle" onClick={() => api.setView(studio ? 'editor' : 'studio')}>
-          {studio ? 'Editor' : 'Studio'}
-        </button>
+        <div className="view-toggles">
+          <button aria-pressed={railOpen} onClick={() => setRailOpen(!railOpen)}>Workspace</button>
+          <button onClick={() => api.setView(studio ? 'editor' : 'studio')}>{studio ? 'Editor' : 'Studio'}</button>
+        </div>
       </main>
       <Panel hidden={studio} />
-      <LastRender studio={studio} />
+      {railOpen && <WorkspaceRail />}
+      <OpenedRender studio={studio} />
     </>
   )
 }

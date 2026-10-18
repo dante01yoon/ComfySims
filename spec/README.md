@@ -18,7 +18,7 @@ New features start as a copy of `spec/TEMPLATE.md` with status `Draft`, go to th
 | Status | Meaning | Verify rule |
 | --- | --- | --- |
 | `active` | Must hold now | Needs at least one passing test and no failing test |
-| `planned` | Agreed, not built yet | May have `it.todo` placeholders; reported, never fails |
+| `planned` | Agreed, not built yet | Tests may exist and fail (shown as `TODO*`); reported, never fails |
 | `manual` | Checked by a person (demo, visual) | Reported with the evidence link in the spec |
 
 Moving an AC from `planned` to `active` is a spec change, so it happens in a spec session.

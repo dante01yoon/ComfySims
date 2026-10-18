@@ -56,7 +56,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
       const entry = prompts.get(job[1])
       if (!entry) return json(404, { error: 'not found' })
       entry.polls += 1
-      if (entry.polls < 2 || (entry.slow && Date.now() - entry.createdAt < 3000)) return json(200, { id: job[1], status: 'in_progress', create_time: 0, update_time: 0 })
+      if (entry.polls < 2 || (entry.slow && Date.now() - entry.createdAt < 8000)) return json(200, { id: job[1], status: 'in_progress', create_time: 0, update_time: 0 })
       if (failJobs || JSON.stringify(entry.prompt).includes('fail-upload')) {
         return json(200, { id: job[1], status: 'failed', create_time: 0, update_time: 0, execution_error: { node_id: '3', node_type: 'KSampler', exception_message: 'out of memory', exception_type: 'RuntimeError', traceback: [], current_inputs: {}, current_outputs: {} } })
       }

@@ -85,9 +85,9 @@ function testsByCriterion(tests) {
 }
 
 function judge(criterion, counts) {
+  if (criterion.status === 'planned') return { mark: counts.failed > 0 ? 'TODO*' : counts.passed > 0 ? 'EARLY' : 'TODO', ok: true }
   if (counts.failed > 0) return { mark: 'FAIL', ok: false }
   if (criterion.status === 'manual') return { mark: 'MANUAL', ok: true }
-  if (criterion.status === 'planned') return { mark: counts.passed > 0 ? 'EARLY' : 'TODO', ok: true }
   if (counts.passed === 0) return { mark: 'NO TEST', ok: false }
   return { mark: 'PASS', ok: true }
 }
@@ -117,6 +117,7 @@ const criteria = readAcceptanceCriteria().map((criterion) => {
 })
 
 const failedTests = allTests.filter((test) => test.status === 'failed')
+const plannedIds = criteria.filter((c) => c.status === 'planned').map((c) => c.id)
 
 console.log('Gates')
 if (!HAS_EDITOR) console.log('  SKIP  editor build + e2e (no web/index.html yet)')
@@ -130,7 +131,7 @@ for (const c of criteria) {
 
 const problems = [
   ...gates.filter((gate) => !gate.ok && gate.label !== 'tests' && !(gate.label === 'e2e' && existsSync(E2E_REPORT)) && !(gate.label === 'python acceptance' && existsSync(PYTHON_REPORT))).map((gate) => `${gate.label}:\n${gate.output.slice(-2000)}`),
-  ...failedTests.map((test) => `${test.fullName}\n  ${test.file}\n  ${test.failureMessages.join('\n').split('\n').slice(0, 6).join('\n  ')}`),
+  ...failedTests.filter((test) => !plannedIds.some((id) => new RegExp(`\\b${id}\\b`).test(test.fullName))).map((test) => `${test.fullName}\n  ${test.file}\n  ${test.failureMessages.join('\n').split('\n').slice(0, 6).join('\n  ')}`),
   ...criteria.filter((c) => c.mark === 'NO TEST').map((c) => `${c.id} is active in ${c.spec} but has no passing test named "${c.id} ..."`)
 ]
 

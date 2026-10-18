@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../../harness/tools/lint-workflow.ts'
-import type { Dimensions, FitMode } from '../../schema/src/index.ts'
+import { DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type Job, type JobKind } from '../../schema/src/index.ts'
 
 export type PromptOutcome = { ok: true; prompt: ApiWorkflow } | { ok: false; missing: string[] }
 
@@ -191,3 +191,14 @@ export function createComfyClient({ baseUrl, fetch: fetcher = fetch, pollMs = 10
 }
 
 export type ComfyClient = ReturnType<typeof createComfyClient>
+
+/** Median duration in seconds of the finished (done) jobs of a kind, or the documented default before any. */
+export function expectedSeconds(jobs: readonly Job[], kind: JobKind): number {
+  const durations = jobs
+    .filter((job) => job.kind === kind && job.steps.at(-1)?.status === 'done')
+    .map(({ steps }) => (steps.at(-1)!.at - steps[0]!.at) / 1000)
+    .sort((a, b) => a - b)
+  if (durations.length === 0) return DEFAULT_EXPECTED_SECONDS[kind]
+  const middle = Math.floor(durations.length / 2)
+  return durations.length % 2 === 1 ? durations[middle]! : (durations[middle - 1]! + durations[middle]!) / 2
+}

@@ -1,5 +1,5 @@
 import { createComfyClient, savedFiles, type Failure, type PromptOutcome, type SavedFile } from '../../packages/comfy/src/index.ts'
-import type { ComfyJob } from '../../spec/contracts/editor-api.ts'
+import type { JobStep } from '../../packages/schema/src/index.ts'
 
 const COMFY_OUTPUT = 'comfy-output:'
 
@@ -21,34 +21,29 @@ export function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31)
 }
 
-/** Uploads an input, runs the workflow built for it and downloads the file it saved, reporting each status. */
+/** Uploads an input, runs the workflow built for it and downloads the file it saved, reporting each step. */
 export async function generate(
-  kind: ComfyJob['kind'],
-  report: (job: ComfyJob) => void,
+  step: (status: JobStep) => void,
   input: { file: Blob; fileName: string },
   build: (uploadedName: string) => PromptOutcome
 ): Promise<{ ok: true; bytes: Uint8Array; file: SavedFile } | Failure> {
-  const fail = (failure: Failure): Failure => {
-    report({ kind, status: 'failed', message: failure.message })
-    return failure
-  }
-  report({ kind, status: 'uploading' })
+  step('uploading')
   const uploaded = await comfy.upload(input.file, input.fileName)
-  if (!uploaded.ok) return fail(uploaded)
+  if (!uploaded.ok) return uploaded
   const built = build(uploaded.name)
-  if (!built.ok) return fail({ ok: false, reason: 'rejected', message: `the workflow is missing ${built.missing.join(', ')}` })
+  if (!built.ok) return { ok: false, reason: 'rejected', message: `the workflow is missing ${built.missing.join(', ')}` }
   const queued = await comfy.queue(built.prompt)
-  if (!queued.ok) return fail(queued)
-  report({ kind, status: 'queued' })
+  if (!queued.ok) return queued
+  step('queued')
   const finished = await comfy.waitForJob(queued.id, {
     onStatus: (status) => {
-      if (status === 'in_progress') report({ kind, status })
+      if (status === 'in_progress') step('generating')
     }
   })
-  if (!finished.ok) return fail(finished)
+  if (!finished.ok) return finished
   const [file] = savedFiles(built.prompt, finished.outputs)
-  if (!file) return fail({ ok: false, reason: 'failed', message: 'the workflow saved no file' })
-  report({ kind, status: 'downloading' })
+  if (!file) return { ok: false, reason: 'failed', message: 'the workflow saved no file' }
+  step('downloading')
   const downloaded = await comfy.download(file)
-  return downloaded.ok ? { ok: true, bytes: downloaded.bytes, file } : fail(downloaded)
+  return downloaded.ok ? { ok: true, bytes: downloaded.bytes, file } : downloaded
 }

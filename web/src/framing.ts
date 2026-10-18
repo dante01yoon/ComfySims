@@ -25,6 +25,18 @@ export function compassDirection(azimuthDeg: number, elevationDeg: number): Vec3
   return { x: Math.sin(azimuth) * Math.cos(elevation), y: Math.sin(elevation), z: -Math.cos(azimuth) * Math.cos(elevation) }
 }
 
+/** Area centroid of a simple polygon in cm. */
+export function polygonCentroid(polygon: readonly { x: number; z: number }[]): { x: number; z: number } {
+  const edges = polygon.map((a, index) => {
+    const b = polygon[(index + 1) % polygon.length]!
+    return { a, b, cross: a.x * b.z - b.x * a.z }
+  })
+  const twiceArea = edges.reduce((sum, { cross }) => sum + cross, 0)
+  if (twiceArea === 0) return boundsCenter(polygonBounds(polygon))
+  const sum = (axis: 'x' | 'z') => edges.reduce((total, { a, b, cross }) => total + (a[axis] + b[axis]) * cross, 0)
+  return { x: sum('x') / (3 * twiceArea), z: sum('z') / (3 * twiceArea) }
+}
+
 /** Floor-plan extent of a zone polygon in cm. */
 export function polygonBounds(polygon: readonly { x: number; z: number }[]): Bounds {
   const xs = polygon.map(({ x }) => x)
