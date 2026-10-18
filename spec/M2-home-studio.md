@@ -23,6 +23,10 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-36 | active | Before fitting, a generated model is turned about Y to its smallest footprint with its long side on the longer listed axis, so a model generated from a three-quarter photo fits without distortion; the applied yaw is reported and alignment can be switched off |
 | AC-37 | active | Fit mode `auto` uses `exact` when the aligned distortion is at most 1.15 and `uniform` otherwise, reporting both the requested and the chosen mode |
 | AC-38 | active | Shared domain types (out-of-bounds reasons, collisions, fit modes, fit report) are defined once in `packages/schema`; a type-level check fails typecheck when placement, fit or the editor contract drift from them |
+| AC-39 | active | `findSpot` places an item of a given size in a zone with its back flush against a solid wall (never across a door), its front facing the room, and no collisions or wall problems; it reports `no-space` or `unknown-zone` |
+| AC-40 | active | Focusing a room (API or the room chips in the studio) frames that room; clearing focus returns to the whole house |
+| AC-41 | active | A product generated from a photo lands in the requested or focused room through `findSpot`; a room with no space is reported and nothing changes |
+| AC-42 | active | Rendering in the studio uses the current (focused) view and keeps it |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence 2026-10-18: `docs/recordings/demo-ac35-studio.md`) |
 
 ## Plan rooms (AC-29 ~ AC-31)
@@ -67,3 +71,10 @@ Found on 2026-10-18 by generating the demo-house furniture on Comfy Cloud: 13 of
 ## Contract gate (AC-38)
 
 Added after the spec session left the editor contract behind three times (impl-05, impl-07, impl-09 each ended `BLOCKED:`). `packages/schema/src/domain.ts` owns `OutOfBoundsReason`, `Collision`, `AppliedFitMode`, `FitReport`; `spec/contracts/editor-api.ts` uses them; `acceptance/contract-types.ts` asserts the public signatures of `outOfBounds`, `collisions`, `fitGlbBytes` and the editor contract are equal to them. `packages/schema/` is now protected like `spec/` (it is the contract). Mutation-checked: removing `hits-wall` from the shared type fails typecheck in `contract-types.ts`.
+
+## House-first editing (AC-39 ~ AC-42)
+
+- `findSpot(layout, zoneId, dimensions)` in `packages/placement` returns `FindSpotOutcome` (`packages/schema/src/domain.ts`). Candidates: the solid stretches of walls bounding the zone (doors and windows excluded), longest first; along each, from its middle outwards in 5 cm steps; the item's back (−Z) flush against the wall's inner face (+0.1 cm), front (+Z, ADR-0002) facing into the zone; positions snapped to 5 cm along the wall; first candidate with no collisions and no out-of-bounds wins. Box rooms: the four walls of the box. This resolves the open "face the room" question.
+- `focusZone(zoneId | null)`: camera target at the zone's centre, distance fitted to the zone, same three-quarter elevation; `null` returns to the whole-house frame. Studio shows one chip per zone (button named by the zone name) above the preset bar; the active one is pressed.
+- `addProductFromPhoto({ …, zoneId? })`: target zone = `zoneId` ?? focused zone; if there is one, the item goes where `findSpot` says (failure `no-space`, nothing added); otherwise as before (room centre).
+- `renderInComfy` renders from the current camera and leaves it unchanged; works in both views.

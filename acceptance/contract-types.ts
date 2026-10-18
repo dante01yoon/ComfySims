@@ -18,3 +18,8 @@ export type ContractChecks = [
   Assert<Equal<NonNullable<ProductRequest['mode']>, FitMode>>,
   Assert<Equal<ProductReportOf<Awaited<ReturnType<RoomfitEditorApi['addProductFromPhoto']>>>, Omit<FitReport, 'scale'>>>
 ]
+
+import type { FindSpotOutcome } from '../packages/schema/src/index.ts'
+import type { findSpot } from '../packages/placement/src/index.ts'
+
+export type FindSpotCheck = Assert<Equal<ReturnType<typeof findSpot>, FindSpotOutcome>>

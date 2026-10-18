@@ -20,6 +20,7 @@ export type EditorState = {
   lastRender: string | null
   view: EditorView
   scene: ScenePreset
+  focusedZone: string | null
 }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
@@ -28,7 +29,7 @@ export type ComfyJobStatus = 'uploading' | 'queued' | 'in_progress' | 'downloadi
 
 export type ComfyJob = { kind: 'product' | 'render'; status: ComfyJobStatus; message?: string }
 
-export type ComfyFailure = { ok: false; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled' | 'unreadable'; message: string }
+export type ComfyFailure = { ok: false; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled' | 'unreadable' | 'no-space'; message: string }
 
 export type ProductRequest = {
   fileName: string
@@ -37,6 +38,7 @@ export type ProductRequest = {
   dimensions: { width: number; depth: number; height: number }
   mode?: FitMode
   seed?: number
+  zoneId?: string
 }
 
 export type EditorView = 'editor' | 'studio'
@@ -75,6 +77,7 @@ export type RoomfitEditorApi = {
   setScene(preset: ScenePreset): void
   lighting(): Lighting
   camera(): { position: Vec3; target: Vec3 }
+  focusZone(zoneId: string | null): void
 }
 
 declare global {

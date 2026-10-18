@@ -18,3 +18,8 @@ export type FitReport = {
   distortion: number
   flagged: boolean
 }
+
+/** Where a new item of a given size can stand in a zone: back against a wall, front (+Z) facing the room. */
+export type FindSpotOutcome =
+  | { ok: true; position: { x: number; y: number; z: number }; rotationY: number; wallId: string }
+  | { ok: false; reason: 'unknown-zone' | 'no-space' }
