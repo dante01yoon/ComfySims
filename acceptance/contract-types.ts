@@ -45,3 +45,11 @@ export type M5Checks = [
   Assert<Equal<EditorState['viewer360'], Viewer360 | null>>,
   Assert<Equal<Extract<JobKind, 'pano360'>, 'pano360'>>
 ]
+
+import type { BackendKind } from '../packages/schema/src/index.ts'
+import type { BackendState } from '../spec/contracts/editor-api.ts'
+
+export type M6Checks = [
+  Assert<Equal<EditorState['backend'], BackendState>>,
+  Assert<Equal<BackendState['kind'], BackendKind>>
+]

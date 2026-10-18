@@ -1,0 +1,14 @@
+{
+ "local": {
+  "product": "product-to-glb.json",
+  "render": "render-from-depth.json",
+  "photo3d": "local/photo-to-3d-moge.json",
+  "pano360": "cloud/pano360-from-depth.json"
+ },
+ "cloud": {
+  "product": "cloud/product-to-glb-pixal3d.json",
+  "render": "render-from-depth.json",
+  "photo3d": "cloud/photo-to-3d-moge.json",
+  "pano360": "cloud/pano360-from-depth.json"
+ }
+}

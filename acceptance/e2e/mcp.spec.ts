@@ -110,6 +110,10 @@ test('AC-67 view_360 returns the panorama as PNG image content and saves the fil
   expect(state.undoLabels.filter((label) => label === 'mcp:view_360')).toHaveLength(0)
 })
 
+test('AC-74 get_backend reports the backend the editor uses and what it cannot run', async () => {
+  await expect.poll(async () => json((await call('get_backend')).content), { timeout: 15_000 }).toEqual({ kind: 'cloud', url: 'http://127.0.0.1:8199', ready: true, unavailable: [] })
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })

@@ -33,11 +33,15 @@ export type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'f
 /** Source image for a 3D photo: a finished render job or an uploaded photo. */
 export type Photo3dSource = { kind: 'render'; jobId: string } | { kind: 'upload'; fileName: string; imageBase64: string }
 
+/** Where ComfyUI work runs: the user's own ComfyUI or Comfy Cloud. */
+export type BackendKind = 'local' | 'cloud'
+
 /** One ComfyUI job as the editor tracks it. */
 export type Job = {
   id: string
   kind: JobKind
   title: string
+  backend?: BackendKind
   steps: { status: JobStep; at: number }[]
   message?: string
   result?: { image?: string; glb?: string; itemId?: string }

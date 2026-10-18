@@ -16,6 +16,7 @@
   "photo3d": { "required": [], "properties": { "renderJobId": "string", "path": "string" } },
   "screenshot": { "required": [], "properties": {} },
   "get_jobs": { "required": [], "properties": {} },
-  "view_360": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string" } }
+  "view_360": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
+  "get_backend": { "required": [], "properties": {} }
  }
 }

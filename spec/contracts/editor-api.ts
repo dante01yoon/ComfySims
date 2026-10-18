@@ -1,4 +1,4 @@
-import type { Collision, FitMode, FitReport, Job, OutOfBoundsReason, Photo3dSource, RoomLayout } from '../../packages/schema/src/index.ts'
+import type { BackendKind, Collision, FitMode, FitReport, Job, JobKind, OutOfBoundsReason, Photo3dSource, RoomLayout } from '../../packages/schema/src/index.ts'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -23,6 +23,7 @@ export type EditorState = {
   focusedZone: string | null
   photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
   viewer360: Viewer360 | null
+  backend: BackendState
   undoLabels: string[]
   agentConnected: boolean
   wallCutCm: number
@@ -34,6 +35,18 @@ export type Viewer360 = { jobId: string; zoneId: string; yawDegrees: number; pit
 
 /** An equirectangular depth panorama from a room's standing point: column 0 is yaw −180, the centre column yaw 0 (+Z); row 0 is pitch +90. */
 export type DepthPanorama = { image: string; width: number; height: number; standingPoint: { x: number; z: number }; eyeHeightCm: number }
+
+/** The ComfyUI the editor sends new jobs to, and which job kinds it can run (node classes and model files checked against its /api/object_info). */
+export type BackendState = {
+  kind: BackendKind
+  url: string
+  status: 'checking' | 'ready' | 'unreachable'
+  unavailable: { kind: JobKind; missing: string[] }[]
+  cloudConfigured: boolean
+}
+
+/** The workflow a job ran: its file under workflows/, the backend, and the exact API graph submitted. */
+export type JobWorkflow = { file: string; backend: BackendKind; submitted: Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }> }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
@@ -99,6 +112,10 @@ export type RoomfitEditorApi = {
   view360(request?: { zoneId?: string; prompt?: string }): Promise<{ ok: true; jobId: string; image: string } | { ok: false; reason: 'no-room' } | ComfyFailure>
   open360(jobId: string): void
   close360(): void
+  backend(): BackendState
+  setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState>
+  checkBackend(): Promise<BackendState>
+  jobWorkflow(jobId: string): JobWorkflow | null
 }
 
 declare global {

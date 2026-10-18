@@ -4,13 +4,29 @@ import { readFileSync } from 'node:fs'
 const GLB = readFileSync(new URL('../../fixtures/glb/generated-offset-box.glb', import.meta.url))
 const PHOTO3D_GLB = readFileSync(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url))
 const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', import.meta.url))
+const snapshotAt = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'))
+const LOCAL_WITHOUT = ['LoadMoGeModel', 'MoGeInference', 'MoGePointMapToMesh']
+
+/** /api/object_info as a backend would serve it: `cloud` from the Cloud snapshot; `local` from the local snapshot without MoGe nodes and with only an SDXL ControlNet installed. */
+function catalogOf(kind) {
+  const snapshot = snapshotAt(kind === 'local' ? 'spec/contracts/comfyui-object-info.json' : 'spec/contracts/comfy-cloud-object-info.json')
+  const classes = snapshot.classes.filter((name) => kind !== 'local' || !LOCAL_WITHOUT.includes(name))
+  const catalog = Object.fromEntries(classes.map((name) => [name, snapshot.nodes[name] ?? { input: { required: {} }, output: [] }]))
+  if (kind === 'local') {
+    catalog.ControlNetLoader = structuredClone(catalog.ControlNetLoader)
+    catalog.ControlNetLoader.input.required.control_net_name = [['controlnet-depth-sdxl-1.0.safetensors']]
+  }
+  return catalog
+}
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
   'base64'
 )
 
 /** A ComfyUI/Comfy Cloud stand-in for the harness: records every request and answers like Cloud's v1 API. */
-export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = false, requireKey = null } = {}) {
+export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = false, requireKey = null, catalog = 'cloud' } = {}) {
+  const objectInfo = catalogOf(catalog)
+  let lastPrompt = null
   const requests = []
   const prompts = new Map()
   const uploadNames = new Map()
@@ -38,7 +54,9 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
 
     if (url.pathname === '/__requests') return json(200, requests.filter((entry) => entry.url !== '/__requests').map(({ body, ...entry }) => entry))
     if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null })))
+    if (url.pathname === '/__last-prompt') return json(200, lastPrompt)
     if (requireKey && request.headers['x-api-key'] !== requireKey) return json(401, { error: 'unauthorized' })
+    if (request.method === 'GET' && url.pathname === '/api/object_info') return json(200, objectInfo)
 
     if (request.method === 'POST' && url.pathname === '/api/upload/image') {
       uploads += 1
@@ -51,6 +69,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
       jobs += 1
       const id = `job-${jobs}`
       const prompt = JSON.parse(body.toString('utf8')).prompt
+      lastPrompt = prompt
       prompts.set(id, { prompt, polls: 0, createdAt: Date.now(), slow: JSON.stringify(prompt).includes('slow-upload') })
       return json(200, { prompt_id: id, number: jobs })
     }
@@ -93,6 +112,8 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  await startFakeComfy({ requireKey: process.env.FAKE_COMFY_REQUIRE_KEY ?? null })
-  console.log('fake comfy on http://127.0.0.1:8199 (storage :8197)')
+  const port = Number(process.env.FAKE_COMFY_PORT ?? 8199)
+  const storagePort = Number(process.env.FAKE_COMFY_STORAGE_PORT ?? 8197)
+  await startFakeComfy({ port, storagePort, requireKey: process.env.FAKE_COMFY_REQUIRE_KEY ?? null, catalog: process.env.FAKE_COMFY_CATALOG ?? 'cloud' })
+  console.log(`fake comfy on http://127.0.0.1:${port} (storage :${storagePort})`)
 }

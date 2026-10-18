@@ -25,7 +25,7 @@ function portHolder(port) {
 }
 
 function e2eGate() {
-  for (const [port, role] of [[5179, 'editor dev server'], [8199, 'fake ComfyUI'], [8197, 'fake ComfyUI storage']]) {
+  for (const [port, role] of [[5179, 'editor dev server'], [8199, 'fake ComfyUI'], [8197, 'fake ComfyUI storage'], [8196, 'fake local ComfyUI'], [8195, 'fake local ComfyUI storage']]) {
     const holders = portHolder(port)
     if (holders.length > 0) {
       return {

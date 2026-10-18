@@ -39,41 +39,43 @@ Non-goals (M6)
 
 ## 4. Screens and states
 
-- Workspace rail, top: backend chip **"Cloud · ready"** / **"Local · ready"** / **"… · checking…"** / **"… · unreachable"** / **"… · N workflows unavailable"**. Click → menu with **Cloud**, **Local**, a URL field for Local (default `http://127.0.0.1:8188`), **"Check again"**. Cloud is disabled with "No Cloud key in .env.local" when the server has none.
-- Job card: **"Workflow"** button on every card (any state). Panel title "<workflow name> · <backend>"; sections Nodes, Filled inputs, buttons **"Download JSON"**, **"Open in ComfyUI"**, **"Close"**.
-- Disabled actions show the reason inline with **"View workflow"**.
+- Workspace rail, top: a backend chip button whose name is exactly **"Cloud · ready"** / **"Local · ready"** / **"<kind> · checking"** / **"<kind> · unreachable"** / **"<kind> · N workflows unavailable"**. Clicking it opens a small menu: **"Use Cloud"**, **"Use Local"**, a text field **"Local ComfyUI URL"** (default `http://127.0.0.1:8188`), **"Check again"**. "Use Cloud" is disabled with the title "No Cloud key in .env.local" when the server has none.
+- Job card: **"Workflow"** button on every card (any state). It opens a dialog named **"Workflow"** showing the file (e.g. `render-from-depth.json`) and backend ("Cloud"/"Local"), the node list (title and class of each node), the inputs roomfit filled, and buttons **"Download JSON"**, **"Open in ComfyUI"**, **"Close"**.
+- Actions that the current backend cannot run are disabled, with a title naming what is missing (node classes or model files).
 
 ## 5. Behaviour rules
 
-- The proxy target becomes runtime state on the dev server: `POST /__roomfit/backend { kind, url? }` (same-origin only, 127.0.0.1 only); the key is attached only when `kind = cloud`. Default at start: the env var, as today.
-- Workflow sets: `workflows/local/*.json` and `workflows/cloud/*.json`, one per job kind (`product`, `render`, `photo3d`, `pano360`). Render is shared if it runs on both.
-- Readiness: on switch and on "Check again", fetch the backend's `/object_info` (Cloud: `/api/object_info`) and lint each workflow of that set against it (same linter as AC-8/AC-54). A kind is available only when its workflow lints clean.
-- Switching never cancels running jobs; each job records `backend` and polls the backend it started on.
+- The dev server owns the current backend: `GET/POST /__roomfit/backend` (`{ kind, url? }`; requests whose `Origin` is not the dev server get 403; 127.0.0.1 only). Env: `ROOMFIT_CLOUD_URL` (default `https://cloud.comfy.org`), `ROOMFIT_LOCAL_URL` (default `http://127.0.0.1:8188`), `COMFY_CLOUD_API_KEY`; the starting backend is Cloud when `ROOMFIT_COMFY_URL` equals the Cloud URL, else Local at `ROOMFIT_COMFY_URL`. The key is attached only to requests that go to the Cloud URL. A newly opened editor shows the server's current backend.
+- Workflow sets: `workflows/sets.json` maps each backend and job kind (`product`, `render`, `photo3d`, `pano360`) to a file under `workflows/`. Local's MoGe workflow is `workflows/local/photo-to-3d-moge.json` (no `refine_steps`, which older ComfyUI lacks).
+- Readiness: on switch and on "Check again", fetch the backend's `/api/object_info`. A kind is unavailable when its workflow uses a node class the catalog lacks, or a string value of an input whose catalog spec is a non-empty option list (model files) that is not in that list; `missing` lists those class or file names. Unreachable backend → status `unreachable`.
+- Switching never cancels running jobs; each job records `backend` and all of its requests (polls, downloads) go to the backend it started on.
 - A job records the exact graph it submitted (after roomfit filled inputs). "Download JSON" saves that; "Open in ComfyUI": Local → opens `<url>/` in a new tab and copies the graph to the clipboard with "Paste into ComfyUI (Ctrl+V)"; Cloud → same with `https://cloud.comfy.org/`.
 - MCP `get_backend` returns `{ kind, url, ready, unavailable }`; there is no `set_backend` tool.
 
 ## 6. Contract and data changes
 
-- `Job` gains `backend: { kind: 'local' | 'cloud', url }`, `workflow: { kind, file, submitted }` (the submitted API graph).
-- Editor API: `backend(): BackendState`, `setBackend({ kind, url? }): Promise<BackendState>`, `jobWorkflow(jobId)`, `state().backend`.
-- `spec/contracts/mcp-tools.json`: `get_backend`.
-- New `workflows/local/` (product → 3D with a locally installable model; candidate: Hunyuan3D 2.x / TRELLIS, chosen in the spike).
+- `packages/schema`: `BackendKind = 'local' | 'cloud'`; `Job.backend?`.
+- Editor API (`spec/contracts/editor-api.ts`): `BackendState { kind, url, status, unavailable: { kind, missing }[], cloudConfigured }`, `JobWorkflow { file, backend, submitted }`; `backend()`, `setBackend({ kind, url? })`, `checkBackend()`, `jobWorkflow(jobId)`, `state().backend`.
+- `spec/contracts/mcp-tools.json`: `get_backend` → `{ kind, url, ready, unavailable: JobKind[] }`.
+- `workflows/sets.json`, `workflows/local/photo-to-3d-moge.json`.
+- Harness: a second fake ComfyUI on :8196 (storage :8195) acting as an older local ComfyUI (no MoGe nodes, only an SDXL ControlNet installed); both fakes serve `/api/object_info` and `/__last-prompt`.
 
 ## 7. ComfyUI workflows
 
-- Local product → 3D: **spike needed** — which open image-to-3D runs on a typical local ComfyUI (Dante's Mac) within reason, and lints against the local catalog snapshot.
-- Local photo → 3D: MoGe nodes are in ComfyUI core recently; check against the local snapshot.
+- Local product → 3D stays `workflows/product-to-glb.json` (Hunyuan3D 2 + RoomfitFitMesh from the node pack) until the local spike picks a better open model; readiness reports it unavailable on a ComfyUI without those nodes or models.
+- Local photo → 3D: `workflows/local/photo-to-3d-moge.json`.
+- Finding while writing the sets: the pinned local ComfyUI has every class the Cloud workflows use (Pixal3D, MoGe…), so the real Local/Cloud difference is installed model files, the roomfit node pack, and node input versions (`refine_steps`).
 
 ## 8. Acceptance criteria
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-70 | planned | Switching backend in the app changes where new jobs queue (fake local vs fake cloud servers), without restarting, and running jobs keep polling where they started |
-| AC-71 | planned | The Cloud key is attached only to Cloud requests and never reaches the browser (extends AC-25) |
-| AC-72 | planned | Readiness: a backend missing a workflow's node marks that kind unavailable with the node name; its action is disabled with the reason |
-| AC-73 | planned | Every job card opens its workflow: node list, filled inputs, and "Download JSON" returns exactly the graph that was submitted |
-| AC-74 | planned | `get_backend` MCP tool returns kind, url, ready and unavailable kinds |
-| AC-75 | planned | Each workflow in `workflows/local/` lints against the local catalog snapshot, each in `workflows/cloud/` against the Cloud snapshot |
+| AC-70 | active | Switching backend in the app changes where new jobs queue (fake local vs fake cloud servers), without restarting, and running jobs keep polling where they started |
+| AC-71 | active | The Cloud key is attached only to Cloud requests and never reaches the browser (extends AC-25) |
+| AC-72 | active | Readiness: a backend missing a workflow's node marks that kind unavailable with the node name; its action is disabled with the reason |
+| AC-73 | active | Every job card opens its workflow: node list, filled inputs, and "Download JSON" returns exactly the graph that was submitted |
+| AC-74 | active | `get_backend` MCP tool returns kind, url, ready and unavailable kinds |
+| AC-75 | active | Each workflow in `workflows/local/` lints against the local catalog snapshot, each in `workflows/cloud/` against the Cloud snapshot |
 | AC-76 | manual | Recording: the same product placed on Local and on Cloud, with the workflow panel opened for each |
 
 ## 9. Test plan
@@ -102,3 +104,4 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 
 - 2026-10-18 Draft, from Dante's questions about Local/Cloud, MCP and seeing workflows.
 - 2026-10-18 Approved on the recommended answers; implement after M5.
+- 2026-10-18 Spec session: workflow-set manifest, local MoGe variant, Cloud catalog classes for product/render, backend contracts, second fake ComfyUI, AC-70~75 tests; ACs active.
