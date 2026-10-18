@@ -19,6 +19,11 @@
       .preset-bar button:hover { color: #fff; background: rgba(255, 255, 255, .08); }
       .preset-bar button[aria-pressed=true] { color: #1c1c1e; background: rgba(250, 246, 240, .92); }
       .preset-bar .dot { width: 8px; height: 8px; border-radius: 50%; }
+      .zone-chips { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: calc(100% - 32px); }
+      .zone-chips button { font: inherit; font-size: 12px; font-weight: 500; color: rgba(244, 239, 232, .85); background: rgba(24, 25, 27, .45); border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; padding: 5px 12px; cursor: pointer; backdrop-filter: blur(10px); transition: background .2s, color .2s; }
+      .zone-chips button:hover { color: #fff; background: rgba(24, 25, 27, .65); }
+      .zone-chips button[aria-pressed=true] { color: #1c1c1e; background: rgba(250, 246, 240, .92); }
+      .studio-render { inset: 0; }
       aside { padding: 14px 16px; border-left: 1px solid var(--line); overflow: auto; display: flex; flex-direction: column; gap: 10px; }
       aside h2 { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
       aside h2:first-of-type { border-top: 0; padding-top: 0; }

@@ -5,7 +5,7 @@ import { Box3, type Object3D, type Scene } from 'three'
 
 import { buildPhotoTo3dPrompt, buildRenderPrompt, type Failure } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
-import { collisions, outOfBounds, snapPosition } from '../../packages/placement/src/index.ts'
+import { collisions, findSpot, outOfBounds } from '../../packages/placement/src/index.ts'
 import { Dimensions, parseLayout, type Asset, type PlacedItem, type RoomLayout } from '../../packages/schema/src/index.ts'
 import type {
   ComfyFailure,
@@ -17,7 +17,8 @@ import type {
   RenderRequest,
   RoomfitEditorApi,
   SceneItem,
-  ScenePreset
+  ScenePreset,
+  Vec3
 } from '../../spec/contracts/editor-api.ts'
 import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
@@ -25,7 +26,7 @@ import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { studioCamera } from './framing.ts'
+import { polygonBounds, roomBounds, studioCamera } from './framing.ts'
 import { exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -45,6 +46,8 @@ export type Editor = {
   lastRender: string | null
   view: EditorView
   scene: ScenePreset
+  focusedZone: string | null
+  renderPrompt: string
   revision: number
 }
 
@@ -74,6 +77,8 @@ let editor: Editor = {
   lastRender: null,
   view: 'editor',
   scene: 'work',
+  focusedZone: null,
+  renderPrompt: '',
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -183,7 +188,7 @@ export function endDrag(): void {
 export async function loadUnknown(input: unknown): ReturnType<RoomfitEditorApi['load']> {
   const parsed = parseLayout(input)
   if (!parsed.ok) return { ok: false, issues: parsed.issues }
-  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none' })
+  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null })
   requestMeshes(parsed.layout)
   return { ok: true }
 }
@@ -200,8 +205,22 @@ function state(): EditorState {
     jobs: [...editor.jobs],
     lastRender: editor.lastRender,
     view: editor.view,
-    scene: editor.scene
+    scene: editor.scene,
+    focusedZone: editor.focusedZone
   }
+}
+
+function focusFrame(): { position: Vec3; target: Vec3 } {
+  const { room } = editor.history.present
+  const zone = room.kind === 'plan' ? room.zones.find(({ id }) => id === editor.focusedZone) : undefined
+  return studioCamera(zone ? polygonBounds(zone.polygon) : roomBounds(room))
+}
+
+function focusZone(zoneId: string | null): void {
+  const { room } = editor.history.present
+  if (zoneId !== null && (room.kind !== 'plan' || !room.zones.some(({ id }) => id === zoneId))) return
+  update({ focusedZone: zoneId })
+  api.setCamera(focusFrame())
 }
 
 function reportJob(job: ComfyJob): void {
@@ -229,14 +248,23 @@ async function blobAt(url: string): Promise<Blob> {
   return (await fetch(url)).blob()
 }
 
-function placeAtRoomCenter(asset: Asset): PlacedItem {
+type Placement = { ok: true; position: PlacedItem['position']; rotationY: number }
+
+function placementIn(zoneId: string | null, dimensions: Dimensions): Placement | ComfyFailure {
+  if (zoneId === null) return { ok: true, position: { x: 0, y: 0, z: 0 }, rotationY: 0 }
+  const spot = findSpot(editor.history.present, zoneId, dimensions)
+  if (spot.ok) return spot
+  const failure: ComfyFailure =
+    spot.reason === 'no-space'
+      ? { ok: false, reason: 'no-space', message: `no free wall in ${zoneId} for ${dimensions.width} × ${dimensions.depth} cm` }
+      : { ok: false, reason: 'rejected', message: `there is no room called ${zoneId}` }
+  reportJob({ kind: 'product', status: 'failed', message: failure.message })
+  return failure
+}
+
+function placeItem(asset: Asset, { position, rotationY }: Placement): PlacedItem {
   const layout = editor.history.present
-  const item: PlacedItem = {
-    id: uniqueId(asset.id, layout.items),
-    assetId: asset.id,
-    position: snapPosition({ x: 0, y: 0, z: 0 }),
-    rotationY: 0
-  }
+  const item: PlacedItem = { id: uniqueId(asset.id, layout.items), assetId: asset.id, position, rotationY }
   const next = { ...layout, assets: [...layout.assets, asset], items: [...layout.items, item] }
   setHistory(commit(editor.history, next), 'none')
   requestMeshes(next)
@@ -248,6 +276,9 @@ async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitE
   const name = request.name.trim()
   if (!name) return rejected('product', 'the product needs a name')
   if (!Dimensions.safeParse(request.dimensions).success) return rejected('product', 'width, depth and height must be positive centimeters')
+  const zoneId = request.zoneId ?? editor.focusedZone
+  const planned = placementIn(zoneId, request.dimensions)
+  if (!planned.ok) return planned
 
   const photo = await blobAt(`data:application/octet-stream;base64,${request.imageBase64}`)
   const seed = request.seed ?? randomSeed()
@@ -265,14 +296,16 @@ async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitE
   }
   const { flagged, requested, yawDegrees } = fitted.report
   const distortion = roundedToFloat32Noise(fitted.report.distortion)
-  const item = placeAtRoomCenter({
+  const placement = placementIn(zoneId, request.dimensions)
+  if (!placement.ok) return placement
+  const item = placeItem({
     id: uniqueId(name, editor.history.present.assets),
     name,
     uri: comfyOutputUri(generated.file),
     dimensions: request.dimensions,
     source: { kind: 'generated', workflow: PRODUCT_WORKFLOW },
     fit: { mode, distortion }
-  })
+  }, placement)
   reportJob({ kind: 'product', status: 'done' })
   return { ok: true, itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } }
 }
@@ -289,7 +322,7 @@ async function renderInComfy(request: RenderRequest): ReturnType<RoomfitEditorAp
 
   const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
   if (editor.lastRender) URL.revokeObjectURL(editor.lastRender)
-  update({ lastRender: image })
+  update({ lastRender: image, renderPrompt: request.prompt })
   reportJob({ kind: 'render', status: 'done' })
   return { ok: true, image }
 }
@@ -323,7 +356,7 @@ export const api: RoomfitEditorApi = {
   renderInComfy,
   setView: (view) => {
     update({ view })
-    if (view === 'studio') api.setCamera(studioCamera(editor.history.present.room))
+    if (view === 'studio') api.setCamera(focusFrame())
   },
   setScene: (scene) => update({ scene }),
   lighting: () => ({ preset: editor.scene, ...SCENE_LIGHTING[editor.scene] }),
@@ -331,5 +364,6 @@ export const api: RoomfitEditorApi = {
     const position = getThree?.().camera.position ?? { x: 0, y: 0, z: 0 }
     const target = controls?.target ?? { x: 0, y: 0, z: 0 }
     return { position: { x: position.x, y: position.y, z: position.z }, target: { x: target.x, y: target.y, z: target.z } }
-  }
+  },
+  focusZone
 }

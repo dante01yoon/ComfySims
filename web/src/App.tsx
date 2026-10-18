@@ -19,7 +19,7 @@ import type { ComfyJob, ComfyJobStatus, RoomfitEditorApi } from '../../spec/cont
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
-import { PresetBar, StudioScene } from './studio.tsx'
+import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -382,9 +382,16 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function RenderOverlay({ image, prompt, onClose }: { image: string; prompt: string; onClose: () => void }) {
+function LastRender({ studio }: { studio: boolean }) {
+  const { lastRender, renderPrompt } = useSyncExternalStore(subscribe, snapshot)
+  const [closedRender, setClosedRender] = useState<string | null>(null)
+  if (!lastRender || lastRender === closedRender) return null
+  return <RenderOverlay image={lastRender} prompt={renderPrompt} studio={studio} onClose={() => setClosedRender(lastRender)} />
+}
+
+function RenderOverlay({ image, prompt, studio, onClose }: { image: string; prompt: string; studio: boolean; onClose: () => void }) {
   return (
-    <div className="render-overlay">
+    <div className={studio ? 'render-overlay studio-render' : 'render-overlay'}>
       <figure>
         <img src={image} alt="Render result" />
         {prompt && <figcaption>{prompt}</figcaption>}
@@ -395,23 +402,18 @@ function RenderOverlay({ image, prompt, onClose }: { image: string; prompt: stri
 }
 
 function ComfyPanel() {
-  const { jobs, lastRender, history } = useSyncExternalStore(subscribe, snapshot)
+  const { jobs } = useSyncExternalStore(subscribe, snapshot)
   const [photo, setPhoto] = useState<File | null>(null)
   const [name, setName] = useState('')
   const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
   const [mode, setMode] = useState<FitMode>('auto')
   const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
   const [prompt, setPrompt] = useState('')
-  const [renderedPrompt, setRenderedPrompt] = useState('')
-  const [closedRender, setClosedRender] = useState<string | null>(null)
   const job = jobs.at(-1)
   const busy = job !== undefined && !isFinished(job)
   const seconds = useRunSeconds(jobs, busy)
 
-  const render = () => {
-    setRenderedPrompt(prompt)
-    return api.renderInComfy({ prompt })
-  }
+  const render = () => api.renderInComfy({ prompt })
 
   const generate3d = async () => {
     if (!photo) return
@@ -453,9 +455,6 @@ function ComfyPanel() {
       <div role="status" className={job?.status === 'failed' ? 'status problem' : 'status'}>
         {statusLine(job, placedFit, size, seconds)}
       </div>
-      {lastRender && lastRender !== closedRender && (
-        <RenderOverlay image={lastRender} prompt={renderedPrompt} onClose={() => setClosedRender(lastRender)} />
-      )}
     </>
   )
 }
@@ -513,12 +512,14 @@ export function App() {
             ) : null
           })}
         </Canvas>
+        {studio && <ZoneChips room={layout.room} />}
         {studio && <PresetBar />}
         <button className="view-toggle" onClick={() => api.setView(studio ? 'editor' : 'studio')}>
           {studio ? 'Editor' : 'Studio'}
         </button>
       </main>
       <Panel hidden={studio} />
+      <LastRender studio={studio} />
     </>
   )
 }

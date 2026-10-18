@@ -1,4 +1,4 @@
-import type { BoxRoom, Dimensions, Opening, PlacedItem, PlanRoom, RoomLayout, Wall } from '../../schema/src/index.ts'
+import type { BoxRoom, Dimensions, FindSpotOutcome, Opening, PlacedItem, PlanRoom, Room, RoomLayout, Wall } from '../../schema/src/index.ts'
 
 type Point = { x: number; z: number }
 type Footprint = { id: string; corners: Point[]; top: number }
@@ -146,6 +146,109 @@ export function outOfBounds(layout: RoomLayout): { itemId: string; reason: OutOf
     ]
     return reasons.map((reason) => ({ itemId: item.id, reason }))
   })
+}
+
+type Enclosure = { walls: readonly Wall[]; openings: readonly Opening[]; thickness: number; zone: readonly Point[] }
+type WallSide = { wall: Wall; stretch: [number, number]; inward: Point }
+
+const SPOT_STEP_CM = 5
+const WALL_CLEARANCE_CM = 0.1
+const PROBE_ID = '\u0000find-spot'
+
+function enclosure(room: Room, zoneId: string): Enclosure | null {
+  if (room.kind === 'plan') {
+    const zone = room.zones.find(({ id }) => id === zoneId)
+    return zone ? { walls: room.walls, openings: room.openings, thickness: room.wallThickness, zone: zone.polygon } : null
+  }
+  const corners = [
+    { x: -room.width / 2, z: -room.depth / 2 },
+    { x: room.width / 2, z: -room.depth / 2 },
+    { x: room.width / 2, z: room.depth / 2 },
+    { x: -room.width / 2, z: room.depth / 2 }
+  ]
+  const walls = corners.map((from, index) => ({ id: ['north', 'east', 'south', 'west'][index]!, from, to: corners[(index + 1) % 4]! }))
+  return { walls, openings: [], thickness: 0, zone: corners }
+}
+
+function wallAxis(wall: Wall): { along: Point; length: number } {
+  const length = Math.hypot(wall.to.x - wall.from.x, wall.to.z - wall.from.z)
+  return { along: { x: (wall.to.x - wall.from.x) / length, z: (wall.to.z - wall.from.z) / length }, length }
+}
+
+function sidesFacingZone({ walls, openings, zone }: Enclosure): WallSide[] {
+  const edges = zone.map((corner, index) => [corner, zone[(index + 1) % zone.length]!] as const)
+  return walls.flatMap((wall) => {
+    const { along, length } = wallAxis(wall)
+    const project = (point: Point) => (point.x - wall.from.x) * along.x + (point.z - wall.from.z) * along.z
+    const offLine = (point: Point) => Math.abs((point.x - wall.from.x) * along.z - (point.z - wall.from.z) * along.x)
+    const normal = { x: -along.z, z: along.x }
+    return edges
+      .filter(([a, b]) => offLine(a) <= TOUCH_TOLERANCE_CM && offLine(b) <= TOUCH_TOLERANCE_CM)
+      .flatMap(([a, b]) => {
+        const low = Math.max(0, Math.min(project(a), project(b)))
+        const high = Math.min(length, Math.max(project(a), project(b)))
+        return solidStretches(wall, openings, ['door', 'window'])
+          .map(([start, end]): [number, number] => [Math.max(start, low), Math.min(end, high)])
+          .filter(([start, end]) => end > start)
+      })
+      .map((stretch) => {
+        const middle = (stretch[0] + stretch[1]) / 2
+        const probe = { x: wall.from.x + along.x * middle + normal.x, z: wall.from.z + along.z * middle + normal.z }
+        return { wall, stretch, inward: inPolygon(probe, zone) ? normal : { x: -normal.x, z: -normal.z } }
+      })
+  })
+}
+
+function offsetsFromMiddle(reach: number): number[] {
+  const steps = Math.ceil(reach / SPOT_STEP_CM)
+  return [0, ...Array.from({ length: steps }, (_, index) => [(index + 1) * SPOT_STEP_CM, -(index + 1) * SPOT_STEP_CM]).flat()]
+}
+
+function candidates({ wall, stretch: [start, end], inward }: WallSide, dimensions: Dimensions, thickness: number): PlacedItem[] {
+  const { along } = wallAxis(wall)
+  const origin = wall.from.x * along.x + wall.from.z * along.z
+  const middle = (start + end) / 2
+  const halfWidth = dimensions.width / 2
+  const fromWall = thickness / 2 + WALL_CLEARANCE_CM + dimensions.depth / 2
+  const rotationY = (((Math.atan2(inward.x, inward.z) * 180) / Math.PI) % 360 + 360) % 360 + 0
+  return offsetsFromMiddle((end - start) / 2)
+    .map((offset) => snap(origin + middle + offset, SPOT_STEP_CM) - origin)
+    .filter((distance) => distance - halfWidth >= start - TOUCH_TOLERANCE_CM && distance + halfWidth <= end + TOUCH_TOLERANCE_CM)
+    .map((distance) => ({
+      id: PROBE_ID,
+      assetId: PROBE_ID,
+      position: {
+        x: wall.from.x + along.x * distance + inward.x * fromWall,
+        y: 0,
+        z: wall.from.z + along.z * distance + inward.z * fromWall
+      },
+      rotationY
+    }))
+}
+
+function standsFree(layout: RoomLayout, zone: readonly Point[], item: PlacedItem, dimensions: Dimensions): boolean {
+  const probed: RoomLayout = {
+    ...layout,
+    assets: [...layout.assets, { id: PROBE_ID, name: PROBE_ID, uri: PROBE_ID, dimensions, source: { kind: 'upload' } }],
+    items: [...layout.items, item]
+  }
+  return (
+    footprint(item, dimensions).corners.every((corner) => inPolygon(corner, zone)) &&
+    outOfBounds(probed).every(({ itemId }) => itemId !== PROBE_ID) &&
+    collisions(probed).every(({ a, b }) => a !== PROBE_ID && b !== PROBE_ID)
+  )
+}
+
+/** Where an item of the given size can stand in a zone: back flush against a solid wall, front (+Z) facing the room, clear of everything. */
+export function findSpot(layout: RoomLayout, zoneId: string, dimensions: Dimensions): FindSpotOutcome {
+  const room = enclosure(layout.room, zoneId)
+  if (!room) return { ok: false, reason: 'unknown-zone' }
+  const sides = sidesFacingZone(room).sort((a, b) => b.stretch[1] - b.stretch[0] - (a.stretch[1] - a.stretch[0]))
+  for (const side of sides) {
+    const spot = candidates(side, dimensions, room.thickness).find((item) => standsFree(layout, room.zone, item, dimensions))
+    if (spot) return { ok: true, position: spot.position, rotationY: spot.rotationY, wallId: side.wall.id }
+  }
+  return { ok: false, reason: 'no-space' }
 }
 
 function snap(value: number, step: number): number {

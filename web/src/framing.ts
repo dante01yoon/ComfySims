@@ -10,10 +10,7 @@ const STUDIO_DISTANCE_PER_RADIUS = 2.6
 /** Floor-plan extent of a room in cm. */
 export function roomBounds(room: Room): Bounds {
   if (room.kind === 'box') return { min: { x: -room.width / 2, z: -room.depth / 2 }, max: { x: room.width / 2, z: room.depth / 2 } }
-  const points = room.walls.flatMap((wall) => [wall.from, wall.to])
-  const xs = points.map(({ x }) => x)
-  const zs = points.map(({ z }) => z)
-  return { min: { x: Math.min(...xs), z: Math.min(...zs) }, max: { x: Math.max(...xs), z: Math.max(...zs) } }
+  return polygonBounds(room.walls.flatMap((wall) => [wall.from, wall.to]))
 }
 
 export function boundsCenter({ min, max }: Bounds): Vec3 {
@@ -27,9 +24,15 @@ export function compassDirection(azimuthDeg: number, elevationDeg: number): Vec3
   return { x: Math.sin(azimuth) * Math.cos(elevation), y: Math.sin(elevation), z: -Math.cos(azimuth) * Math.cos(elevation) }
 }
 
-/** The studio's default camera: the whole room from the south-east at three-quarters. */
-export function studioCamera(room: Room): { position: Vec3; target: Vec3 } {
-  const bounds = roomBounds(room)
+/** Floor-plan extent of a zone polygon in cm. */
+export function polygonBounds(polygon: readonly { x: number; z: number }[]): Bounds {
+  const xs = polygon.map(({ x }) => x)
+  const zs = polygon.map(({ z }) => z)
+  return { min: { x: Math.min(...xs), z: Math.min(...zs) }, max: { x: Math.max(...xs), z: Math.max(...zs) } }
+}
+
+/** The studio camera framing a floor-plan extent from the south-east at three-quarters. */
+export function studioCamera(bounds: Bounds): { position: Vec3; target: Vec3 } {
   const target = boundsCenter(bounds)
   const distance = (Math.hypot(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2) * STUDIO_DISTANCE_PER_RADIUS
   const direction = compassDirection(STUDIO_AZIMUTH_DEG, STUDIO_ELEVATION_DEG)

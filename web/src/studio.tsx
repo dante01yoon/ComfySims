@@ -280,6 +280,21 @@ export function StudioScene({ room }: { room: Room }) {
   )
 }
 
+/** One chip per zone above the preset bar; pressing the active chip returns to the whole house. */
+export function ZoneChips({ room }: { room: Room }) {
+  const { focusedZone } = useSyncExternalStore(subscribe, snapshot)
+  if (room.kind !== 'plan') return null
+  return (
+    <nav className="zone-chips" aria-label="Rooms">
+      {room.zones.map((zone) => (
+        <button key={zone.id} aria-pressed={focusedZone === zone.id} onClick={() => api.focusZone(focusedZone === zone.id ? null : zone.id)}>
+          {zone.name}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 /** Pill bar of scene presets over the studio view. */
 export function PresetBar() {
   const { scene } = useSyncExternalStore(subscribe, snapshot)
