@@ -1,0 +1,731 @@
+{
+ "version": 1,
+ "id": "demo-house",
+ "name": "Demo house",
+ "units": "cm",
+ "room": {
+  "kind": "plan",
+  "wallHeight": 270,
+  "wallThickness": 15,
+  "walls": [
+   {
+    "id": "ext-south",
+    "from": {
+     "x": -700,
+     "z": 500
+    },
+    "to": {
+     "x": 700,
+     "z": 500
+    }
+   },
+   {
+    "id": "ext-east",
+    "from": {
+     "x": 700,
+     "z": 500
+    },
+    "to": {
+     "x": 700,
+     "z": -500
+    }
+   },
+   {
+    "id": "ext-north",
+    "from": {
+     "x": 700,
+     "z": -500
+    },
+    "to": {
+     "x": -700,
+     "z": -500
+    }
+   },
+   {
+    "id": "ext-west",
+    "from": {
+     "x": -700,
+     "z": -500
+    },
+    "to": {
+     "x": -700,
+     "z": 500
+    }
+   },
+   {
+    "id": "mid",
+    "from": {
+     "x": -700,
+     "z": 0
+    },
+    "to": {
+     "x": 400,
+     "z": 0
+    }
+   },
+   {
+    "id": "living-kitchen",
+    "from": {
+     "x": 0,
+     "z": 0
+    },
+    "to": {
+     "x": 0,
+     "z": 500
+    }
+   },
+   {
+    "id": "bed-office",
+    "from": {
+     "x": -200,
+     "z": -500
+    },
+    "to": {
+     "x": -200,
+     "z": 0
+    }
+   },
+   {
+    "id": "office-bath",
+    "from": {
+     "x": 150,
+     "z": -500
+    },
+    "to": {
+     "x": 150,
+     "z": 0
+    }
+   },
+   {
+    "id": "garage",
+    "from": {
+     "x": 400,
+     "z": -500
+    },
+    "to": {
+     "x": 400,
+     "z": 500
+    }
+   }
+  ],
+  "openings": [
+   {
+    "wallId": "ext-south",
+    "kind": "door",
+    "offset": 420,
+    "width": 110,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "ext-south",
+    "kind": "door",
+    "offset": 1120,
+    "width": 240,
+    "height": 220,
+    "sill": 0
+   },
+   {
+    "wallId": "ext-south",
+    "kind": "window",
+    "offset": 120,
+    "width": 220,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-south",
+    "kind": "window",
+    "offset": 820,
+    "width": 180,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-north",
+    "kind": "window",
+    "offset": 80,
+    "width": 180,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-north",
+    "kind": "window",
+    "offset": 520,
+    "width": 200,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-north",
+    "kind": "window",
+    "offset": 1000,
+    "width": 200,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-west",
+    "kind": "window",
+    "offset": 150,
+    "width": 200,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-west",
+    "kind": "window",
+    "offset": 650,
+    "width": 220,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "ext-east",
+    "kind": "window",
+    "offset": 380,
+    "width": 160,
+    "height": 130,
+    "sill": 90
+   },
+   {
+    "wallId": "mid",
+    "kind": "door",
+    "offset": 420,
+    "width": 90,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "mid",
+    "kind": "door",
+    "offset": 760,
+    "width": 90,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "mid",
+    "kind": "door",
+    "offset": 980,
+    "width": 90,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "living-kitchen",
+    "kind": "door",
+    "offset": 180,
+    "width": 160,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "bed-office",
+    "kind": "door",
+    "offset": 300,
+    "width": 90,
+    "height": 210,
+    "sill": 0
+   },
+   {
+    "wallId": "garage",
+    "kind": "door",
+    "offset": 700,
+    "width": 90,
+    "height": 210,
+    "sill": 0
+   }
+  ],
+  "zones": [
+   {
+    "id": "living",
+    "name": "Living",
+    "floor": "oak",
+    "polygon": [
+     {
+      "x": -700,
+      "z": 0
+     },
+     {
+      "x": 0,
+      "z": 0
+     },
+     {
+      "x": 0,
+      "z": 500
+     },
+     {
+      "x": -700,
+      "z": 500
+     }
+    ]
+   },
+   {
+    "id": "kitchen",
+    "name": "Kitchen & dining",
+    "floor": "tile",
+    "polygon": [
+     {
+      "x": 0,
+      "z": 0
+     },
+     {
+      "x": 400,
+      "z": 0
+     },
+     {
+      "x": 400,
+      "z": 500
+     },
+     {
+      "x": 0,
+      "z": 500
+     }
+    ]
+   },
+   {
+    "id": "bedroom",
+    "name": "Bedroom",
+    "floor": "walnut",
+    "polygon": [
+     {
+      "x": -700,
+      "z": -500
+     },
+     {
+      "x": -200,
+      "z": -500
+     },
+     {
+      "x": -200,
+      "z": 0
+     },
+     {
+      "x": -700,
+      "z": 0
+     }
+    ]
+   },
+   {
+    "id": "office",
+    "name": "Office",
+    "floor": "oak",
+    "polygon": [
+     {
+      "x": -200,
+      "z": -500
+     },
+     {
+      "x": 150,
+      "z": -500
+     },
+     {
+      "x": 150,
+      "z": 0
+     },
+     {
+      "x": -200,
+      "z": 0
+     }
+    ]
+   },
+   {
+    "id": "bath",
+    "name": "Bath",
+    "floor": "tile",
+    "polygon": [
+     {
+      "x": 150,
+      "z": -500
+     },
+     {
+      "x": 400,
+      "z": -500
+     },
+     {
+      "x": 400,
+      "z": 0
+     },
+     {
+      "x": 150,
+      "z": 0
+     }
+    ]
+   },
+   {
+    "id": "garage",
+    "name": "Garage",
+    "floor": "concrete",
+    "polygon": [
+     {
+      "x": 400,
+      "z": -500
+     },
+     {
+      "x": 700,
+      "z": -500
+     },
+     {
+      "x": 700,
+      "z": 500
+     },
+     {
+      "x": 400,
+      "z": 500
+     }
+    ]
+   }
+  ]
+ },
+ "assets": [
+  {
+   "id": "asset-sofa",
+   "name": "Three-seat sofa",
+   "uri": "/fixtures/glb/house/sofa.glb",
+   "dimensions": {
+    "width": 200,
+    "depth": 90,
+    "height": 85
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-coffee-table",
+   "name": "Coffee table",
+   "uri": "/fixtures/glb/house/coffee-table.glb",
+   "dimensions": {
+    "width": 100,
+    "depth": 50,
+    "height": 40
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-tv-unit",
+   "name": "TV unit",
+   "uri": "/fixtures/glb/house/tv-unit.glb",
+   "dimensions": {
+    "width": 180,
+    "depth": 45,
+    "height": 55
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-armchair",
+   "name": "Armchair",
+   "uri": "/fixtures/glb/house/armchair.glb",
+   "dimensions": {
+    "width": 80,
+    "depth": 80,
+    "height": 80
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-dining-table",
+   "name": "Dining table",
+   "uri": "/fixtures/glb/house/dining-table.glb",
+   "dimensions": {
+    "width": 160,
+    "depth": 90,
+    "height": 75
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-dining-chair",
+   "name": "Dining chair",
+   "uri": "/fixtures/glb/house/dining-chair.glb",
+   "dimensions": {
+    "width": 45,
+    "depth": 50,
+    "height": 85
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-kitchen-counter",
+   "name": "Kitchen counter",
+   "uri": "/fixtures/glb/house/kitchen-counter.glb",
+   "dimensions": {
+    "width": 300,
+    "depth": 60,
+    "height": 90
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-bed",
+   "name": "Queen bed",
+   "uri": "/fixtures/glb/house/bed.glb",
+   "dimensions": {
+    "width": 160,
+    "depth": 210,
+    "height": 100
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-nightstand",
+   "name": "Nightstand",
+   "uri": "/fixtures/glb/house/nightstand.glb",
+   "dimensions": {
+    "width": 45,
+    "depth": 40,
+    "height": 55
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-wardrobe",
+   "name": "Wardrobe",
+   "uri": "/fixtures/glb/house/wardrobe.glb",
+   "dimensions": {
+    "width": 180,
+    "depth": 60,
+    "height": 210
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-desk",
+   "name": "Desk",
+   "uri": "/fixtures/glb/house/desk.glb",
+   "dimensions": {
+    "width": 140,
+    "depth": 70,
+    "height": 75
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-desk-chair",
+   "name": "Desk chair",
+   "uri": "/fixtures/glb/house/desk-chair.glb",
+   "dimensions": {
+    "width": 60,
+    "depth": 60,
+    "height": 100
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-bookshelf",
+   "name": "Bookshelf",
+   "uri": "/fixtures/glb/house/bookshelf.glb",
+   "dimensions": {
+    "width": 90,
+    "depth": 35,
+    "height": 190
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-bathtub",
+   "name": "Bathtub",
+   "uri": "/fixtures/glb/house/bathtub.glb",
+   "dimensions": {
+    "width": 170,
+    "depth": 75,
+    "height": 60
+   },
+   "source": {
+    "kind": "upload"
+   }
+  },
+  {
+   "id": "asset-car",
+   "name": "Car",
+   "uri": "/fixtures/glb/house/car.glb",
+   "dimensions": {
+    "width": 450,
+    "depth": 185,
+    "height": 150
+   },
+   "source": {
+    "kind": "upload"
+   }
+  }
+ ],
+ "items": [
+  {
+   "id": "item-sofa",
+   "assetId": "asset-sofa",
+   "position": {
+    "x": -350,
+    "y": 0,
+    "z": 420
+   },
+   "rotationY": 180
+  },
+  {
+   "id": "item-coffee-table",
+   "assetId": "asset-coffee-table",
+   "position": {
+    "x": -350,
+    "y": 0,
+    "z": 300
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-tv-unit",
+   "assetId": "asset-tv-unit",
+   "position": {
+    "x": -350,
+    "y": 0,
+    "z": 30
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-armchair",
+   "assetId": "asset-armchair",
+   "position": {
+    "x": -600,
+    "y": 0,
+    "z": 280
+   },
+   "rotationY": 90
+  },
+  {
+   "id": "item-dining-table",
+   "assetId": "asset-dining-table",
+   "position": {
+    "x": 200,
+    "y": 0,
+    "z": 320
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-dining-chair",
+   "assetId": "asset-dining-chair",
+   "position": {
+    "x": 200,
+    "y": 0,
+    "z": 400
+   },
+   "rotationY": 180
+  },
+  {
+   "id": "item-kitchen-counter",
+   "assetId": "asset-kitchen-counter",
+   "position": {
+    "x": 200,
+    "y": 0,
+    "z": 40
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-bed",
+   "assetId": "asset-bed",
+   "position": {
+    "x": -450,
+    "y": 0,
+    "z": -330
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-nightstand",
+   "assetId": "asset-nightstand",
+   "position": {
+    "x": -575,
+    "y": 0,
+    "z": -440
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-wardrobe",
+   "assetId": "asset-wardrobe",
+   "position": {
+    "x": -450,
+    "y": 0,
+    "z": -40
+   },
+   "rotationY": 180
+  },
+  {
+   "id": "item-desk",
+   "assetId": "asset-desk",
+   "position": {
+    "x": -30,
+    "y": 0,
+    "z": -440
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-desk-chair",
+   "assetId": "asset-desk-chair",
+   "position": {
+    "x": -30,
+    "y": 0,
+    "z": -360
+   },
+   "rotationY": 180
+  },
+  {
+   "id": "item-bookshelf",
+   "assetId": "asset-bookshelf",
+   "position": {
+    "x": 110,
+    "y": 0,
+    "z": -240
+   },
+   "rotationY": 270
+  },
+  {
+   "id": "item-bathtub",
+   "assetId": "asset-bathtub",
+   "position": {
+    "x": 275,
+    "y": 0,
+    "z": -450
+   },
+   "rotationY": 0
+  },
+  {
+   "id": "item-car",
+   "assetId": "asset-car",
+   "position": {
+    "x": 550,
+    "y": 0,
+    "z": 0
+   },
+   "rotationY": 90
+  }
+ ]
+}

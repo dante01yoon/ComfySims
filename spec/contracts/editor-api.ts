@@ -18,6 +18,8 @@ export type EditorState = {
   canRedo: boolean
   jobs: ComfyJob[]
   lastRender: string | null
+  view: EditorView
+  scene: ScenePreset
 }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
@@ -35,6 +37,20 @@ export type ProductRequest = {
   dimensions: { width: number; depth: number; height: number }
   mode?: 'exact' | 'uniform'
   seed?: number
+}
+
+export type EditorView = 'editor' | 'studio'
+
+export type ScenePreset = 'reading' | 'work' | 'movie' | 'evening'
+
+export type Lighting = {
+  preset: ScenePreset
+  sunElevationDeg: number
+  sunAzimuthDeg: number
+  sunKelvin: number
+  sunIntensity: number
+  interiorKelvin: number
+  interiorIntensity: number
 }
 
 export type RenderRequest = { prompt: string; negativePrompt?: string; seed?: number; size?: { width: number; height: number } }
@@ -55,6 +71,10 @@ export type RoomfitEditorApi = {
   exportPasses(size: { width: number; height: number }): Promise<RenderPasses>
   addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; itemId: string; report: { mode: 'exact' | 'uniform'; distortion: number; flagged: boolean } } | ComfyFailure>
   renderInComfy(request: RenderRequest): Promise<{ ok: true; image: string } | ComfyFailure>
+  setView(view: EditorView): void
+  setScene(preset: ScenePreset): void
+  lighting(): Lighting
+  camera(): { position: Vec3; target: Vec3 }
 }
 
 declare global {

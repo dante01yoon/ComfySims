@@ -47,6 +47,181 @@
             "height"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "plan"
+            },
+            "wallHeight": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "wallThickness": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "walls": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "from": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "z": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "z"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "to": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "z": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "z"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "openings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "wallId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "door",
+                      "window"
+                    ]
+                  },
+                  "offset": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "sill": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "wallId",
+                  "kind",
+                  "offset",
+                  "width",
+                  "height",
+                  "sill"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "zones": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "polygon": {
+                    "minItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "z": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "z"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "floor": {
+                    "type": "string",
+                    "enum": [
+                      "oak",
+                      "walnut",
+                      "tile",
+                      "concrete",
+                      "carpet"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "polygon",
+                  "floor"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "wallHeight",
+            "wallThickness",
+            "walls",
+            "openings",
+            "zones"
+          ],
+          "additionalProperties": false
         }
       ]
     },
