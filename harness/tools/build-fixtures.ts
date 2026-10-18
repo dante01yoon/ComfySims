@@ -10,7 +10,8 @@ function boxDocument({ size, center }: Box): Document {
     [-sx, -sy, -sz], [sx, -sy, -sz], [sx, sy, -sz], [-sx, sy, -sz],
     [-sx, -sy, sz], [sx, -sy, sz], [sx, sy, sz], [-sx, sy, sz]
   ].flatMap(([x, y, z]) => [x! + cx, y! + cy, z! + cz])
-  const faces = [0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6, 0, 4, 5, 0, 5, 1, 3, 2, 6, 3, 6, 7, 0, 3, 7, 0, 7, 4, 1, 5, 6, 1, 6, 2]
+  const inwardFaces = [0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6, 0, 4, 5, 0, 5, 1, 3, 2, 6, 3, 6, 7, 0, 3, 7, 0, 7, 4, 1, 5, 6, 1, 6, 2]
+  const faces = inwardFaces.map((_, index) => inwardFaces[index - (index % 3) + [0, 2, 1][index % 3]!]!)
 
   const document = new Document()
   const buffer = document.createBuffer()
