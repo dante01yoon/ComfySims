@@ -7,8 +7,9 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "types": ["node"],
+    "jsx": "react-jsx",
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["packages", "acceptance", "harness"]
+  "include": ["packages", "acceptance", "harness", "web"]
 }

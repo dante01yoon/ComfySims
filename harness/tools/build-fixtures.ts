@@ -37,3 +37,9 @@ for (const [name, box] of Object.entries(fixtureBoxes)) {
   await io.write(target, boxDocument(box))
   console.log(`wrote fixtures/glb/${name}`)
 }
+
+const sceneless = new Document()
+sceneless.createBuffer()
+sceneless.createMesh()
+await io.write(fileURLToPath(new URL('../../fixtures/glb/no-scene.glb', import.meta.url)), sceneless)
+console.log('wrote fixtures/glb/no-scene.glb')

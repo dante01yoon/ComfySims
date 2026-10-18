@@ -86,6 +86,7 @@ describe('AC-12 fit report', () => {
 describe('AC-13 fit failures are data', () => {
   it.for([
     { source: 'fixtures/glb/generated-flat-plane.glb', reason: 'degenerate-bounds' },
+    { source: 'fixtures/glb/no-scene.glb', reason: 'no-scene' },
     { source: 'fixtures/glb/not-a-glb.glb', reason: 'unreadable' },
     { source: 'fixtures/glb/does-not-exist.glb', reason: 'unreadable' }
   ])('AC-13 returns $reason for $source without throwing or writing a file', async ({ source, reason }) => {

@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const STATE_DIR = '.harness'
 const VITEST_REPORT = join(STATE_DIR, 'vitest.json')
+const E2E_REPORT = join(STATE_DIR, 'e2e.json')
+const HAS_EDITOR = existsSync('web/index.html')
 
 function run(label, command, args) {
   const started = Date.now()
@@ -25,8 +27,28 @@ function readAcceptanceCriteria() {
     )
 }
 
-function testsByCriterion(report) {
-  const tests = report.testResults.flatMap((file) => file.assertionResults)
+function vitestTests(report) {
+  return report.testResults.flatMap((file) =>
+    file.assertionResults.map((test) => ({ fullName: test.fullName, status: test.status, file: file.name, failureMessages: test.failureMessages ?? [] }))
+  )
+}
+
+function playwrightTests(report) {
+  const walk = (suite) => [
+    ...(suite.specs ?? []).flatMap((spec) =>
+      spec.tests.map((test) => ({
+        fullName: spec.title,
+        file: spec.file,
+        status: { expected: 'passed', flaky: 'passed', unexpected: 'failed', skipped: 'todo' }[test.status] ?? 'failed',
+        failureMessages: test.results.flatMap((result) => (result.error?.message ? [result.error.message] : []))
+      }))
+    ),
+    ...(suite.suites ?? []).flatMap(walk)
+  ]
+  return (report.suites ?? []).flatMap(walk)
+}
+
+function testsByCriterion(tests) {
   return (id) => {
     const pattern = new RegExp(`\\b${id}\\b`)
     const matching = tests.filter((test) => pattern.test(test.fullName))
@@ -47,25 +69,29 @@ function judge(criterion, counts) {
 }
 
 mkdirSync(STATE_DIR, { recursive: true })
+rmSync(E2E_REPORT, { force: true })
 
 const gates = [
   run('contract drift', 'pnpm', ['exec', 'tsx', 'packages/schema/scripts/export-json-schema.ts', '--check']),
   run('typecheck', 'pnpm', ['exec', 'tsc', '--noEmit']),
-  run('tests', 'pnpm', ['exec', 'vitest', 'run', '--reporter=json', `--outputFile=${VITEST_REPORT}`])
+  run('tests', 'pnpm', ['exec', 'vitest', 'run', '--reporter=json', `--outputFile=${VITEST_REPORT}`]),
+  ...(HAS_EDITOR ? [run('editor build', 'pnpm', ['-s', 'web:build']), run('e2e', 'pnpm', ['exec', 'playwright', 'test'])] : [])
 ]
 
-const report = JSON.parse(readFileSync(VITEST_REPORT, 'utf8'))
-const countsFor = testsByCriterion(report)
+const allTests = [
+  ...vitestTests(JSON.parse(readFileSync(VITEST_REPORT, 'utf8'))),
+  ...(existsSync(E2E_REPORT) ? playwrightTests(JSON.parse(readFileSync(E2E_REPORT, 'utf8'))) : [])
+]
+const countsFor = testsByCriterion(allTests)
 const criteria = readAcceptanceCriteria().map((criterion) => {
   const counts = countsFor(criterion.id)
   return { ...criterion, ...counts, ...judge(criterion, counts) }
 })
 
-const failedTests = report.testResults
-  .flatMap((file) => file.assertionResults.map((test) => ({ ...test, file: file.name })))
-  .filter((test) => test.status === 'failed')
+const failedTests = allTests.filter((test) => test.status === 'failed')
 
 console.log('Gates')
+if (!HAS_EDITOR) console.log('  SKIP  editor build + e2e (no web/index.html yet)')
 for (const gate of gates) console.log(`  ${gate.ok ? 'PASS' : 'FAIL'}  ${gate.label} (${gate.ms} ms)`)
 console.log('\nSpec')
 for (const c of criteria) {
@@ -74,8 +100,8 @@ for (const c of criteria) {
 }
 
 const problems = [
-  ...gates.filter((gate) => !gate.ok && gate.label !== 'tests').map((gate) => `${gate.label}:\n${gate.output.slice(-2000)}`),
-  ...failedTests.map((test) => `${test.fullName}\n  ${test.file}\n  ${(test.failureMessages ?? []).join('\n').split('\n').slice(0, 6).join('\n  ')}`),
+  ...gates.filter((gate) => !gate.ok && gate.label !== 'tests' && !(gate.label === 'e2e' && existsSync(E2E_REPORT))).map((gate) => `${gate.label}:\n${gate.output.slice(-2000)}`),
+  ...failedTests.map((test) => `${test.fullName}\n  ${test.file}\n  ${test.failureMessages.join('\n').split('\n').slice(0, 6).join('\n  ')}`),
   ...criteria.filter((c) => c.mark === 'NO TEST').map((c) => `${c.id} is active in ${c.spec} but has no passing test named "${c.id} ..."`)
 ]
 
