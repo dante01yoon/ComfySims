@@ -27,6 +27,8 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-40 | active | Focusing a room (API or the room chips in the studio) frames that room; clearing focus returns to the whole house |
 | AC-41 | active | A product generated from a photo lands in the requested or focused room through `findSpot`; a room with no space is reported and nothing changes |
 | AC-42 | active | Rendering in the studio uses the current (focused) view and keeps it |
+| AC-43 | active | The Python node pack aligns yaw and supports `auto` exactly like the TypeScript fit (same yaw up to front/back, same chosen mode), reports `requested` and `yawDegrees`, and can switch alignment off |
+| AC-44 | active | A focused room is framed from above (elevation 55–75°) so walls do not hide it; the studio has a "Render this view" button whose prompt is built from the focused room and the scene preset |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence 2026-10-18: `docs/recordings/demo-ac35-studio.md`) |
 
 ## Plan rooms (AC-29 ~ AC-31)
@@ -78,3 +80,8 @@ Added after the spec session left the editor contract behind three times (impl-0
 - `focusZone(zoneId | null)`: camera target at the zone's centre, distance fitted to the zone, same three-quarter elevation; `null` returns to the whole-house frame. Studio shows one chip per zone (button named by the zone name) above the preset bar; the active one is pressed.
 - `addProductFromPhoto({ …, zoneId? })`: target zone = `zoneId` ?? focused zone; if there is one, the item goes where `findSpot` says (failure `no-space`, nothing added); otherwise as before (room centre).
 - `renderInComfy` renders from the current camera and leaves it unchanged; works in both views.
+
+## Node pack parity and studio follow-ups (AC-43, AC-44)
+
+- `fit_mesh(mesh, dimensions, mode, align="auto")`: same search as `fitGlbBytes` (0.5° steps over 0–90°, then 90° to put the long side on the longer listed axis, ties keep 0°); `mode` accepts `auto`; reports gain `requested` and `yawDegrees` (AC-18 expectations updated). `RoomfitFitMesh.mode` options are `auto, exact, uniform` with `auto` first (contract updated).
+- Room focus elevation 60° (whole-house view stays at its 30–65°). The studio shows a "Render this view" button next to the presets; it renders the current view with the prompt "Photograph of the <room name> of a bright modern home, <preset> light, …" (render overlay shows the prompt), raised by impl-11.

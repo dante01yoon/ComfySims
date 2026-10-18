@@ -80,3 +80,27 @@ test('AC-42 render from a focused room in the studio uses that view', async ({ p
   expect(await page.evaluate(() => window.roomfit.state().view)).toBe('studio')
   await expect(page.getByRole('img', { name: 'Render result' })).toBeVisible()
 })
+
+test('AC-44 a focused room is framed from above so the whole room shows', async ({ page }) => {
+  for (const id of ['bedroom', 'kitchen', 'garage']) {
+    await page.evaluate((zoneId) => window.roomfit.focusZone(zoneId), id)
+    const { position, target } = await page.evaluate(() => window.roomfit.camera())
+    const elevation = (Math.atan2(position.y - target.y, Math.hypot(position.x - target.x, position.z - target.z)) * 180) / Math.PI
+    expect(elevation, id).toBeGreaterThanOrEqual(55)
+    expect(elevation, id).toBeLessThanOrEqual(75)
+  }
+})
+
+test('AC-44 the studio Render button renders the current room with a prompt from the room and the light', async ({ page }) => {
+  await page.getByRole('button', { name: 'Living', exact: true }).click()
+  await page.getByRole('button', { name: 'Evening', exact: true }).click()
+  await page.getByRole('button', { name: 'Render this view' }).click()
+  await expect(page.getByRole('img', { name: 'Render result' })).toBeVisible({ timeout: 20_000 })
+
+  const prompts = (await (await fetch('http://127.0.0.1:8199/__requests')).json()) as { method: string; url: string }[]
+  expect(prompts.some((request) => request.method === 'POST' && request.url === '/api/prompt')).toBe(true)
+  const lastPositive = await page.evaluate(() => window.roomfit.state().jobs.at(-1))
+  expect(lastPositive).toMatchObject({ kind: 'render', status: 'done' })
+  await expect(page.getByText(/living/i).last()).toBeVisible()
+  await expect(page.getByText(/evening/i).last()).toBeVisible()
+})

@@ -43,7 +43,7 @@ class AC18FitMeshParity(unittest.TestCase):
 
         self.assertTrue(outcome["ok"])
         self.assert_bounds(outcome["mesh"].vertices[0], (-1.0, 0.0, -0.45), (1.0, 0.85, 0.45))
-        self.assertEqual(outcome["reports"], [{"mode": "exact", "scale": {"x": 2.0, "y": 2.0, "z": 2.0}, "distortion": 1.0, "flagged": False}])
+        self.assertEqual(outcome["reports"], [{"mode": "exact", "requested": "exact", "yawDegrees": 0, "scale": {"x": 2.0, "y": 2.0, "z": 2.0}, "distortion": 1.0, "flagged": False}])
 
     def test_ac_18_reports_the_same_distortion_as_the_typescript_fit(self):
         exact = fit_mesh(box_mesh(*SQUASHED_BOX), SOFA, "exact")["reports"][0]
@@ -149,3 +149,53 @@ class AC19NodePackInComfyUI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def yawed_box_vertices(size, center, yaw_degrees):
+    import math
+    yaw = math.radians(yaw_degrees)
+    points = []
+    for corner in CORNERS:
+        x, y, z = (corner[i] * size[i] for i in range(3))
+        points.append([x * math.cos(yaw) + z * math.sin(yaw) + center[0], y + center[1], -x * math.sin(yaw) + z * math.cos(yaw) + center[2]])
+    return torch.tensor(points, dtype=torch.float32)
+
+
+class AC43YawAlignmentParity(unittest.TestCase):
+    def fit(self, size, center, yaw, dimensions, mode):
+        vertices = yawed_box_vertices(size, center, yaw).unsqueeze(0)
+        mesh = Types.MESH(vertices, torch.tensor([[[0, 1, 2]]], dtype=torch.int64))
+        outcome = fit_mesh(mesh, dimensions, mode)
+        self.assertTrue(outcome["ok"])
+        return outcome
+
+    def assert_size(self, vertices, dimensions):
+        size = (vertices.max(dim=0).values - vertices.min(dim=0).values) * 100
+        self.assertAlmostEqual(size[0].item(), dimensions["width"], delta=1)
+        self.assertAlmostEqual(size[1].item(), dimensions["height"], delta=1)
+        self.assertAlmostEqual(size[2].item(), dimensions["depth"], delta=1)
+
+    def test_ac_43_aligns_a_turned_model_like_the_typescript_fit(self):
+        for size, yaw, dimensions, ts_yaw in [
+            ([1.0, 0.425, 0.45], 35, SOFA, 145),
+            ([0.45, 0.425, 1.0], -20, {"width": 90.0, "depth": 200.0, "height": 85.0}, 20),
+        ]:
+            outcome = self.fit(size, [0.1, 0.3, 0.2], yaw, dimensions, "exact")
+            report = outcome["reports"][0]
+            self.assertLessEqual(report["distortion"], 1.01)
+            self.assertFalse(report["flagged"])
+            self.assertLessEqual(abs((report["yawDegrees"] - ts_yaw + 90) % 180 - 90), 0.5)
+            self.assert_size(outcome["mesh"].vertices[0], dimensions)
+
+    def test_ac_43_auto_mode_chooses_like_the_typescript_fit(self):
+        uniform = self.fit([1.0, 0.3, 0.45], [0, 0, 0], 0, SOFA, "auto")["reports"][0]
+        exact = self.fit([1.0, 0.425, 0.45], [0, 0, 0], 35, SOFA, "auto")["reports"][0]
+
+        self.assertEqual((uniform["mode"], uniform["requested"]), ("uniform", "auto"))
+        self.assertEqual((exact["mode"], exact["requested"]), ("exact", "auto"))
+
+    def test_ac_43_alignment_can_be_switched_off(self):
+        report = fit_mesh(Types.MESH(yawed_box_vertices([1.0, 0.425, 0.45], [0, 0, 0], 35).unsqueeze(0), torch.tensor([[[0, 1, 2]]], dtype=torch.int64)), SOFA, "exact", align="none")["reports"][0]
+
+        self.assertEqual(report["yawDegrees"], 0)
+        self.assertTrue(report["flagged"])
