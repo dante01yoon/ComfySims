@@ -13,7 +13,8 @@ describe('harness guard', () => {
     { name: 'editing hook settings', call: edit('.claude/settings.json') },
     { name: 'editing the layout contract package', call: edit('packages/schema/src/domain.ts') },
     { name: 'deleting fixtures from the shell', call: bash('rm -rf fixtures/glb') },
-    { name: 'rewriting a test with sed', call: bash("sed -i '' 's/200/100/' acceptance/glb-fitting.test.ts") }
+    { name: 'rewriting a test with sed', call: bash("sed -i '' 's/200/100/' acceptance/glb-fitting.test.ts") },
+    { name: 'overwriting a spec behind a silenced error', call: bash('echo x > spec/M4-agent-mcp.md 2>/dev/null') }
   ])('blocks $name', ({ call }) => {
     expect(decide(call, false)).toMatch(/protected/)
   })
@@ -21,7 +22,9 @@ describe('harness guard', () => {
   it.for([
     { name: 'editing package source', call: edit('packages/fit/src/index.ts') },
     { name: 'reading a spec from the shell', call: bash('cat spec/M1-scaled-furniture.md') },
-    { name: 'running verify', call: bash('pnpm verify') }
+    { name: 'running verify', call: bash('pnpm verify') },
+    { name: 'reading a spec with errors silenced', call: bash('ls spec 2>/dev/null; sed -n 1,80p spec/M4-agent-mcp.md 2>/dev/null') },
+    { name: 'reading a spec with stderr merged', call: bash('cat spec/M4-agent-mcp.md 2>&1') }
   ])('allows $name', ({ call }) => {
     expect(decide(call, false)).toBeNull()
   })

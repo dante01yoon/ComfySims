@@ -4,6 +4,9 @@ import { isAbsolute, relative, resolve } from 'node:path'
 export const PROTECTED = ['spec/', 'packages/schema/', 'acceptance/', 'fixtures/', 'harness/', '.claude/', 'vitest.config.ts', 'playwright.config.ts', 'package.json']
 const WRITE_HINT = /(>|\btee\b|\brm\b|\bmv\b|\bcp\b|\bsed\s+-i|\bperl\s+-p?i|\bgit\s+(checkout|restore|rm|mv)\b|\btruncate\b|\bwriteFile)/
 
+const HARMLESS_REDIRECT = /\d?>\s*\/dev\/null|\d?>&\d/g
+const withoutHarmlessRedirects = (command) => command.replace(HARMLESS_REDIRECT, '')
+
 const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 
 function isProtected(path) {
@@ -15,7 +18,7 @@ export function decide({ tool_name: tool, tool_input: input = {} }, specSession)
   if (specSession) return null
   const path = input.file_path ?? input.notebook_path
   if (path && isProtected(path)) return `"${relative(root, resolve(root, path))}" is a protected harness file`
-  if (tool === 'Bash' && WRITE_HINT.test(input.command ?? '')) {
+  if (tool === 'Bash' && WRITE_HINT.test(withoutHarmlessRedirects(input.command ?? ''))) {
     const hit = PROTECTED.find((entry) => input.command.includes(entry.replace(/\/$/, '')))
     if (hit) return `this shell command looks like it writes to protected "${hit}"`
   }
