@@ -29,7 +29,7 @@ test('AC-23 a product photo becomes a real-size item through ComfyUI', async ({ 
   const asset = state.layout.assets.find((candidate) => state.layout.items.some((item) => item.id === outcome.itemId && item.assetId === candidate.id))!
   const item = (await page.evaluate(() => window.roomfit.scene())).find((candidate) => candidate.id === outcome.itemId)!
 
-  expect(outcome.report).toEqual({ mode: 'exact', distortion: 1, flagged: false })
+  expect(outcome.report).toMatchObject({ mode: 'exact', distortion: 1, flagged: false })
   expect(asset).toMatchObject({ name: 'Sofa', dimensions: { width: 200, depth: 90, height: 85 }, fit: { mode: 'exact', distortion: 1 } })
   expect(asset.uri).toBe('comfy-output:roomfit/product_00001_.glb')
   expect(item.meshLoaded).toBe(true)

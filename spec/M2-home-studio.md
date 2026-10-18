@@ -20,6 +20,8 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-32 | active | Studio view frames the whole house from above at three-quarters (elevation 30–65°) |
 | AC-33 | active | Scene presets Reading / Work / Movie / Evening set the lighting from the table below, the bottom bar shows the active one, and evening is visibly darker than work |
 | AC-34 | active | The studio loads nothing from the network |
+| AC-36 | active | Before fitting, a generated model is turned about Y to its smallest footprint with its long side on the longer listed axis, so a model generated from a three-quarter photo fits without distortion; the applied yaw is reported and alignment can be switched off |
+| AC-37 | active | Fit mode `auto` uses `exact` when the aligned distortion is at most 1.15 and `uniform` otherwise, reporting both the requested and the chosen mode |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence: recording) |
 
 ## Plan rooms (AC-29 ~ AC-31)
@@ -50,3 +52,13 @@ Interior lights are warm point lights near the ceiling of each zone; they make r
 ## Open questions
 
 - Generated furniture for every demo-house item through Comfy Cloud (batch of product photos) — needed for AC-35, not for the automated ACs.
+
+## Fitting real generated furniture (AC-36, AC-37)
+
+Found on 2026-10-18 by generating the demo-house furniture on Comfy Cloud: 13 of 15 models were flagged (distortion up to 4.12). Root cause: the model inherits the photo's viewpoint, so a three-quarter product photo yields a model turned ~30–60° about Y, whose bounding box is nearly square. Product listings usually use three-quarter photos, so this must be handled in the fit, not in the prompt.
+
+- `fitGlbBytes(bytes, dimensions, mode, { align?: 'auto' | 'none' })`, default `align: 'auto'`: rotate about Y by the angle (0.5° steps over 0–90°) that minimises the footprint's bounding-box area, then by 90° if needed so the longer footprint side lies on the longer listed axis (width → X, depth → Z). Ties keep 0°. The 180° front/back ambiguity is not resolved (ADR-0002 front = +Z stays the convention).
+- `FitReport` adds `requested` (the mode asked for) and `yawDegrees` (applied rotation, 0 when none). `mode` is the mode actually used.
+- `FitMode` adds `auto`: aligned exact distortion ≤ 1.15 → `exact`, else `uniform`. Assets store the requested mode; re-fitting on load is deterministic.
+- The editor panel defaults to `auto`; `addProductFromPhoto` keeps `exact` as its default.
+- Open: the Python node pack does not align yet (AC-18 parity covers axis-aligned meshes only).

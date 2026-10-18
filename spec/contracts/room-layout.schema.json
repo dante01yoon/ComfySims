@@ -311,7 +311,8 @@
                 "type": "string",
                 "enum": [
                   "exact",
-                  "uniform"
+                  "uniform",
+                  "auto"
                 ]
               },
               "distortion": {

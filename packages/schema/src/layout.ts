@@ -60,7 +60,7 @@ export const AssetSource = z.discriminatedUnion('kind', [
   })
 ])
 
-export const FitMode = z.enum(['exact', 'uniform'])
+export const FitMode = z.enum(['exact', 'uniform', 'auto'])
 
 export const AssetFit = z.strictObject({
   mode: FitMode,
