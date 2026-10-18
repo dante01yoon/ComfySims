@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type WheelEvent } from 'react'
-import { Box3, DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, Vector3, type Object3D } from 'three'
+import { Box3, DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Vector3, type Object3D } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import { api, captionOf, snapshot, subscribe, turnPhoto } from './editor.ts'
@@ -9,9 +9,10 @@ const DEGREES_PER_PIXEL = 0.1
 const MAX_DOLLY_SHARE = 0.4
 const DOLLY_SHARE_PER_WHEEL_UNIT = 0.0005
 const UP = new Vector3(0, 1, 0)
+const FORWARD = new Vector3(0, 0, -1)
 const loader = new GLTFLoader()
 
-type Framing = { forward: Vector3; depth: number }
+type Framing = { depth: number; tanHalfWidth: number; tanHalfHeight: number }
 
 function flatLit(scene: Object3D): Object3D {
   scene.traverse((object) => {
@@ -23,9 +24,25 @@ function flatLit(scene: Object3D): Object3D {
 }
 
 function framingOf(model: Object3D): Framing {
-  const center = new Box3().setFromObject(model).getCenter(new Vector3())
-  const depth = center.length()
-  return { forward: depth > 0 ? center.clone().normalize() : new Vector3(0, 0, -1), depth }
+  model.updateMatrixWorld(true)
+  const vertex = new Vector3()
+  let tanHalfWidth = 0
+  let tanHalfHeight = 0
+  model.traverse((object) => {
+    if (!(object instanceof Mesh)) return
+    const positions = object.geometry.getAttribute('position')
+    for (let index = 0; index < positions.count; index++) {
+      vertex.fromBufferAttribute(positions, index).applyMatrix4(object.matrixWorld)
+      if (vertex.z >= 0) continue
+      tanHalfWidth = Math.max(tanHalfWidth, Math.abs(vertex.x / vertex.z))
+      tanHalfHeight = Math.max(tanHalfHeight, Math.abs(vertex.y / vertex.z))
+    }
+  })
+  return { depth: new Box3().setFromObject(model).getCenter(new Vector3()).length(), tanHalfWidth, tanHalfHeight }
+}
+
+function coverFovDegrees({ tanHalfWidth, tanHalfHeight }: Framing, aspect: number): number {
+  return (2 * Math.atan(Math.min(tanHalfHeight, tanHalfWidth / aspect)) * 180) / Math.PI
 }
 
 function lookDirection(forward: Vector3, yawDegrees: number, pitchDegrees: number): Vector3 {
@@ -35,9 +52,13 @@ function lookDirection(forward: Vector3, yawDegrees: number, pitchDegrees: numbe
 }
 
 function PhotoCamera({ framing, dolly, yawDegrees, pitchDegrees }: { framing: Framing; dolly: number; yawDegrees: number; pitchDegrees: number }) {
-  useFrame(({ camera }) => {
-    camera.position.copy(framing.forward).multiplyScalar(dolly)
-    camera.lookAt(camera.position.clone().add(lookDirection(framing.forward, yawDegrees, pitchDegrees)))
+  useFrame(({ camera, size }) => {
+    if (camera instanceof PerspectiveCamera) {
+      camera.fov = coverFovDegrees(framing, size.width / size.height)
+      camera.updateProjectionMatrix()
+    }
+    camera.position.copy(FORWARD).multiplyScalar(dolly)
+    camera.lookAt(camera.position.clone().add(lookDirection(FORWARD, yawDegrees, pitchDegrees)))
   })
   return null
 }
@@ -87,7 +108,7 @@ export function PhotoViewer() {
   return (
     <div role="dialog" aria-modal="true" aria-label="3D photo" className="photo-viewer">
       <div className="photo-stage" onPointerDown={startDrag} onPointerMove={drag} onPointerUp={() => (dragFrom.current = null)} onWheel={moveForward}>
-        <Canvas camera={{ fov: 60, near: 0.01, far: 1000, position: [0, 0, 0] }}>
+        <Canvas camera={{ near: 0.01, far: 1000, position: [0, 0, 0] }}>
           {model && framing && (
             <>
               <primitive object={model} />
