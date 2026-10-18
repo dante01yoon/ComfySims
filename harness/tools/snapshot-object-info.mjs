@@ -10,11 +10,20 @@ const DETAILED = [
   'LoadImage', 'ImageOnlyCheckpointLoader', 'CLIPVisionEncode', 'Hunyuan3Dv2Conditioning', 'EmptyLatentHunyuan3Dv2',
   'ModelSamplingAuraFlow', 'KSampler', 'VAEDecodeHunyuan3D', 'VoxelToMesh', 'SaveGLB',
   'CheckpointLoaderSimple', 'CLIPTextEncode', 'ControlNetLoader', 'ControlNetApplyAdvanced', 'EmptyLatentImage',
-  'VAEDecode', 'SaveImage', 'ImageScale'
+  'VAEDecode', 'SaveImage', 'ImageScale',
+  'UNETLoader', 'CLIPLoader', 'VAELoader', 'ModelPatchLoader', 'QwenImageDiffsynthControlnet', 'EmptySD3LatentImage'
 ]
 const contractNodes = JSON.parse(readFileSync('spec/contracts/roomfit-nodes.json', 'utf8'))
 const full = JSON.parse(readFileSync(fullPath, 'utf8'))
-const pick = ({ input, input_order, output, output_name }) => ({ input, input_order, output, output_name })
+const isModelFile = (name) => /(^|_)name$/.test(name)
+const withoutInstalledModels = (inputs = {}) =>
+  Object.fromEntries(Object.entries(inputs).map(([name, spec]) => [name, isModelFile(name) && Array.isArray(spec[0]) ? [[], ...spec.slice(1)] : spec]))
+const pick = ({ input, input_order, output, output_name }) => ({
+  input: { ...input, required: withoutInstalledModels(input.required), optional: withoutInstalledModels(input.optional) },
+  input_order,
+  output,
+  output_name
+})
 
 const snapshot = {
   source: 'ComfyUI /object_info, local checkout, --cpu, no custom nodes; Roomfit nodes from spec/contracts/roomfit-nodes.json',

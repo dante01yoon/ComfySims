@@ -23,7 +23,7 @@ Picking one and baking it into collision logic would make either choice expensiv
    - `uniform`: one factor, largest fit inside the listed box, proportions kept (AC-11).
    - New modes are added to the enum; the layout contract and collision code do not change.
 3. **Every fit produces a report** with per-axis scale and `distortion = max scale / min scale`. Above 1.15 the asset is flagged so the editor can suggest `uniform` or regenerating (AC-12). The distortion is stored on the asset.
-4. Frame: glTF Y-up, front faces −Z, width = X, height = Y, depth = Z. Pivot at bottom center in every mode (AC-4).
+4. Frame: glTF Y-up, front faces +Z (glTF convention, corrected 2026-10-18 from real TRELLIS.2 output), width = X, height = Y, depth = Z. Pivot at bottom center in every mode (AC-4).
 5. Placed items carry no scale field; an item is always the size of its asset.
 
 ## Why this is the extensible choice

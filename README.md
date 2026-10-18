@@ -2,7 +2,11 @@
 
 > Does this sofa fit my living room? Product photo + listed size → exact-size 3D model → placed in your room → photoreal render. Powered by ComfyUI.
 
-Status: harness and contracts only (M1 spec session, 2026-10-18). Nothing user-facing yet.
+Status: M1 working end to end (2026-10-18): 20 automated acceptance criteria pass; the end-to-end demo is recorded.
+
+https://github.com/dante01yoon/roomfit/raw/main/docs/recordings/media/roomfit-demo.mp4
+
+![render](docs/recordings/media/demo-render.jpg)
 
 ```bash
 pnpm install

@@ -28,7 +28,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-7 | active | Snapping puts floor positions on a 5 cm grid (height untouched) and rotation on 15° steps normalized to [0, 360) |
 | AC-8 | active | `workflows/product-to-glb.json` and `workflows/render-from-depth.json` lint clean against the pinned node catalog (classes, required inputs, link targets and types, combo values) and tag their input nodes |
 | AC-9 | active | The editor exports depth (near = bright), camera-space normal and object-mask PNGs from the current camera at the requested size |
-| AC-10 | manual | End to end: fixture sofa photo → fitted GLB → placed in the fixture room → photoreal render (evidence: demo recording) |
+| AC-10 | manual | End to end: product photo → generated GLB → fitted to listed size → placed in a room → photoreal render from its depth pass (evidence 2026-10-18: `docs/recordings/demo-ac10.md`) |
 | AC-11 | active | `uniform` fit keeps the source proportions (±0.5%) and fits inside the listed box, touching it on at least one axis (±1 cm) |
 | AC-12 | active | Every fit returns a report with per-axis scale and distortion = max/min scale, flagged above 1.15 |
 | AC-13 | active | Fitting never throws: unreadable files, GLBs without a scene and zero-size bounds return a failure reason and write nothing |
@@ -55,6 +55,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 
 ## Open questions
 
+- Front direction: ADR-0002 said −Z; the first real generated model (TRELLIS.2) faces +Z, the glTF convention. ADR corrected; no test depends on it yet. Add an AC when the editor gets a "face the room" placement default.
 - Rounding parity: the Python fit rounds measured sizes to 1 µm (float32 noise) and the TypeScript fit does not (raised by impl-04-nodepack). Decide whether both round.
 
 - Which image-to-3D model is the default local path (Hunyuan3D 2.x vs TRELLIS) — decide after a fixture comparison run.

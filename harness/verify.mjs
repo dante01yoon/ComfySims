@@ -19,6 +19,24 @@ function run(label, command, args) {
   return { label, ok, ms: Date.now() - started, output }
 }
 
+function portHolder(port) {
+  const result = spawnSync('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'], { encoding: 'utf8' })
+  return result.stdout.trim().split('\n').filter(Boolean)
+}
+
+function e2eGate() {
+  const holders = portHolder(5179)
+  if (holders.length > 0) {
+    return {
+      label: 'e2e',
+      ok: false,
+      ms: 0,
+      output: `port 5179 is already in use by PID ${holders.join(', ')} (a leftover editor dev server?). Stop it: kill ${holders.join(' ')}`
+    }
+  }
+  return run('e2e', 'pnpm', ['exec', 'playwright', 'test'])
+}
+
 function readAcceptanceCriteria() {
   return readdirSync('spec')
     .filter((file) => /^M\d+-.*\.md$/.test(file))
@@ -80,7 +98,7 @@ const gates = [
   run('contract drift', 'pnpm', ['exec', 'tsx', 'packages/schema/scripts/export-json-schema.ts', '--check']),
   run('typecheck', 'pnpm', ['exec', 'tsc', '--noEmit']),
   run('tests', 'pnpm', ['exec', 'vitest', 'run', '--reporter=json', `--outputFile=${VITEST_REPORT}`]),
-  ...(HAS_EDITOR ? [run('editor build', 'pnpm', ['-s', 'web:build']), run('e2e', 'pnpm', ['exec', 'playwright', 'test'])] : []),
+  ...(HAS_EDITOR ? [run('editor build', 'pnpm', ['-s', 'web:build']), e2eGate()] : []),
   ...(HAS_EDITOR && existsSync('nodes/roomfit') ? [run('node pack editor build', 'pnpm', ['-s', 'web:build:nodepack'])] : []),
   ...(HAS_COMFYUI ? [run('python acceptance', COMFYUI_PYTHON, ['harness/tools/run-python-acceptance.py'])] : [])
 ]

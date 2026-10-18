@@ -905,7 +905,8 @@
        "image_upload": true
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -927,7 +928,8 @@
      "ckpt_name": [
       []
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -960,7 +962,8 @@
        "none"
       ]
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -983,7 +986,8 @@
       "CLIP_VISION_OUTPUT",
       {}
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1019,7 +1023,8 @@
        "max": 4096
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1049,7 +1054,8 @@
        "step": 0.01
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1104,52 +1110,7 @@
       }
      ],
      "sampler_name": [
-      [
-       "euler",
-       "euler_cfg_pp",
-       "euler_ancestral",
-       "euler_ancestral_cfg_pp",
-       "heun",
-       "heunpp2",
-       "exp_heun_2_x0",
-       "exp_heun_2_x0_sde",
-       "dpm_2",
-       "dpm_2_ancestral",
-       "lms",
-       "dpm_fast",
-       "dpm_adaptive",
-       "dpmpp_2s_ancestral",
-       "dpmpp_2s_ancestral_cfg_pp",
-       "dpmpp_sde",
-       "dpmpp_sde_gpu",
-       "dpmpp_2m",
-       "dpmpp_2m_cfg_pp",
-       "dpmpp_2m_sde",
-       "dpmpp_2m_sde_gpu",
-       "dpmpp_2m_sde_heun",
-       "dpmpp_2m_sde_heun_gpu",
-       "dpmpp_3m_sde",
-       "dpmpp_3m_sde_gpu",
-       "ddpm",
-       "lcm",
-       "ipndm",
-       "ipndm_v",
-       "deis",
-       "res_multistep",
-       "res_multistep_cfg_pp",
-       "res_multistep_ancestral",
-       "res_multistep_ancestral_cfg_pp",
-       "gradient_estimation",
-       "gradient_estimation_cfg_pp",
-       "er_sde",
-       "seeds_2",
-       "seeds_3",
-       "sa_solver",
-       "sa_solver_pece",
-       "ddim",
-       "uni_pc",
-       "uni_pc_bh2"
-      ],
+      [],
       {
        "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
       }
@@ -1198,7 +1159,8 @@
        "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1250,7 +1212,8 @@
        "max": 512
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1293,7 +1256,8 @@
        "step": 0.01
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1333,7 +1297,8 @@
      "extra_pnginfo": [
       "EXTRA_PNGINFO"
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1357,7 +1322,8 @@
        "tooltip": "The name of the checkpoint (model) to load."
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1392,7 +1358,8 @@
        "tooltip": "The CLIP model used for encoding the text."
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1413,7 +1380,8 @@
      "control_net_name": [
       []
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1531,7 +1499,8 @@
        "tooltip": "The number of latent images in the batch."
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1562,7 +1531,8 @@
        "tooltip": "The VAE model used for decoding the latent."
       }
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1597,7 +1567,8 @@
     "hidden": {
      "prompt": "PROMPT",
      "extra_pnginfo": "EXTRA_PNGINFO"
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1655,7 +1626,8 @@
        "center"
       ]
      ]
-    }
+    },
+    "optional": {}
    },
    "input_order": {
     "required": [
@@ -1671,6 +1643,244 @@
    ],
    "output_name": [
     "IMAGE"
+   ]
+  },
+  "UNETLoader": {
+   "input": {
+    "required": {
+     "unet_name": [
+      []
+     ],
+     "weight_dtype": [
+      [
+       "default",
+       "fp8_e4m3fn",
+       "fp8_e4m3fn_fast",
+       "fp8_e5m2"
+      ],
+      {
+       "advanced": true
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "unet_name",
+     "weight_dtype"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
+  },
+  "CLIPLoader": {
+   "input": {
+    "required": {
+     "clip_name": [
+      []
+     ],
+     "type": [
+      [
+       "stable_diffusion",
+       "stable_cascade",
+       "sd3",
+       "stable_audio",
+       "mochi",
+       "ltxv",
+       "pixart",
+       "cosmos",
+       "lumina2",
+       "wan",
+       "hidream",
+       "chroma",
+       "ace",
+       "omnigen2",
+       "qwen_image",
+       "hunyuan_image",
+       "flux2",
+       "ovis",
+       "longcat_image",
+       "cogvideox",
+       "lens",
+       "pixeldit",
+       "ideogram4",
+       "boogu",
+       "krea2",
+       "joyimage",
+       "mage",
+       "minimax"
+      ]
+     ]
+    },
+    "optional": {
+     "device": [
+      [
+       "default",
+       "cpu"
+      ],
+      {
+       "advanced": true
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "clip_name",
+     "type"
+    ],
+    "optional": [
+     "device"
+    ]
+   },
+   "output": [
+    "CLIP"
+   ],
+   "output_name": [
+    "CLIP"
+   ]
+  },
+  "VAELoader": {
+   "input": {
+    "required": {
+     "vae_name": [
+      []
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "vae_name"
+    ]
+   },
+   "output": [
+    "VAE"
+   ],
+   "output_name": [
+    "VAE"
+   ]
+  },
+  "ModelPatchLoader": {
+   "input": {
+    "required": {
+     "name": [
+      []
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "name"
+    ]
+   },
+   "output": [
+    "MODEL_PATCH"
+   ],
+   "output_name": [
+    "MODEL_PATCH"
+   ]
+  },
+  "QwenImageDiffsynthControlnet": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL"
+     ],
+     "model_patch": [
+      "MODEL_PATCH"
+     ],
+     "vae": [
+      "VAE"
+     ],
+     "image": [
+      "IMAGE"
+     ],
+     "strength": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": -10,
+       "max": 10,
+       "step": 0.01
+      }
+     ]
+    },
+    "optional": {
+     "mask": [
+      "MASK"
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "model_patch",
+     "vae",
+     "image",
+     "strength"
+    ],
+    "optional": [
+     "mask"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
+  },
+  "EmptySD3LatentImage": {
+   "input": {
+    "required": {
+     "width": [
+      "INT",
+      {
+       "default": 1024,
+       "min": 16,
+       "max": 16384,
+       "step": 16
+      }
+     ],
+     "height": [
+      "INT",
+      {
+       "default": 1024,
+       "min": 16,
+       "max": 16384,
+       "step": 16
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "default": 1,
+       "min": 1,
+       "max": 4096
+      }
+     ]
+    },
+    "optional": {}
+   },
+   "input_order": {
+    "required": [
+     "width",
+     "height",
+     "batch_size"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
    ]
   },
   "RoomfitFitMesh": {
