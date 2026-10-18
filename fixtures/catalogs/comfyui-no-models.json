@@ -1,0 +1,1913 @@
+{
+ "KSampler": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "The model used for denoising the input latent."
+     }
+    ],
+    "seed": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "max": 18446744073709551615,
+      "control_after_generate": true,
+      "tooltip": "The random seed used for creating the noise."
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 20,
+      "min": 1,
+      "max": 10000,
+      "tooltip": "The number of steps used in the denoising process."
+     }
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 8.0,
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.1,
+      "round": 0.01,
+      "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
+     }
+    ],
+    "sampler_name": [
+     [
+      "euler",
+      "euler_cfg_pp",
+      "euler_ancestral",
+      "euler_ancestral_cfg_pp",
+      "heun",
+      "heunpp2",
+      "exp_heun_2_x0",
+      "exp_heun_2_x0_sde",
+      "dpm_2",
+      "dpm_2_ancestral",
+      "lms",
+      "dpm_fast",
+      "dpm_adaptive",
+      "dpmpp_2s_ancestral",
+      "dpmpp_2s_ancestral_cfg_pp",
+      "dpmpp_sde",
+      "dpmpp_sde_gpu",
+      "dpmpp_2m",
+      "dpmpp_2m_cfg_pp",
+      "dpmpp_2m_sde",
+      "dpmpp_2m_sde_gpu",
+      "dpmpp_2m_sde_heun",
+      "dpmpp_2m_sde_heun_gpu",
+      "dpmpp_3m_sde",
+      "dpmpp_3m_sde_gpu",
+      "ddpm",
+      "lcm",
+      "ipndm",
+      "ipndm_v",
+      "deis",
+      "res_multistep",
+      "res_multistep_cfg_pp",
+      "res_multistep_ancestral",
+      "res_multistep_ancestral_cfg_pp",
+      "gradient_estimation",
+      "gradient_estimation_cfg_pp",
+      "er_sde",
+      "seeds_2",
+      "seeds_3",
+      "sa_solver",
+      "sa_solver_pece",
+      "ddim",
+      "uni_pc",
+      "uni_pc_bh2"
+     ],
+     {
+      "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
+     }
+    ],
+    "scheduler": [
+     [
+      "simple",
+      "sgm_uniform",
+      "karras",
+      "exponential",
+      "ddim_uniform",
+      "beta",
+      "normal",
+      "linear_quadratic",
+      "kl_optimal"
+     ],
+     {
+      "tooltip": "The scheduler controls how noise is gradually removed to form the image."
+     }
+    ],
+    "positive": [
+     "CONDITIONING",
+     {
+      "tooltip": "The conditioning describing the attributes you want to include in the image."
+     }
+    ],
+    "negative": [
+     "CONDITIONING",
+     {
+      "tooltip": "The conditioning describing the attributes you want to exclude from the image."
+     }
+    ],
+    "latent_image": [
+     "LATENT",
+     {
+      "tooltip": "The latent image to denoise."
+     }
+    ],
+    "denoise": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+     }
+    ]
+   }
+  },
+  "output": [
+   "LATENT"
+  ]
+ },
+ "CLIPTextEncode": {
+  "input": {
+   "required": {
+    "text": [
+     "STRING",
+     {
+      "multiline": true,
+      "dynamicPrompts": true,
+      "tooltip": "The text to be encoded."
+     }
+    ],
+    "clip": [
+     "CLIP",
+     {
+      "tooltip": "The CLIP model used for encoding the text."
+     }
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING"
+  ]
+ },
+ "VAEDecode": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {
+      "tooltip": "The latent to be decoded."
+     }
+    ],
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "The VAE model used for decoding the latent."
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "VAELoader": {
+  "input": {
+   "required": {
+    "vae_name": [
+     [
+      "pixel_space"
+     ]
+    ]
+   }
+  },
+  "output": [
+   "VAE"
+  ]
+ },
+ "SaveImage": {
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE",
+     {
+      "tooltip": "The images to save."
+     }
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "ComfyUI",
+      "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+     }
+    ]
+   },
+   "hidden": {
+    "prompt": "PROMPT",
+    "extra_pnginfo": "EXTRA_PNGINFO"
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "PreviewImage": {
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE"
+    ]
+   },
+   "hidden": {
+    "prompt": "PROMPT",
+    "extra_pnginfo": "EXTRA_PNGINFO"
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "LoadImage": {
+  "input": {
+   "required": {
+    "image": [
+     [
+      "02_tangled_code.png",
+      "04_toolbox.png",
+      "731ca5c1_000.png",
+      "Screenshot 2026-08-10 at 7.26.13\u202fPM.png",
+      "bz_leviathan.png",
+      "default-profile.jpeg",
+      "example.png",
+      "image64x64.webp"
+     ],
+     {
+      "image_upload": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE",
+   "MASK"
+  ]
+ },
+ "CLIPLoader": {
+  "input": {
+   "required": {
+    "clip_name": [
+     [
+      "qwen_2.5_vl_7b_fp8_scaled.safetensors"
+     ]
+    ],
+    "type": [
+     [
+      "stable_diffusion",
+      "stable_cascade",
+      "sd3",
+      "stable_audio",
+      "mochi",
+      "ltxv",
+      "pixart",
+      "cosmos",
+      "lumina2",
+      "wan",
+      "hidream",
+      "chroma",
+      "ace",
+      "omnigen2",
+      "qwen_image",
+      "hunyuan_image",
+      "flux2",
+      "ovis",
+      "longcat_image",
+      "cogvideox",
+      "lens",
+      "pixeldit",
+      "ideogram4",
+      "boogu",
+      "krea2",
+      "joyimage",
+      "mage",
+      "minimax"
+     ]
+    ]
+   },
+   "optional": {
+    "device": [
+     [
+      "default",
+      "cpu"
+     ],
+     {
+      "advanced": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "CLIP"
+  ]
+ },
+ "UNETLoader": {
+  "input": {
+   "required": {
+    "unet_name": [
+     []
+    ],
+    "weight_dtype": [
+     [
+      "default",
+      "fp8_e4m3fn",
+      "fp8_e4m3fn_fast",
+      "fp8_e5m2"
+     ],
+     {
+      "advanced": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "CLIPVisionEncode": {
+  "input": {
+   "required": {
+    "clip_vision": [
+     "CLIP_VISION"
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "crop": [
+     [
+      "center",
+      "none"
+     ]
+    ]
+   }
+  },
+  "output": [
+   "CLIP_VISION_OUTPUT"
+  ]
+ },
+ "ControlNetApplyAdvanced": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING"
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "control_net": [
+     "CONTROL_NET"
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.01
+     }
+    ],
+    "start_percent": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.001
+     }
+    ],
+    "end_percent": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.001
+     }
+    ]
+   },
+   "optional": {
+    "vae": [
+     "VAE"
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING"
+  ]
+ },
+ "ControlNetLoader": {
+  "input": {
+   "required": {
+    "control_net_name": [
+     []
+    ]
+   }
+  },
+  "output": [
+   "CONTROL_NET"
+  ]
+ },
+ "CLIPVisionLoader": {
+  "input": {
+   "required": {
+    "clip_name": [
+     []
+    ]
+   }
+  },
+  "output": [
+   "CLIP_VISION"
+  ]
+ },
+ "LoraLoaderModelOnly": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "lora_name": [
+     []
+    ],
+    "strength_model": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": -100.0,
+      "max": 100.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "MaskPreview": {
+  "input": {
+   "required": {
+    "mask": [
+     "MASK",
+     {}
+    ]
+   },
+   "hidden": {
+    "prompt": [
+     "PROMPT"
+    ],
+    "extra_pnginfo": [
+     "EXTRA_PNGINFO"
+    ]
+   }
+  },
+  "output": [
+   "MASK"
+  ]
+ },
+ "CFGOverride": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.1,
+      "round": 0.01
+     }
+    ],
+    "start_percent": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.001
+     }
+    ],
+    "end_percent": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.001
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "ModelSamplingSD3": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "shift": [
+     "FLOAT",
+     {
+      "default": 3.0,
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "ModelSamplingAuraFlow": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "shift": [
+     "FLOAT",
+     {
+      "default": 1.73,
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "RescaleCFG": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "multiplier": [
+     "FLOAT",
+     {
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "ImageCropToMask": {
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE",
+     {}
+    ],
+    "masks": [
+     "MASK",
+     {}
+    ],
+    "width": [
+     "INT",
+     {
+      "tooltip": "Output width in pixels.",
+      "default": 1024,
+      "min": 64,
+      "max": 4096,
+      "step": 8
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "tooltip": "Output height in pixels.",
+      "default": 1024,
+      "min": 64,
+      "max": 4096,
+      "step": 8
+     }
+    ],
+    "pad_factor": [
+     "FLOAT",
+     {
+      "tooltip": "Extra margin around the mask bounding box as a multiplier.",
+      "default": 1.0,
+      "min": 1.0,
+      "max": 2.0,
+      "step": 0.01
+     }
+    ],
+    "grow_mask": [
+     "INT",
+     {
+      "tooltip": "Grow or shrink the mask by this many pixels before cropping.",
+      "default": 0,
+      "min": -32,
+      "max": 32,
+      "step": 1
+     }
+    ],
+    "background": [
+     "COLOR",
+     {
+      "tooltip": "Background color behind the masked subject.",
+      "default": "#000000",
+      "socketless": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "ImageOnlyCheckpointLoader": {
+  "input": {
+   "required": {
+    "ckpt_name": [
+     []
+    ]
+   }
+  },
+  "output": [
+   "MODEL",
+   "CLIP_VISION",
+   "VAE"
+  ]
+ },
+ "EmptySD3LatentImage": {
+  "input": {
+   "required": {
+    "width": [
+     "INT",
+     {
+      "default": 1024,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 1024,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 4096
+     }
+    ]
+   }
+  },
+  "output": [
+   "LATENT"
+  ]
+ },
+ "EmptyLatentHunyuan3Dv2": {
+  "input": {
+   "required": {
+    "resolution": [
+     "INT",
+     {
+      "default": 3072,
+      "min": 1,
+      "max": 8192
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "The number of latent images in the batch.",
+      "default": 1,
+      "min": 1,
+      "max": 4096
+     }
+    ]
+   }
+  },
+  "output": [
+   "LATENT"
+  ]
+ },
+ "Hunyuan3Dv2Conditioning": {
+  "input": {
+   "required": {
+    "clip_vision_output": [
+     "CLIP_VISION_OUTPUT",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING"
+  ]
+ },
+ "VAEDecodeHunyuan3D": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "num_chunks": [
+     "INT",
+     {
+      "advanced": true,
+      "default": 8000,
+      "min": 1000,
+      "max": 500000
+     }
+    ],
+    "octree_resolution": [
+     "INT",
+     {
+      "advanced": true,
+      "default": 256,
+      "min": 16,
+      "max": 512
+     }
+    ]
+   }
+  },
+  "output": [
+   "VOXEL"
+  ]
+ },
+ "VoxelToMesh": {
+  "input": {
+   "required": {
+    "voxel": [
+     "VOXEL",
+     {}
+    ],
+    "algorithm": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "surface net",
+       "basic"
+      ]
+     }
+    ],
+    "threshold": [
+     "FLOAT",
+     {
+      "default": 0.6,
+      "min": -1.0,
+      "max": 1.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "PrimitiveInt": {
+  "input": {
+   "required": {
+    "value": [
+     "INT",
+     {
+      "min": -9223372036854775807,
+      "max": 9223372036854775807,
+      "control_after_generate": "fixed"
+     }
+    ]
+   }
+  },
+  "output": [
+   "INT"
+  ]
+ },
+ "PrimitiveBoolean": {
+  "input": {
+   "required": {
+    "value": [
+     "BOOLEAN",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "BOOLEAN"
+  ]
+ },
+ "ModelPatchLoader": {
+  "input": {
+   "required": {
+    "name": [
+     []
+    ]
+   }
+  },
+  "output": [
+   "MODEL_PATCH"
+  ]
+ },
+ "QwenImageDiffsynthControlnet": {
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "model_patch": [
+     "MODEL_PATCH"
+    ],
+    "vae": [
+     "VAE"
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": -10.0,
+      "max": 10.0,
+      "step": 0.01
+     }
+    ]
+   },
+   "optional": {
+    "mask": [
+     "MASK"
+    ]
+   }
+  },
+  "output": [
+   "MODEL"
+  ]
+ },
+ "ComfySwitchNode": {
+  "input": {
+   "required": {
+    "switch": [
+     "BOOLEAN",
+     {}
+    ],
+    "on_false": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "lazy": true,
+      "template": {
+       "template_id": "switch",
+       "allowed_types": "*"
+      }
+     }
+    ],
+    "on_true": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "lazy": true,
+      "template": {
+       "template_id": "switch",
+       "allowed_types": "*"
+      }
+     }
+    ]
+   }
+  },
+  "output": [
+   "COMFY_MATCHTYPE_V3"
+  ]
+ },
+ "Trellis2Conditioning": {
+  "input": {
+   "required": {
+    "clip_vision_model": [
+     "CLIP_VISION",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Preprocessed image from ImageCropToMask (pad_factor=1.0 for TRELLIS.2)."
+     }
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING"
+  ]
+ },
+ "Pixal3DConditioning": {
+  "input": {
+   "required": {
+    "clip_vision_model": [
+     "CLIP_VISION",
+     {
+      "tooltip": "DINOv3 ViT-L/16 ClipVision."
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Preprocessed image from ImageCropToMask (pad_factor=1.1 for Pixal3D)."
+     }
+    ],
+    "camera_angle_x": [
+     "FLOAT",
+     {
+      "display_name": "fov",
+      "tooltip": "Horizontal FOV in degrees. Wire a MoGeGeometryToFOV (axis='horizontal', unit='degrees') for a per-image FoV (matches upstream default).",
+      "default": 49.13,
+      "min": 1.0,
+      "max": 170.0,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING"
+  ]
+ },
+ "Trellis2ShapeStage": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "negative": [
+     "CONDITIONING",
+     {}
+    ],
+    "voxel": [
+     "VOXEL",
+     {
+      "tooltip": "Dense structure voxel from VaeDecodeStructureTrellis2."
+     }
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING",
+   "LATENT"
+  ]
+ },
+ "EmptyTrellis2LatentStructure": {
+  "input": {
+   "required": {
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "The number of latent images in the batch.",
+      "default": 1,
+      "min": 1,
+      "max": 4096
+     }
+    ]
+   }
+  },
+  "output": [
+   "LATENT"
+  ]
+ },
+ "Trellis2TextureStage": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "negative": [
+     "CONDITIONING",
+     {}
+    ],
+    "shape_latent": [
+     "LATENT",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING",
+   "LATENT"
+  ]
+ },
+ "VaeDecodeTextureTrellis": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "shape_subdivides": [
+     "SHAPE_SUBDIVIDES",
+     {
+      "tooltip": "Shape information used to guide higher-detail reconstruction during decoding. Helps preserve structure consistency at higher resolutions."
+     }
+    ]
+   }
+  },
+  "output": [
+   "VOXEL"
+  ]
+ },
+ "VaeDecodeShapeTrellis": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "MESH",
+   "SHAPE_SUBDIVIDES"
+  ]
+ },
+ "VaeDecodeStructureTrellis2": {
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "resolution": [
+     "COMBO",
+     {
+      "default": "32",
+      "multiselect": false,
+      "options": [
+       "32",
+       "64"
+      ]
+     }
+    ]
+   }
+  },
+  "output": [
+   "VOXEL"
+  ]
+ },
+ "Trellis2UpsampleStage": {
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "negative": [
+     "CONDITIONING",
+     {}
+    ],
+    "shape_latent": [
+     "LATENT",
+     {
+      "tooltip": "The 512-resolution shape latent output from the first shape-stage KSampler."
+     }
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "target_resolution": [
+     "INT",
+     {
+      "tooltip": "Voxel resolution of the upsampled shape. Higher = more detail, more VRAM.",
+      "default": 1024,
+      "min": 1024,
+      "max": 2048,
+      "step": 128
+     }
+    ]
+   }
+  },
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING",
+   "LATENT"
+  ]
+ },
+ "DecimateMesh": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "target_face_count": [
+     "INT",
+     {
+      "tooltip": "Target max faces. 0 disables.",
+      "default": 200000,
+      "min": 0,
+      "max": 50000000
+     }
+    ],
+    "placement_mode": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "display_name": "placement_mode",
+      "tooltip": "midpoint: cumesh-faithful (recommended). qem: QEM-optimal placement.",
+      "options": [
+       {
+        "key": "midpoint",
+        "inputs": {
+         "required": {}
+        }
+       },
+       {
+        "key": "qem",
+        "inputs": {
+         "required": {
+          "line_quadric_weight": [
+           "FLOAT",
+           {
+            "tooltip": "Per-edge line-quadric weight; preserves sharp ridges/valleys. 0 = off.",
+            "default": 0.0,
+            "min": 0.0,
+            "max": 100.0,
+            "step": 0.1
+           }
+          ],
+          "feature_edge_quadric_weight": [
+           "FLOAT",
+           {
+            "tooltip": "Extra quadric weight on dihedral feature edges (creases). 0 = off.",
+            "default": 0.0,
+            "min": 0.0,
+            "max": 1000.0,
+            "step": 1.0
+           }
+          ],
+          "feature_edge_min_dihedral_deg": [
+           "FLOAT",
+           {
+            "tooltip": "Minimum dihedral angle (degree) to count an edge as a feature edge.",
+            "default": 30.0,
+            "min": 0.0,
+            "max": 180.0,
+            "step": 1.0
+           }
+          ],
+          "clamp_v_to_edge": [
+           "BOOLEAN",
+           {
+            "tooltip": "Project the QEM-optimal position onto the collapsed edge segment.",
+            "default": true
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "RemeshMesh": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "resolution": [
+     "INT",
+     {
+      "tooltip": "Voxel grid resolution (output density). 256 ~ 100k faces, 512 ~ 1M. For an exact face count, follow with Decimate Mesh.",
+      "default": 512,
+      "min": 32,
+      "max": 2048
+     }
+    ],
+    "sign_mode": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "display_name": "sign_mode",
+      "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding.",
+      "options": [
+       {
+        "key": "udf",
+        "inputs": {
+         "required": {
+          "qef": [
+           "BOOLEAN",
+           {
+            "tooltip": "QEF (Quadratic Error Function) dual-vertex placement for sharper edges.",
+            "advanced": true,
+            "default": false
+           }
+          ],
+          "drop_inverted_components": [
+           "BOOLEAN",
+           {
+            "tooltip": "Drop inward-normal (negative-volume) closed components \u2014 the UDF inner shell.",
+            "advanced": true,
+            "default": false
+           }
+          ],
+          "drop_enclosed_components": [
+           "BOOLEAN",
+           {
+            "tooltip": "Drop components inside the largest's bbox that fail a point-in-mesh raycast. Disable for legitimate nested parts.",
+            "advanced": true,
+            "default": false
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "sdf",
+        "inputs": {
+         "required": {
+          "qef": [
+           "BOOLEAN",
+           {
+            "tooltip": "QEF (Quadratic Error Function) dual-vertex placement (recovers sharp features) vs edge-crossing centroid.",
+            "default": true
+           }
+          ],
+          "manifold": [
+           "BOOLEAN",
+           {
+            "tooltip": "Manifold Dual Contouring: 1-4 dual verts/voxel for multi-sheet cases. Slower.",
+            "default": false
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "band": [
+     "FLOAT",
+     {
+      "tooltip": "Narrow-band width in voxel units. In UDF mode also offsets the surface.",
+      "advanced": true,
+      "default": 1.0,
+      "min": 0.5,
+      "max": 4.0,
+      "step": 0.1
+     }
+    ],
+    "project_back": [
+     "FLOAT",
+     {
+      "tooltip": "Linearly interpolate vertices toward the original surface (0 = pure DC, 1 = snapped).",
+      "advanced": true,
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+     }
+    ],
+    "fix_poles": [
+     "BOOLEAN",
+     {
+      "tooltip": "Collapse valence-3 vertex pairs (DC T-junction artifact).",
+      "advanced": true,
+      "default": false
+     }
+    ],
+    "smooth_iters": [
+     "INT",
+     {
+      "tooltip": "Taubin smoothing iterations (0 = off). 2-3 cleans DC staircase-like artifacts; higher over-smooth QEF edges.",
+      "default": 0,
+      "min": 0,
+      "max": 20
+     }
+    ],
+    "drop_small_components": [
+     "FLOAT",
+     {
+      "tooltip": "Drop components below this fraction of the largest's face count. 0 disables.",
+      "advanced": true,
+      "default": 0.01,
+      "min": 0.0,
+      "max": 0.5,
+      "step": 0.005
+     }
+    ],
+    "precluster_max_verts": [
+     "INT",
+     {
+      "tooltip": "Cap input vertex count before the field queries, inputs above this are cluster-decimated to it first. Prevents OOM on huge meshes.",
+      "advanced": true,
+      "default": 20000000,
+      "min": 0,
+      "max": 100000000
+     }
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "UnwrapMesh": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "segmenter": [
+     "COMBO",
+     {
+      "tooltip": "pec: fast parallel-edge-collapse charting on GPU. adaptive: CPU, slower.",
+      "default": "pec",
+      "multiselect": false,
+      "options": [
+       "pec",
+       "adaptive"
+      ]
+     }
+    ],
+    "resolution": [
+     "INT",
+     {
+      "tooltip": "Target atlas resolution for texel-density auto-scale (0 = fit-to-content).",
+      "default": 1024,
+      "min": 0,
+      "max": 8192,
+      "step": 256
+     }
+    ],
+    "padding": [
+     "INT",
+     {
+      "tooltip": "Texel padding between charts.",
+      "default": 1,
+      "min": 0,
+      "max": 16
+     }
+    ],
+    "weld_distance": [
+     "FLOAT",
+     {
+      "tooltip": "Coincident-vert merge radius as a fraction of mesh extent (0 = auto). Raise to ~0.001 if you get per-triangle charts (unwelded input).",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.0001
+     }
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "BakeTextureFromVoxel": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "voxel_colors": [
+     "VOXEL",
+     {}
+    ],
+    "texture_size": [
+     "INT",
+     {
+      "display_name": "resolution",
+      "tooltip": "Square UV atlas resolution.",
+      "default": 2048,
+      "min": 64,
+      "max": 8192
+     }
+    ]
+   },
+   "optional": {
+    "reference_mesh": [
+     "MESH",
+     {
+      "tooltip": "Optional dense pre-decimation mesh; back-projects each texel onto its true surface before sampling, removing faceted baking on coarse meshes."
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE",
+   "IMAGE",
+   "IMAGE"
+  ]
+ },
+ "ApplyTextureToMesh": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "base_color": [
+     "IMAGE",
+     {}
+    ]
+   },
+   "optional": {
+    "metallic": [
+     "IMAGE",
+     {}
+    ],
+    "roughness": [
+     "IMAGE",
+     {}
+    ],
+    "occlusion": [
+     "IMAGE",
+     {}
+    ],
+    "normal_map": [
+     "IMAGE",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "BakeNormalMapFromMesh": {
+  "input": {
+   "required": {
+    "low_poly": [
+     "MESH",
+     {}
+    ],
+    "high_poly": [
+     "MESH",
+     {}
+    ],
+    "resolution": [
+     "INT",
+     {
+      "display_name": "resolution",
+      "default": 1024,
+      "min": 64,
+      "max": 8192,
+      "step": 64
+     }
+    ],
+    "cage_distance": [
+     "FLOAT",
+     {
+      "tooltip": "Surface search band, as a fraction of the bounding box diagonal. Raise for wrong/missing patches under heavy decimation; lower if it grabs across gaps.",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 0.5,
+      "step": 0.001
+     }
+    ],
+    "ignore_backfaces": [
+     "BOOLEAN",
+     {
+      "tooltip": "Skip high-poly surfaces facing away from the texel, so crevices/enclosed spaces don't grab the opposite wall. Disable only if the high-poly winding is inconsistent.",
+      "default": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "BakeAmbientOcclusion": {
+  "input": {
+   "required": {
+    "low_poly": [
+     "MESH",
+     {}
+    ],
+    "high_poly": [
+     "MESH",
+     {}
+    ],
+    "resolution": [
+     "INT",
+     {
+      "default": 1024,
+      "min": 64,
+      "max": 8192,
+      "step": 64
+     }
+    ],
+    "samples": [
+     "INT",
+     {
+      "tooltip": "Rays per texel. More = smoother, slower. Raise if grainy.",
+      "default": 64,
+      "min": 4,
+      "max": 1024,
+      "step": 4
+     }
+    ],
+    "max_distance": [
+     "FLOAT",
+     {
+      "tooltip": "Ray length, as a fraction of the bounding box diagonal. Smaller = tighter, more local occlusion.",
+      "default": 0.5,
+      "min": 0.01,
+      "max": 2.0,
+      "step": 0.01
+     }
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "tooltip": "Scales the occlusion. >1 darkens, <1 lightens.",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+     }
+    ],
+    "bias": [
+     "FLOAT",
+     {
+      "tooltip": "Ray origin lift off the surface, as a fraction of the bounding box diagonal. Raise if even surfaces show dark blotches/holes.",
+      "default": 0.01,
+      "min": 0.0001,
+      "max": 0.2,
+      "step": 0.0005
+     }
+    ]
+   }
+  },
+  "output": [
+   "IMAGE"
+  ]
+ },
+ "MeshSmoothNormals": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ],
+    "crease_angle": [
+     "FLOAT",
+     {
+      "tooltip": "Edges whose dihedral angle exceeds this value (degrees) stay hard (vertices are split). 180 = fully smooth; lower preserves sharp edges (e.g. ~30-60 for hard-surface).",
+      "default": 180.0,
+      "min": 0.0,
+      "max": 180.0,
+      "step": 1.0
+     }
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "LoadBackgroundRemovalModel": {
+  "input": {
+   "required": {
+    "bg_removal_name": [
+     "COMBO",
+     {
+      "tooltip": "The model used to remove backgrounds from images",
+      "multiselect": false,
+      "options": []
+     }
+    ]
+   }
+  },
+  "output": [
+   "BACKGROUND_REMOVAL"
+  ]
+ },
+ "RemoveBackground": {
+  "input": {
+   "required": {
+    "bg_removal_model": [
+     "BACKGROUND_REMOVAL",
+     {
+      "tooltip": "Background removal model used to generate the mask"
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Input image to remove the background from"
+     }
+    ]
+   }
+  },
+  "output": [
+   "MASK"
+  ]
+ },
+ "SaveGLB": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH,FILE_3D_GLB,FILE_3D_GLTF,FILE_3D_OBJ,FILE_3D_FBX,FILE_3D_STL,FILE_3D_USDZ,FILE_3D_PLY,FILE_3D_SPLAT,FILE_3D_SPZ,FILE_3D_KSPLAT,FILE_3D_SPLAT_ANY,FILE_3D_POINT_CLOUD_ANY,FILE_3D",
+     {
+      "tooltip": "Mesh or 3D file to save"
+     }
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "3d/ComfyUI",
+      "multiline": false
+     }
+    ]
+   },
+   "hidden": {
+    "prompt": [
+     "PROMPT"
+    ],
+    "extra_pnginfo": [
+     "EXTRA_PNGINFO"
+    ]
+   }
+  },
+  "output": []
+ },
+ "MeshToFile3D": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ]
+   }
+  },
+  "output": [
+   "FILE_3D_GLB"
+  ]
+ },
+ "GetMeshInfo": {
+  "input": {
+   "required": {
+    "mesh": [
+     "MESH",
+     {}
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   }
+  },
+  "output": [
+   "MESH",
+   "STRING"
+  ]
+ },
+ "LoadMoGeModel": {
+  "input": {
+   "required": {
+    "model_name": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": []
+     }
+    ]
+   }
+  },
+  "output": [
+   "MOGE_MODEL"
+  ]
+ },
+ "MoGeInference": {
+  "input": {
+   "required": {
+    "moge_model": [
+     "MOGE_MODEL",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "resolution_level": [
+     "INT",
+     {
+      "tooltip": "0 = fastest, 9 = most detail.",
+      "default": 9,
+      "min": 0,
+      "max": 9
+     }
+    ],
+    "fov_x_degrees": [
+     "FLOAT",
+     {
+      "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points.",
+      "advanced": true,
+      "default": 0.0,
+      "min": 0.0,
+      "max": 170.0,
+      "step": 0.1
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "Images per inference call. Lower if you OOM on a long video / image set.",
+      "default": 4,
+      "min": 1,
+      "max": 64
+     }
+    ],
+    "force_projection": [
+     "BOOLEAN",
+     {
+      "advanced": true,
+      "default": true
+     }
+    ],
+    "apply_mask": [
+     "BOOLEAN",
+     {
+      "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately.",
+      "advanced": true,
+      "default": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "MOGE_GEOMETRY"
+  ]
+ },
+ "MoGePointMapToMesh": {
+  "input": {
+   "required": {
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {}
+    ],
+    "batch_index": [
+     "INT",
+     {
+      "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH.",
+      "default": 0,
+      "min": 0,
+      "max": 4096
+     }
+    ],
+    "decimation": [
+     "INT",
+     {
+      "tooltip": "Vertex stride; 1 = full resolution.",
+      "default": 1,
+      "min": 1,
+      "max": 8
+     }
+    ],
+    "discontinuity_threshold": [
+     "FLOAT",
+     {
+      "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off.",
+      "default": 0.04,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+     }
+    ],
+    "texture": [
+     "BOOLEAN",
+     {
+      "tooltip": "Carry the source image through as the baseColor texture.",
+      "default": true
+     }
+    ]
+   }
+  },
+  "output": [
+   "MESH"
+  ]
+ },
+ "MoGeGeometryToFOV": {
+  "input": {
+   "required": {
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {}
+    ],
+    "axis": [
+     "COMBO",
+     {
+      "tooltip": "'vertical' (fov_y), 'horizontal' (fov_x), or 'diagonal'.",
+      "default": "vertical",
+      "multiselect": false,
+      "options": [
+       "vertical",
+       "horizontal",
+       "diagonal"
+      ]
+     }
+    ],
+    "unit": [
+     "COMBO",
+     {
+      "tooltip": "Output unit for the FOV.",
+      "default": "degrees",
+      "multiselect": false,
+      "options": [
+       "degrees",
+       "radians"
+      ]
+     }
+    ]
+   }
+  },
+  "output": [
+   "FLOAT",
+   "FLOAT"
+  ]
+ }
+}

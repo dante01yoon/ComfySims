@@ -47,7 +47,7 @@ Non-goals (M6)
 
 - The dev server owns the current backend: `GET/POST /__roomfit/backend` (`{ kind, url? }`; requests whose `Origin` is not the dev server get 403; 127.0.0.1 only). Env: `ROOMFIT_CLOUD_URL` (default `https://cloud.comfy.org`), `ROOMFIT_LOCAL_URL` (default `http://127.0.0.1:8188`), `COMFY_CLOUD_API_KEY`; the starting backend is Cloud when `ROOMFIT_COMFY_URL` equals the Cloud URL, else Local at `ROOMFIT_COMFY_URL`. The key is attached only to requests that go to the Cloud URL. A newly opened editor shows the server's current backend.
 - Workflow sets: `workflows/sets.json` maps each backend and job kind (`product`, `render`, `photo3d`, `pano360`) to a file under `workflows/`. Local's MoGe workflow is `workflows/local/photo-to-3d-moge.json` (no `refine_steps`, which older ComfyUI lacks).
-- Readiness: on switch and on "Check again", fetch the backend's `/api/object_info`. A kind is unavailable when its workflow uses a node class the catalog lacks, or a string value of an input whose catalog spec is a non-empty option list (model files) that is not in that list; `missing` lists those class or file names. Unreachable backend → status `unreachable`.
+- Readiness: on switch and on "Check again", fetch the backend's `/api/object_info`. A kind is unavailable when its workflow uses a node class the catalog lacks, or a string value of an input whose catalog spec is an option list — **including an empty one**, which is how ComfyUI reports a model folder with nothing installed — that is not in that list (image-upload inputs excepted); `missing` lists those class or file names. Unreachable backend → status `unreachable`.
 - Switching never cancels running jobs; each job records `backend` and all of its requests (polls, downloads) go to the backend it started on.
 - A job records the exact graph it submitted (after roomfit filled inputs). "Download JSON" saves that; "Open in ComfyUI": Local → opens `<url>/` in a new tab and copies the graph to the clipboard with "Paste into ComfyUI (Ctrl+V)"; Cloud → same with `https://cloud.comfy.org/`.
 - MCP `get_backend` returns `{ kind, url, ready, unavailable }`; there is no `set_backend` tool.
@@ -104,4 +104,5 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 
 - 2026-10-18 Draft, from Dante's questions about Local/Cloud, MCP and seeing workflows.
 - 2026-10-18 Approved on the recommended answers; implement after M5.
+- 2026-10-18 Found against a real local ComfyUI with no models: the first rule skipped empty option lists, so a ComfyUI with nothing installed looked ready for 3D photos. Rule fixed; the real catalog is now a fixture (`fixtures/catalogs/comfyui-no-models.json`, AC-72); the fakes install exactly the models the workflows use.
 - 2026-10-18 Spec session: workflow-set manifest, local MoGe variant, Cloud catalog classes for product/render, backend contracts, second fake ComfyUI, AC-70~75 tests; ACs active.
