@@ -263,7 +263,7 @@ async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitE
     reportJob({ kind: 'product', status: 'failed', message: failure.message })
     return failure
   }
-  const { flagged } = fitted.report
+  const { flagged, requested, yawDegrees } = fitted.report
   const distortion = roundedToFloat32Noise(fitted.report.distortion)
   const item = placeAtRoomCenter({
     id: uniqueId(name, editor.history.present.assets),
@@ -274,7 +274,7 @@ async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitE
     fit: { mode, distortion }
   })
   reportJob({ kind: 'product', status: 'done' })
-  return { ok: true, itemId: item.id, report: { mode, distortion, flagged } }
+  return { ok: true, itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } }
 }
 
 async function renderInComfy(request: RenderRequest): ReturnType<RoomfitEditorApi['renderInComfy']> {

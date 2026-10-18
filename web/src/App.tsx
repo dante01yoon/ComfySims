@@ -3,9 +3,9 @@ import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
 import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, Vector2, Vector3, type Material, type Object3D } from 'three'
 
-import { DISTORTION_FLAG_THRESHOLD } from '../../packages/fit/src/index.ts'
 import { collisions, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
 import {
+  FitMode,
   serializeLayout,
   type Asset,
   type BoxRoom,
@@ -15,7 +15,7 @@ import {
   type RoomLayout,
   type Zone
 } from '../../packages/schema/src/index.ts'
-import type { ComfyJob, ComfyJobStatus, ProductRequest } from '../../spec/contracts/editor-api.ts'
+import type { ComfyJob, ComfyJobStatus, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
@@ -334,11 +334,13 @@ function runStartIndex(jobs: readonly ComfyJob[]): number {
   return earlier.lastIndexOf(true) + 1
 }
 
-function placedLine(layout: RoomLayout): string {
-  const fit = layout.assets.at(-1)?.fit
+type FitSummary = Extract<Awaited<ReturnType<RoomfitEditorApi['addProductFromPhoto']>>, { ok: true }>['report']
+
+function placedLine(fit: FitSummary | null): string {
   if (!fit) return 'Placed'
-  const flag = fit.distortion > DISTORTION_FLAG_THRESHOLD ? ' (flagged)' : ''
-  return `Placed — distortion ${fit.distortion.toFixed(2)}${flag}`
+  const modes = fit.requested === fit.mode ? fit.mode : `${fit.requested} → ${fit.mode}`
+  const flag = fit.flagged ? ' (flagged)' : ''
+  return `Placed — ${modes}, turned ${Math.round(fit.yawDegrees)}°, distortion ${fit.distortion.toFixed(2)}${flag}`
 }
 
 function fittingStep(size: SizeInput): string {
@@ -346,10 +348,10 @@ function fittingStep(size: SizeInput): string {
   return listed.every(Boolean) ? `Fitting to ${listed.join(' × ')} cm` : 'Fitting to the listed size'
 }
 
-function statusLine(job: ComfyJob | undefined, layout: RoomLayout, size: SizeInput, seconds: number): string {
+function statusLine(job: ComfyJob | undefined, fit: FitSummary | null, size: SizeInput, seconds: number): string {
   if (!job) return 'Ready'
   if (job.status === 'failed') return `Failed: ${job.message ?? 'unknown error'}`
-  if (job.status === 'done') return job.kind === 'product' ? placedLine(layout) : `Rendered in ${seconds} s`
+  if (job.status === 'done') return job.kind === 'product' ? placedLine(fit) : `Rendered in ${seconds} s`
   const step = job.status === 'fitting' ? fittingStep(size) : `${STEP_LABELS[job.kind][job.status]}…`
   return `${step} ${seconds} s`
 }
@@ -397,7 +399,8 @@ function ComfyPanel() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [name, setName] = useState('')
   const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
-  const [mode, setMode] = useState<ProductRequest['mode']>('exact')
+  const [mode, setMode] = useState<FitMode>('auto')
+  const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
   const [prompt, setPrompt] = useState('')
   const [renderedPrompt, setRenderedPrompt] = useState('')
   const [closedRender, setClosedRender] = useState<string | null>(null)
@@ -413,7 +416,9 @@ function ComfyPanel() {
   const generate3d = async () => {
     if (!photo) return
     const dimensions = { width: Number(size.width), depth: Number(size.depth), height: Number(size.height) }
-    await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode })
+    setPlacedFit(null)
+    const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode })
+    if (placed.ok) setPlacedFit(placed.report)
   }
 
   return (
@@ -433,7 +438,8 @@ function ComfyPanel() {
         ))}
       </div>
       <Field label="Fit mode">
-        <select value={mode} onChange={(event) => setMode(event.target.value === 'uniform' ? 'uniform' : 'exact')}>
+        <select value={mode} onChange={(event) => setMode(FitMode.catch('auto').parse(event.target.value))}>
+          <option value="auto">auto</option>
           <option value="exact">exact</option>
           <option value="uniform">uniform</option>
         </select>
@@ -445,7 +451,7 @@ function ComfyPanel() {
       </Field>
       <button className="primary" onClick={render} disabled={busy || !prompt.trim()}>Render</button>
       <div role="status" className={job?.status === 'failed' ? 'status problem' : 'status'}>
-        {statusLine(job, history.present, size, seconds)}
+        {statusLine(job, placedFit, size, seconds)}
       </div>
       {lastRender && lastRender !== closedRender && (
         <RenderOverlay image={lastRender} prompt={renderedPrompt} onClose={() => setClosedRender(lastRender)} />
