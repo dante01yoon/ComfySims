@@ -1,0 +1,16 @@
+{
+ "RoomfitFitMesh": {
+  "input": {
+   "required": {
+    "mesh": ["MESH", {}],
+    "width_cm": ["FLOAT", { "default": 100.0, "min": 1.0, "max": 2000.0, "step": 0.5 }],
+    "depth_cm": ["FLOAT", { "default": 100.0, "min": 1.0, "max": 2000.0, "step": 0.5 }],
+    "height_cm": ["FLOAT", { "default": 100.0, "min": 1.0, "max": 2000.0, "step": 0.5 }],
+    "mode": [["exact", "uniform"], {}]
+   }
+  },
+  "input_order": { "required": ["mesh", "width_cm", "depth_cm", "height_cm", "mode"] },
+  "output": ["MESH", "STRING"],
+  "output_name": ["mesh", "fit_report"]
+ }
+}

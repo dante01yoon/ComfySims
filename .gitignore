@@ -3,3 +3,5 @@ node_modules/
 *.log
 .recordings/
 web/dist/
+nodes/roomfit/editor/
+__pycache__/

@@ -1,0 +1,1738 @@
+{
+ "source": "ComfyUI /object_info, local checkout, --cpu, no custom nodes; Roomfit nodes from spec/contracts/roomfit-nodes.json",
+ "classes": [
+  "APG",
+  "ARVideoI2V",
+  "AddLayer",
+  "AddNoise",
+  "AddTextPrefix",
+  "AddTextSuffix",
+  "AdjustBrightness",
+  "AdjustContrast",
+  "AlignYourStepsScheduler",
+  "AnimaLLLiteApply",
+  "ApplyTextureToMesh",
+  "AudioAdjustVolume",
+  "AudioConcat",
+  "AudioEncoderEncode",
+  "AudioEncoderLoader",
+  "AudioEqualizer3Band",
+  "AudioMerge",
+  "BakeAmbientOcclusion",
+  "BakeNormalMapFromMesh",
+  "BakeTextureFromVoxel",
+  "BasicGuider",
+  "BasicScheduler",
+  "BatchImagesNode",
+  "BatchLatentsNode",
+  "BatchMasksNode",
+  "BeebleSwitchXImageEdit",
+  "BeebleSwitchXVideoEdit",
+  "BerniniConditioning",
+  "BetaSamplingScheduler",
+  "BriaEraser",
+  "BriaExpandImage",
+  "BriaGenFill",
+  "BriaImageEditNode",
+  "BriaIncreaseResolution",
+  "BriaRemoveImageBackground",
+  "BriaRemoveVideoBackground",
+  "BriaTransparentVideoBackground",
+  "BriaVideoGreenScreen",
+  "BriaVideoReplaceBackground",
+  "BuildJsonPromptIdeogram",
+  "BuildPoseFile",
+  "ByteDance2FirstLastFrameNode",
+  "ByteDance2ReferenceNode",
+  "ByteDance2ReferenceNodeV2",
+  "ByteDance2TextToVideoNode",
+  "ByteDanceCreateImageAsset",
+  "ByteDanceCreateVideoAsset",
+  "ByteDanceFirstLastFrameNode",
+  "ByteDanceImageNode",
+  "ByteDanceImageReferenceNode",
+  "ByteDanceImageToVideoNode",
+  "ByteDanceSeedAudio",
+  "ByteDanceSeedNode",
+  "ByteDanceSeedreamLayerSeparationNode",
+  "ByteDanceSeedreamNode",
+  "ByteDanceSeedreamNodeV2",
+  "ByteDanceSeedreamNodeV3",
+  "ByteDanceTextToVideoNode",
+  "ByteDanceVideoEnhanceNode",
+  "CFGGuider",
+  "CFGNorm",
+  "CFGOverride",
+  "CFGZeroStar",
+  "CLIPAttentionMultiply",
+  "CLIPLoader",
+  "CLIPMergeAdd",
+  "CLIPMergeSimple",
+  "CLIPMergeSubtract",
+  "CLIPSave",
+  "CLIPSetLastLayer",
+  "CLIPTextEncode",
+  "CLIPTextEncodeControlnet",
+  "CLIPTextEncodeFlux",
+  "CLIPTextEncodeHiDream",
+  "CLIPTextEncodeHunyuanDiT",
+  "CLIPTextEncodeKandinsky5",
+  "CLIPTextEncodeLumina2",
+  "CLIPTextEncodePixArtAlpha",
+  "CLIPTextEncodeSD3",
+  "CLIPTextEncodeSDXL",
+  "CLIPTextEncodeSDXLRefiner",
+  "CLIPVisionEncode",
+  "CLIPVisionLoader",
+  "Canny",
+  "CaseConverter",
+  "CenterCropImages",
+  "CheckpointLoader",
+  "CheckpointLoaderSimple",
+  "CheckpointSave",
+  "ChromaRadianceOptions",
+  "ClaudeNode",
+  "ColorToRGBInt",
+  "ColorTransfer",
+  "CombineHooks2",
+  "CombineHooks4",
+  "CombineHooks8",
+  "ComfyAndNode",
+  "ComfyMathExpression",
+  "ComfyNotNode",
+  "ComfyNumberConvert",
+  "ComfyOrNode",
+  "ComfySwitchNode",
+  "ConditioningAverage",
+  "ConditioningCombine",
+  "ConditioningConcat",
+  "ConditioningMultiply",
+  "ConditioningSetArea",
+  "ConditioningSetAreaPercentage",
+  "ConditioningSetAreaPercentageVideo",
+  "ConditioningSetAreaStrength",
+  "ConditioningSetDefaultCombine",
+  "ConditioningSetMask",
+  "ConditioningSetProperties",
+  "ConditioningSetPropertiesAndCombine",
+  "ConditioningSetTimestepRange",
+  "ConditioningStableAudio",
+  "ConditioningTimestepsRange",
+  "ConditioningZeroOut",
+  "ContextWindowsManual",
+  "ControlNetApply",
+  "ControlNetApplyAdvanced",
+  "ControlNetApplySD3",
+  "ControlNetInpaintingAliMamaApply",
+  "ControlNetLoader",
+  "ConvertArrayToString",
+  "ConvertDictionaryToString",
+  "CosmosImageToVideoLatent",
+  "CosmosPredict2ImageToVideoLatent",
+  "CreateBoundingBoxes",
+  "CreateCameraInfo",
+  "CreateHookKeyframe",
+  "CreateHookKeyframesFromFloats",
+  "CreateHookKeyframesInterpolated",
+  "CreateHookLora",
+  "CreateHookLoraModelOnly",
+  "CreateHookModelAsLora",
+  "CreateHookModelAsLoraModelOnly",
+  "CreateList",
+  "CreateVideo",
+  "CropByBBoxes",
+  "CropMask",
+  "CurveEditor",
+  "CustomCombo",
+  "DA3GeometryToMesh",
+  "DA3Inference",
+  "DA3Render",
+  "DecimateMesh",
+  "DiffControlNetLoader",
+  "DifferentialDiffusion",
+  "DiffusersLoader",
+  "DisableNoise",
+  "DrawBBoxes",
+  "DualCFGGuider",
+  "DualCLIPLoader",
+  "DualModelGuider",
+  "EasyCache",
+  "ElevenLabsAudioIsolation",
+  "ElevenLabsInstantVoiceClone",
+  "ElevenLabsSpeechToSpeech",
+  "ElevenLabsSpeechToText",
+  "ElevenLabsTextToDialogue",
+  "ElevenLabsTextToSoundEffects",
+  "ElevenLabsTextToSpeech",
+  "ElevenLabsVoiceSelector",
+  "EmptyARVideoLatent",
+  "EmptyAceStep1.5LatentAudio",
+  "EmptyAceStepLatentAudio",
+  "EmptyAudio",
+  "EmptyChromaRadianceLatentImage",
+  "EmptyCosmosLatentVideo",
+  "EmptyFlux2LatentImage",
+  "EmptyHiDreamO1LatentImage",
+  "EmptyHunyuanImageLatent",
+  "EmptyHunyuanLatentVideo",
+  "EmptyHunyuanVideo15Latent",
+  "EmptyImage",
+  "EmptyLTXVLatentVideo",
+  "EmptyLatentAudio",
+  "EmptyLatentHunyuan3Dv2",
+  "EmptyLatentImage",
+  "EmptyMiniMaxH3LatentAV",
+  "EmptyMiniMaxMusic3LatentAudio",
+  "EmptyMochiLatentVideo",
+  "EmptyQwenImageLayeredLatentImage",
+  "EmptySD3LatentImage",
+  "EmptyTrellis2LatentStructure",
+  "Epsilon Scaling",
+  "ExponentialScheduler",
+  "ExtendIntermediateSigmas",
+  "FeatherMask",
+  "File3DToSplat",
+  "FillHoles",
+  "FishAudioInstantVoiceClone",
+  "FishAudioSpeechToText",
+  "FishAudioTextToSpeech",
+  "FishAudioVoiceSelector",
+  "FlipSigmas",
+  "Flux2ImageNode",
+  "Flux2MaxImageNode",
+  "Flux2ProImageNode",
+  "Flux2Scheduler",
+  "Flux3ImageToVideoNode",
+  "Flux3TextToVideoNode",
+  "Flux3VideoContinuationNode",
+  "FluxDisableGuidance",
+  "FluxEraseNode",
+  "FluxGuidance",
+  "FluxKVCache",
+  "FluxKontextImageScale",
+  "FluxKontextMaxImageNode",
+  "FluxKontextMultiReferenceLatentMethod",
+  "FluxKontextProImageNode",
+  "FluxProExpandNode",
+  "FluxProFillNode",
+  "FluxProUltraImageNode",
+  "FluxVTONode",
+  "FluxVideoUpscaleNode",
+  "FrameInterpolate",
+  "FrameInterpolationModelLoader",
+  "FreSca",
+  "FreeU",
+  "FreeU_V2",
+  "GITSScheduler",
+  "GLIGENLoader",
+  "GLIGENTextBoxApply",
+  "GLSLShader",
+  "GeminiImage2Node",
+  "GeminiImageNode",
+  "GeminiInputFiles",
+  "GeminiNanoBanana2",
+  "GeminiNanoBanana2V2",
+  "GeminiNode",
+  "GeminiNodeV2",
+  "GeminiVideoOmni",
+  "GenerateTracks",
+  "GetICLoRAParameters",
+  "GetImageSize",
+  "GetMeshInfo",
+  "GetSplatCount",
+  "GetVideoComponents",
+  "GrokImageEditNode",
+  "GrokImageEditNodeV2",
+  "GrokImageNode",
+  "GrokVideoEditNode",
+  "GrokVideoExtendNode",
+  "GrokVideoNode",
+  "GrokVideoReferenceNode",
+  "GrowMask",
+  "HappyHorseImageToVideoApi",
+  "HappyHorseReferenceVideoApi",
+  "HappyHorseTextToVideoApi",
+  "HappyHorseVideoEditApi",
+  "HeyGenAvatarVideoNode",
+  "HeyGenCreateAvatarNode",
+  "HeyGenTalkingPhotoNode",
+  "HeyGenTextToSpeechNode",
+  "HeyGenVideoTranslateNode",
+  "HiDreamO1PatchSeamSmoothing",
+  "HiDreamO1ReferenceImages",
+  "HitPawGeneralImageEnhance",
+  "HitPawVideoEnhance",
+  "Hunyuan3Dv2Conditioning",
+  "Hunyuan3Dv2ConditioningMultiView",
+  "HunyuanImageToVideo",
+  "HunyuanRefinerLatent",
+  "HunyuanVideo15ImageToVideo",
+  "HunyuanVideo15LatentUpscaleWithModel",
+  "HunyuanVideo15SuperResolution",
+  "HyperTile",
+  "HypernetworkLoader",
+  "Ideogram4Scheduler",
+  "IdeogramPImage",
+  "IdeogramV3",
+  "IdeogramV4",
+  "ImageAddNoise",
+  "ImageBatch",
+  "ImageBlend",
+  "ImageBlur",
+  "ImageColorToMask",
+  "ImageCompare",
+  "ImageCompositeMasked",
+  "ImageCompositor",
+  "ImageCrop",
+  "ImageCropToMask",
+  "ImageCropV2",
+  "ImageDeduplication",
+  "ImageFlip",
+  "ImageFromBatch",
+  "ImageGrid",
+  "ImageHistogram",
+  "ImageInvert",
+  "ImageMergeTileList",
+  "ImageOnlyCheckpointLoader",
+  "ImageOnlyCheckpointSave",
+  "ImagePadForOutpaint",
+  "ImageQuantize",
+  "ImageRGBToYUV",
+  "ImageRotate",
+  "ImageScale",
+  "ImageScaleBy",
+  "ImageScaleToMaxDimension",
+  "ImageScaleToTotalPixels",
+  "ImageSharpen",
+  "ImageStitch",
+  "ImageToMask",
+  "ImageUpscaleWithModel",
+  "ImageYUVToRGB",
+  "InpaintModelConditioning",
+  "InstructPixToPixConditioning",
+  "InvertMask",
+  "JoinAudioChannels",
+  "JoinImageWithAlpha",
+  "JsonExtractString",
+  "KSampler",
+  "KSamplerAdvanced",
+  "KSamplerSelect",
+  "Kandinsky5ImageToVideo",
+  "KarrasScheduler",
+  "KlingAvatarNode",
+  "KlingFirstLastFrameNode",
+  "KlingImage2VideoNode",
+  "KlingImageGenerationNode",
+  "KlingImageToVideoWithAudio",
+  "KlingLipSyncAudioToVideoNode",
+  "KlingLipSyncTextToVideoNode",
+  "KlingMotionControl",
+  "KlingOmniProEditVideoNode",
+  "KlingOmniProFirstLastFrameNode",
+  "KlingOmniProImageNode",
+  "KlingOmniProImageToVideoNode",
+  "KlingOmniProTextToVideoNode",
+  "KlingOmniProVideoToVideoNode",
+  "KlingStartEndFrameNode",
+  "KlingTextToVideoNode",
+  "KlingTextToVideoWithAudio",
+  "KlingVideoExtendNode",
+  "KlingVideoNode",
+  "Krea2ImageNode",
+  "Krea2StyleReferenceNode",
+  "LTXAVTextEncoderLoader",
+  "LTXVAddGuide",
+  "LTXVAudioVAEDecode",
+  "LTXVAudioVAEEncode",
+  "LTXVAudioVAELoader",
+  "LTXVConcatAVLatent",
+  "LTXVConditioning",
+  "LTXVContextWindows",
+  "LTXVCropGuides",
+  "LTXVDualCFGGuider",
+  "LTXVDurationPredictor",
+  "LTXVEmptyLatentAudio",
+  "LTXVImgToVideo",
+  "LTXVImgToVideoInplace",
+  "LTXVLatentUpsampler",
+  "LTXVModalityGuidance",
+  "LTXVPreprocess",
+  "LTXVReferenceAudio",
+  "LTXVScheduler",
+  "LTXVSeparateAVLatent",
+  "LTXVSpatioTemporalGuidance",
+  "LaplaceScheduler",
+  "LatentAdd",
+  "LatentApplyOperation",
+  "LatentApplyOperationCFG",
+  "LatentBatch",
+  "LatentBatchSeedBehavior",
+  "LatentBlend",
+  "LatentComposite",
+  "LatentCompositeMasked",
+  "LatentConcat",
+  "LatentCrop",
+  "LatentCut",
+  "LatentCutToBatch",
+  "LatentFlip",
+  "LatentFromBatch",
+  "LatentInterpolate",
+  "LatentMultiply",
+  "LatentOperationSharpen",
+  "LatentOperationTonemapReinhard",
+  "LatentRotate",
+  "LatentSubtract",
+  "LatentUpscale",
+  "LatentUpscaleBy",
+  "LatentUpscaleModelLoader",
+  "LayersFromBoundingBoxes",
+  "LazyCache",
+  "Load3D",
+  "Load3DAdvanced",
+  "LoadAudio",
+  "LoadBackgroundRemovalModel",
+  "LoadDA3Model",
+  "LoadImage",
+  "LoadImageDataSetFromFolder",
+  "LoadImageMask",
+  "LoadImageOutput",
+  "LoadImageTextDataSetFromFolder",
+  "LoadLatent",
+  "LoadMediaPipeFaceLandmarker",
+  "LoadMoGeModel",
+  "LoadTrainingDataset",
+  "LoadVideo",
+  "LoadVideoDataSetFromFolder",
+  "LoadVideoTextDataSetFromFolder",
+  "LoraLoader",
+  "LoraLoaderBypass",
+  "LoraLoaderBypassModelOnly",
+  "LoraLoaderModelOnly",
+  "LoraModelLoader",
+  "LoraSave",
+  "LossGraphNode",
+  "LotusConditioning",
+  "LtxApi25AudioToVideo",
+  "LtxApi25ImageToVideo",
+  "LtxApi25TextToVideo",
+  "LtxvApiImageToVideo",
+  "LtxvApiTextToVideo",
+  "LumaConceptsNode",
+  "LumaImageEditNode2",
+  "LumaImageModifyNode",
+  "LumaImageNode",
+  "LumaImageNode2",
+  "LumaImageToVideoNode",
+  "LumaRay32ExtendVideoNode",
+  "LumaRay32ImageToVideoNode",
+  "LumaRay32KeyframeNode",
+  "LumaRay32KeyframesToVideoNode",
+  "LumaRay32TextToVideoNode",
+  "LumaRay32VideoEditNode",
+  "LumaRay32VideoReframeNode",
+  "LumaReferenceNode",
+  "LumaVideoNode",
+  "MagnificImageRelightNode",
+  "MagnificImageSkinEnhancerNode",
+  "MagnificImageStyleTransferNode",
+  "MagnificImageUpscalerCreativeNode",
+  "MagnificImageUpscalerPreciseV2Node",
+  "Mahiro",
+  "MakeTrainingDataset",
+  "ManualSigmas",
+  "MaskComposite",
+  "MaskPreview",
+  "MaskToImage",
+  "MediaPipeFaceLandmarker",
+  "MediaPipeFaceMask",
+  "MediaPipeFaceMeshVisualize",
+  "MergeImageLists",
+  "MergeMeshes",
+  "MergeSplat",
+  "MergeTextLists",
+  "MeshSmoothNormals",
+  "MeshTextureToImage",
+  "MeshToFile3D",
+  "MeshyAnimateModelNode",
+  "MeshyImageToModelNode",
+  "MeshyMultiImageToModelNode",
+  "MeshyRefineNode",
+  "MeshyRigModelNode",
+  "MeshyTextToModelNode",
+  "MeshyTextureNode",
+  "MiniMaxH3AddGuide",
+  "MiniMaxH3ImageToVideo",
+  "MiniMaxH3ReferenceToVideo",
+  "MiniMaxH3SigmaShift",
+  "MiniMaxMusic3TextEncode",
+  "MinimaxHailuo03ContextIRNode",
+  "MinimaxHailuo03FirstLastFrameNode",
+  "MinimaxHailuo03ReferenceNode",
+  "MinimaxHailuo03RegenerateNode",
+  "MinimaxHailuo03TextToVideoNode",
+  "MinimaxHailuoVideoNode",
+  "MinimaxImageToVideoNode",
+  "MinimaxTextToVideoNode",
+  "MoGeGeometryToFOV",
+  "MoGeInference",
+  "MoGePanoramaInference",
+  "MoGePointMapToMesh",
+  "MoGeRender",
+  "ModelAttentionBackend",
+  "ModelComputeDtype",
+  "ModelMergeAdd",
+  "ModelMergeAuraflow",
+  "ModelMergeBlocks",
+  "ModelMergeCosmos14B",
+  "ModelMergeCosmos7B",
+  "ModelMergeCosmosPredict2_14B",
+  "ModelMergeCosmosPredict2_2B",
+  "ModelMergeFlux1",
+  "ModelMergeKrea2",
+  "ModelMergeLTXV",
+  "ModelMergeMochiPreview",
+  "ModelMergeQwenImage",
+  "ModelMergeSD1",
+  "ModelMergeSD2",
+  "ModelMergeSD35_Large",
+  "ModelMergeSD3_2B",
+  "ModelMergeSDXL",
+  "ModelMergeSimple",
+  "ModelMergeSubtract",
+  "ModelMergeWAN2_1",
+  "ModelNoiseScale",
+  "ModelPatchLoader",
+  "ModelSamplingAuraFlow",
+  "ModelSamplingContinuousEDM",
+  "ModelSamplingContinuousV",
+  "ModelSamplingDiscrete",
+  "ModelSamplingFlux",
+  "ModelSamplingLTXV",
+  "ModelSamplingSD3",
+  "ModelSamplingStableCascade",
+  "ModelSave",
+  "Morphology",
+  "MultiGPU_WorkUnits",
+  "NAGuidance",
+  "NormalizeImages",
+  "NormalizeVideoLatentStart",
+  "OpenAIChatConfig",
+  "OpenAIChatNode",
+  "OpenAIDalle2",
+  "OpenAIDalle3",
+  "OpenAIGPTImage1",
+  "OpenAIGPTImageNodeV2",
+  "OpenAIInputFiles",
+  "OpenAIVideoSora2",
+  "OpenRouterLLMNode",
+  "OpticalFlowLoader",
+  "OptimalStepsScheduler",
+  "PaintMesh",
+  "Painter",
+  "PairConditioningCombine",
+  "PairConditioningSetDefaultCombine",
+  "PairConditioningSetProperties",
+  "PairConditioningSetPropertiesAndCombine",
+  "PatchModelAddDownscale",
+  "PerpNeg",
+  "PerpNegGuider",
+  "PerturbedAttentionGuidance",
+  "PhotoMakerEncode",
+  "PhotoMakerLoader",
+  "PiDConditioning",
+  "Pixal3DConditioning",
+  "PixverseImageToVideoNode",
+  "PixverseTemplateNode",
+  "PixverseTextToVideoNode",
+  "PixverseTransitionVideoNode",
+  "PolyexponentialScheduler",
+  "PorterDuffImageComposite",
+  "Preview3D",
+  "Preview3DAdvanced",
+  "PreviewAny",
+  "PreviewAudio",
+  "PreviewGaussianSplat",
+  "PreviewImage",
+  "PreviewPointCloud",
+  "PrimitiveBoolean",
+  "PrimitiveBoundingBox",
+  "PrimitiveFloat",
+  "PrimitiveInt",
+  "PrimitiveString",
+  "PrimitiveStringMultiline",
+  "QuadrupleCLIPLoader",
+  "QuiverImageToSVGNode",
+  "QuiverTextToSVGNode",
+  "QwenImageDiffsynthControlnet",
+  "QwenImageEditApi",
+  "QwenImageTextToImageApi",
+  "RTDETR_detect",
+  "RandomCropImages",
+  "RandomNoise",
+  "RebatchImages",
+  "RebatchLatents",
+  "RecordAudio",
+  "RecraftColorRGB",
+  "RecraftControls",
+  "RecraftCreateStyleNode",
+  "RecraftCreativeUpscaleNode",
+  "RecraftCrispUpscaleNode",
+  "RecraftImageInpaintingNode",
+  "RecraftImageToImageNode",
+  "RecraftRemoveBackgroundNode",
+  "RecraftReplaceBackgroundNode",
+  "RecraftStyleV3DigitalIllustration",
+  "RecraftStyleV3InfiniteStyleLibrary",
+  "RecraftStyleV3LogoRaster",
+  "RecraftStyleV3RealisticImage",
+  "RecraftTextToImageNode",
+  "RecraftTextToVectorNode",
+  "RecraftV4TextToImageNode",
+  "RecraftV4TextToVectorNode",
+  "RecraftVectorizeImageNode",
+  "ReferenceLatent",
+  "ReferenceTimbreAudio",
+  "RegexExtract",
+  "RegexMatch",
+  "RegexReplace",
+  "RemeshMesh",
+  "RemoveBackground",
+  "RenderMesh",
+  "RenderSplat",
+  "RenderUVAtlas",
+  "RenormCFG",
+  "RepeatImageBatch",
+  "RepeatLatentBatch",
+  "ReplaceText",
+  "ReplaceVideoLatentFrames",
+  "RescaleCFG",
+  "ResizeAndPadImage",
+  "ResizeImageMaskNode",
+  "ResizeImagesByLongerEdge",
+  "ResizeImagesByShorterEdge",
+  "ResolutionBucket",
+  "ResolutionSelector",
+  "ReveImageCreateNode",
+  "ReveImageEditNode",
+  "ReveImageRemixNode",
+  "Rodin3D_Detail",
+  "Rodin3D_Gen2",
+  "Rodin3D_Gen25_Image",
+  "Rodin3D_Gen25_Text",
+  "Rodin3D_Regular",
+  "Rodin3D_Sketch",
+  "Rodin3D_Smooth",
+  "RoomfitFitMesh",
+  "RotateMesh",
+  "RunwayAleph2KeyframeNode",
+  "RunwayAleph2PromptImageNode",
+  "RunwayAleph2VideoToVideoNode",
+  "RunwayFirstLastFrameNode",
+  "RunwayImageToVideoNodeGen3a",
+  "RunwayImageToVideoNodeGen4",
+  "RunwayTextToImageNode",
+  "SAM3DBody_FaceExpression",
+  "SAM3DBody_Loader",
+  "SAM3DBody_Predict",
+  "SAM3DBody_Render",
+  "SAM3DBody_Smooth",
+  "SAM3_Detect",
+  "SAM3_TrackPreview",
+  "SAM3_TrackToMask",
+  "SAM3_VideoTrack",
+  "SCAIL2ColoredMask",
+  "SDPoseDrawKeypoints",
+  "SDPoseFaceBBoxes",
+  "SDPoseKeypointExtractor",
+  "SDTurboScheduler",
+  "SD_4XUpscale_Conditioning",
+  "SUPIRApply",
+  "SV3D_Conditioning",
+  "SVD_img2vid_Conditioning",
+  "SamplerARVideo",
+  "SamplerCustom",
+  "SamplerCustomAdvanced",
+  "SamplerDPMAdaptative",
+  "SamplerDPMPP_2M_SDE",
+  "SamplerDPMPP_2S_Ancestral",
+  "SamplerDPMPP_3M_SDE",
+  "SamplerDPMPP_SDE",
+  "SamplerER_SDE",
+  "SamplerEulerAncestral",
+  "SamplerEulerAncestralCFGPP",
+  "SamplerEulerCFGpp",
+  "SamplerLCM",
+  "SamplerLCMUpscale",
+  "SamplerLMS",
+  "SamplerSASolver",
+  "SamplerSEEDS2",
+  "SamplingPercentToSigma",
+  "Save3DAdvanced",
+  "SaveAnimatedPNG",
+  "SaveAnimatedWEBP",
+  "SaveAudio",
+  "SaveAudioAdvanced",
+  "SaveAudioMP3",
+  "SaveAudioOpus",
+  "SaveGLB",
+  "SaveGaussianSplat",
+  "SaveImage",
+  "SaveImageAdvanced",
+  "SaveImageDataSetToFolder",
+  "SaveImageTextDataSetToFolder",
+  "SaveLatent",
+  "SaveLoRA",
+  "SavePointCloud",
+  "SaveSVGNode",
+  "SaveText",
+  "SaveTrainingDataset",
+  "SaveVideo",
+  "SaveWEBM",
+  "ScaleROPE",
+  "SeedNode",
+  "SeedVR2Conditioning",
+  "SeedVR2PostProcessing",
+  "SeedVR2Preprocess",
+  "SeedVR2TemporalChunk",
+  "SeedVR2TemporalMerge",
+  "SelectCLIPDevice",
+  "SelectModelDevice",
+  "SelectVAEDevice",
+  "SelfAttentionGuidance",
+  "SetClipHooks",
+  "SetFirstSigma",
+  "SetHookKeyframes",
+  "SetLatentNoiseMask",
+  "SetUnionControlNetType",
+  "ShuffleDataset",
+  "ShuffleImageTextDataset",
+  "ShuffleVideoDataset",
+  "ShuffleVideoTextDataset",
+  "SkipLayerGuidanceDiT",
+  "SkipLayerGuidanceDiTSimple",
+  "SkipLayerGuidanceSD3",
+  "SolidMask",
+  "SoniloTextToMusic",
+  "SoniloVideoToMusic",
+  "SplatToFile3D",
+  "SplatToMesh",
+  "SplitAudioChannels",
+  "SplitImageToTileList",
+  "SplitImageWithAlpha",
+  "SplitSigmas",
+  "SplitSigmasDenoise",
+  "StableCascade_EmptyLatentImage",
+  "StableCascade_StageB_Conditioning",
+  "StableCascade_StageC_VAEEncode",
+  "StableCascade_SuperResolutionControlnet",
+  "StableZero123_Conditioning",
+  "StableZero123_Conditioning_Batched",
+  "StringCompare",
+  "StringConcatenate",
+  "StringContains",
+  "StringFormat",
+  "StringLength",
+  "StringReplace",
+  "StringSubstring",
+  "StringTrim",
+  "StripWhitespace",
+  "StyleModelApply",
+  "StyleModelLoader",
+  "SyncLipSyncNode",
+  "SyncTalkingImageNode",
+  "T5TokenizerOptions",
+  "TCFG",
+  "TemporalScoreRescaling",
+  "Tencent3DPartNode",
+  "Tencent3DTextureEditNode",
+  "TencentImageToModelNode",
+  "TencentModelTo3DUVNode",
+  "TencentSmartTopologyNode",
+  "TencentTextToModelNode",
+  "TextEncodeAceStepAudio",
+  "TextEncodeAceStepAudio1.5",
+  "TextEncodeBooguEdit",
+  "TextEncodeHunyuanVideo_ImageToVideo",
+  "TextEncodeJoyImageEdit",
+  "TextEncodeMageFlowEdit",
+  "TextEncodeQwenImageEdit",
+  "TextEncodeQwenImageEditPlus",
+  "TextEncodeZImageOmni",
+  "TextGenerate",
+  "TextGenerateLTX2Prompt",
+  "TextOverlay",
+  "TextToLowercase",
+  "TextToUppercase",
+  "ThresholdMask",
+  "TomePatchModel",
+  "TopazImageEnhance",
+  "TopazImageEnhanceV2",
+  "TopazVideoEnhance",
+  "TopazVideoEnhanceV2",
+  "TorchCompileModel",
+  "TrainLoraNode",
+  "TransformSplat",
+  "Trellis2Conditioning",
+  "Trellis2ShapeStage",
+  "Trellis2TextureStage",
+  "Trellis2UpsampleStage",
+  "TrimAudioDuration",
+  "TrimVideoLatent",
+  "TripleCLIPLoader",
+  "TripoConversionNode",
+  "TripoImageToModelNode",
+  "TripoImportModelNode",
+  "TripoMultiviewToModelNode",
+  "TripoP1ImageToModelNode",
+  "TripoP1MultiviewToModelNode",
+  "TripoP1TextToModelNode",
+  "TripoRefineNode",
+  "TripoRetargetNode",
+  "TripoRigNode",
+  "TripoSplatConditioning",
+  "TripoSplatPreprocessImage",
+  "TripoSplatSamplingPreview",
+  "TripoTextToModelNode",
+  "TripoTextureNode",
+  "TruncateText",
+  "UNETLoader",
+  "UNetCrossAttentionMultiply",
+  "UNetSelfAttentionMultiply",
+  "UNetTemporalAttentionMultiply",
+  "USOStyleReference",
+  "UnwrapMesh",
+  "UpscaleModelLoader",
+  "VAEDecode",
+  "VAEDecodeAudio",
+  "VAEDecodeAudioTiled",
+  "VAEDecodeHunyuan3D",
+  "VAEDecodeTiled",
+  "VAEDecodeTripoSplat",
+  "VAEEncode",
+  "VAEEncodeAudio",
+  "VAEEncodeForInpaint",
+  "VAEEncodeTiled",
+  "VAELoader",
+  "VAESave",
+  "VOIDInpaintConditioning",
+  "VOIDQuadmaskPreprocess",
+  "VOIDSampler",
+  "VOIDWarpedNoise",
+  "VOIDWarpedNoiseSource",
+  "VPScheduler",
+  "VaeDecodeShapeTrellis",
+  "VaeDecodeStructureTrellis2",
+  "VaeDecodeTextureTrellis",
+  "Veo3FirstLastFrameNode",
+  "Veo3VideoGenerationNode",
+  "VeoVideoGenerationNode",
+  "Video Slice",
+  "VideoFrameSample",
+  "VideoLinearCFGGuidance",
+  "VideoRandomTemporalCrop",
+  "VideoTemporalCrop",
+  "VideoTriangleCFGGuidance",
+  "Vidu2ImageToVideoNode",
+  "Vidu2ReferenceVideoNode",
+  "Vidu2StartEndToVideoNode",
+  "Vidu2TextToVideoNode",
+  "Vidu3ImageToVideoNode",
+  "Vidu3StartEndToVideoNode",
+  "Vidu3TextToVideoNode",
+  "ViduExtendVideoNode",
+  "ViduImageToVideoNode",
+  "ViduMultiFrameVideoNode",
+  "ViduReferenceVideoNode",
+  "ViduStartEndToVideoNode",
+  "ViduTextToVideoNode",
+  "VoxelToMesh",
+  "VoxelToMeshBasic",
+  "Wan22FunControlToVideo",
+  "Wan22ImageToVideoLatent",
+  "Wan2ImageToVideoApi",
+  "Wan2ReferenceVideoApi",
+  "Wan2TextToVideoApi",
+  "Wan2VideoContinuationApi",
+  "Wan2VideoEditApi",
+  "WanAnimate2Cache",
+  "WanAnimate2ToVideo",
+  "WanAnimateToVideo",
+  "WanCameraEmbedding",
+  "WanCameraImageToVideo",
+  "WanContextWindowsManual",
+  "WanDancerEncodeAudio",
+  "WanDancerPadKeyframes",
+  "WanDancerPadKeyframesList",
+  "WanDancerVideo",
+  "WanFirstLastFrameToVideo",
+  "WanFunControlToVideo",
+  "WanFunInpaintToVideo",
+  "WanHuMoImageToVideo",
+  "WanImageToImageApi",
+  "WanImageToVideo",
+  "WanImageToVideoApi",
+  "WanInfiniteTalkToVideo",
+  "WanMoveConcatTrack",
+  "WanMoveTrackToVideo",
+  "WanMoveTracksFromCoords",
+  "WanMoveVisualizeTracks",
+  "WanPhantomSubjectToVideo",
+  "WanReferenceVideoApi",
+  "WanSCAILToVideo",
+  "WanSoundImageToVideo",
+  "WanSoundImageToVideoExtend",
+  "WanTextToImageApi",
+  "WanTextToVideoApi",
+  "WanTrackToVideo",
+  "WanUni3CControlnetApply",
+  "WanVaceToVideo",
+  "WavespeedFlashVSRNode",
+  "WavespeedImageUpscaleNode",
+  "WebcamCapture",
+  "WeldVertices",
+  "ZImageFunControlnet",
+  "unCLIPCheckpointLoader",
+  "unCLIPConditioning",
+  "wanBlockSwap"
+ ],
+ "nodes": {
+  "LoadImage": {
+   "input": {
+    "required": {
+     "image": [
+      [],
+      {
+       "image_upload": true
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "image"
+    ]
+   },
+   "output": [
+    "IMAGE",
+    "MASK"
+   ],
+   "output_name": [
+    "IMAGE",
+    "MASK"
+   ]
+  },
+  "ImageOnlyCheckpointLoader": {
+   "input": {
+    "required": {
+     "ckpt_name": [
+      []
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "ckpt_name"
+    ]
+   },
+   "output": [
+    "MODEL",
+    "CLIP_VISION",
+    "VAE"
+   ],
+   "output_name": [
+    "MODEL",
+    "CLIP_VISION",
+    "VAE"
+   ]
+  },
+  "CLIPVisionEncode": {
+   "input": {
+    "required": {
+     "clip_vision": [
+      "CLIP_VISION"
+     ],
+     "image": [
+      "IMAGE"
+     ],
+     "crop": [
+      [
+       "center",
+       "none"
+      ]
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "clip_vision",
+     "image",
+     "crop"
+    ]
+   },
+   "output": [
+    "CLIP_VISION_OUTPUT"
+   ],
+   "output_name": [
+    "CLIP_VISION_OUTPUT"
+   ]
+  },
+  "Hunyuan3Dv2Conditioning": {
+   "input": {
+    "required": {
+     "clip_vision_output": [
+      "CLIP_VISION_OUTPUT",
+      {}
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "clip_vision_output"
+    ]
+   },
+   "output": [
+    "CONDITIONING",
+    "CONDITIONING"
+   ],
+   "output_name": [
+    "positive",
+    "negative"
+   ]
+  },
+  "EmptyLatentHunyuan3Dv2": {
+   "input": {
+    "required": {
+     "resolution": [
+      "INT",
+      {
+       "default": 3072,
+       "min": 1,
+       "max": 8192
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "tooltip": "The number of latent images in the batch.",
+       "default": 1,
+       "min": 1,
+       "max": 4096
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "resolution",
+     "batch_size"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
+   ]
+  },
+  "ModelSamplingAuraFlow": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL"
+     ],
+     "shift": [
+      "FLOAT",
+      {
+       "default": 1.73,
+       "min": 0,
+       "max": 100,
+       "step": 0.01
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "shift"
+    ]
+   },
+   "output": [
+    "MODEL"
+   ],
+   "output_name": [
+    "MODEL"
+   ]
+  },
+  "KSampler": {
+   "input": {
+    "required": {
+     "model": [
+      "MODEL",
+      {
+       "tooltip": "The model used for denoising the input latent."
+      }
+     ],
+     "seed": [
+      "INT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 18446744073709552000,
+       "control_after_generate": true,
+       "tooltip": "The random seed used for creating the noise."
+      }
+     ],
+     "steps": [
+      "INT",
+      {
+       "default": 20,
+       "min": 1,
+       "max": 10000,
+       "tooltip": "The number of steps used in the denoising process."
+      }
+     ],
+     "cfg": [
+      "FLOAT",
+      {
+       "default": 8,
+       "min": 0,
+       "max": 100,
+       "step": 0.1,
+       "round": 0.01,
+       "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
+      }
+     ],
+     "sampler_name": [
+      [
+       "euler",
+       "euler_cfg_pp",
+       "euler_ancestral",
+       "euler_ancestral_cfg_pp",
+       "heun",
+       "heunpp2",
+       "exp_heun_2_x0",
+       "exp_heun_2_x0_sde",
+       "dpm_2",
+       "dpm_2_ancestral",
+       "lms",
+       "dpm_fast",
+       "dpm_adaptive",
+       "dpmpp_2s_ancestral",
+       "dpmpp_2s_ancestral_cfg_pp",
+       "dpmpp_sde",
+       "dpmpp_sde_gpu",
+       "dpmpp_2m",
+       "dpmpp_2m_cfg_pp",
+       "dpmpp_2m_sde",
+       "dpmpp_2m_sde_gpu",
+       "dpmpp_2m_sde_heun",
+       "dpmpp_2m_sde_heun_gpu",
+       "dpmpp_3m_sde",
+       "dpmpp_3m_sde_gpu",
+       "ddpm",
+       "lcm",
+       "ipndm",
+       "ipndm_v",
+       "deis",
+       "res_multistep",
+       "res_multistep_cfg_pp",
+       "res_multistep_ancestral",
+       "res_multistep_ancestral_cfg_pp",
+       "gradient_estimation",
+       "gradient_estimation_cfg_pp",
+       "er_sde",
+       "seeds_2",
+       "seeds_3",
+       "sa_solver",
+       "sa_solver_pece",
+       "ddim",
+       "uni_pc",
+       "uni_pc_bh2"
+      ],
+      {
+       "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
+      }
+     ],
+     "scheduler": [
+      [
+       "simple",
+       "sgm_uniform",
+       "karras",
+       "exponential",
+       "ddim_uniform",
+       "beta",
+       "normal",
+       "linear_quadratic",
+       "kl_optimal"
+      ],
+      {
+       "tooltip": "The scheduler controls how noise is gradually removed to form the image."
+      }
+     ],
+     "positive": [
+      "CONDITIONING",
+      {
+       "tooltip": "The conditioning describing the attributes you want to include in the image."
+      }
+     ],
+     "negative": [
+      "CONDITIONING",
+      {
+       "tooltip": "The conditioning describing the attributes you want to exclude from the image."
+      }
+     ],
+     "latent_image": [
+      "LATENT",
+      {
+       "tooltip": "The latent image to denoise."
+      }
+     ],
+     "denoise": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 1,
+       "step": 0.01,
+       "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "model",
+     "seed",
+     "steps",
+     "cfg",
+     "sampler_name",
+     "scheduler",
+     "positive",
+     "negative",
+     "latent_image",
+     "denoise"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
+   ]
+  },
+  "VAEDecodeHunyuan3D": {
+   "input": {
+    "required": {
+     "samples": [
+      "LATENT",
+      {}
+     ],
+     "vae": [
+      "VAE",
+      {}
+     ],
+     "num_chunks": [
+      "INT",
+      {
+       "advanced": true,
+       "default": 8000,
+       "min": 1000,
+       "max": 500000
+      }
+     ],
+     "octree_resolution": [
+      "INT",
+      {
+       "advanced": true,
+       "default": 256,
+       "min": 16,
+       "max": 512
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "samples",
+     "vae",
+     "num_chunks",
+     "octree_resolution"
+    ]
+   },
+   "output": [
+    "VOXEL"
+   ],
+   "output_name": [
+    "VOXEL"
+   ]
+  },
+  "VoxelToMesh": {
+   "input": {
+    "required": {
+     "voxel": [
+      "VOXEL",
+      {}
+     ],
+     "algorithm": [
+      "COMBO",
+      {
+       "multiselect": false,
+       "options": [
+        "surface net",
+        "basic"
+       ]
+      }
+     ],
+     "threshold": [
+      "FLOAT",
+      {
+       "default": 0.6,
+       "min": -1,
+       "max": 1,
+       "step": 0.01
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "voxel",
+     "algorithm",
+     "threshold"
+    ]
+   },
+   "output": [
+    "MESH"
+   ],
+   "output_name": [
+    "MESH"
+   ]
+  },
+  "SaveGLB": {
+   "input": {
+    "required": {
+     "mesh": [
+      "MESH,FILE_3D_GLB,FILE_3D_GLTF,FILE_3D_OBJ,FILE_3D_FBX,FILE_3D_STL,FILE_3D_USDZ,FILE_3D_PLY,FILE_3D_SPLAT,FILE_3D_SPZ,FILE_3D_KSPLAT,FILE_3D_SPLAT_ANY,FILE_3D_POINT_CLOUD_ANY,FILE_3D",
+      {
+       "tooltip": "Mesh or 3D file to save"
+      }
+     ],
+     "filename_prefix": [
+      "STRING",
+      {
+       "default": "3d/ComfyUI",
+       "multiline": false
+      }
+     ]
+    },
+    "hidden": {
+     "prompt": [
+      "PROMPT"
+     ],
+     "extra_pnginfo": [
+      "EXTRA_PNGINFO"
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "mesh",
+     "filename_prefix"
+    ],
+    "hidden": [
+     "prompt",
+     "extra_pnginfo"
+    ]
+   },
+   "output": [],
+   "output_name": []
+  },
+  "CheckpointLoaderSimple": {
+   "input": {
+    "required": {
+     "ckpt_name": [
+      [],
+      {
+       "tooltip": "The name of the checkpoint (model) to load."
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "ckpt_name"
+    ]
+   },
+   "output": [
+    "MODEL",
+    "CLIP",
+    "VAE"
+   ],
+   "output_name": [
+    "MODEL",
+    "CLIP",
+    "VAE"
+   ]
+  },
+  "CLIPTextEncode": {
+   "input": {
+    "required": {
+     "text": [
+      "STRING",
+      {
+       "multiline": true,
+       "dynamicPrompts": true,
+       "tooltip": "The text to be encoded."
+      }
+     ],
+     "clip": [
+      "CLIP",
+      {
+       "tooltip": "The CLIP model used for encoding the text."
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "text",
+     "clip"
+    ]
+   },
+   "output": [
+    "CONDITIONING"
+   ],
+   "output_name": [
+    "CONDITIONING"
+   ]
+  },
+  "ControlNetLoader": {
+   "input": {
+    "required": {
+     "control_net_name": [
+      []
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "control_net_name"
+    ]
+   },
+   "output": [
+    "CONTROL_NET"
+   ],
+   "output_name": [
+    "CONTROL_NET"
+   ]
+  },
+  "ControlNetApplyAdvanced": {
+   "input": {
+    "required": {
+     "positive": [
+      "CONDITIONING"
+     ],
+     "negative": [
+      "CONDITIONING"
+     ],
+     "control_net": [
+      "CONTROL_NET"
+     ],
+     "image": [
+      "IMAGE"
+     ],
+     "strength": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 10,
+       "step": 0.01
+      }
+     ],
+     "start_percent": [
+      "FLOAT",
+      {
+       "default": 0,
+       "min": 0,
+       "max": 1,
+       "step": 0.001
+      }
+     ],
+     "end_percent": [
+      "FLOAT",
+      {
+       "default": 1,
+       "min": 0,
+       "max": 1,
+       "step": 0.001
+      }
+     ]
+    },
+    "optional": {
+     "vae": [
+      "VAE"
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "positive",
+     "negative",
+     "control_net",
+     "image",
+     "strength",
+     "start_percent",
+     "end_percent"
+    ],
+    "optional": [
+     "vae"
+    ]
+   },
+   "output": [
+    "CONDITIONING",
+    "CONDITIONING"
+   ],
+   "output_name": [
+    "positive",
+    "negative"
+   ]
+  },
+  "EmptyLatentImage": {
+   "input": {
+    "required": {
+     "width": [
+      "INT",
+      {
+       "default": 512,
+       "min": 16,
+       "max": 16384,
+       "step": 8,
+       "tooltip": "The width of the latent images in pixels."
+      }
+     ],
+     "height": [
+      "INT",
+      {
+       "default": 512,
+       "min": 16,
+       "max": 16384,
+       "step": 8,
+       "tooltip": "The height of the latent images in pixels."
+      }
+     ],
+     "batch_size": [
+      "INT",
+      {
+       "default": 1,
+       "min": 1,
+       "max": 4096,
+       "tooltip": "The number of latent images in the batch."
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "width",
+     "height",
+     "batch_size"
+    ]
+   },
+   "output": [
+    "LATENT"
+   ],
+   "output_name": [
+    "LATENT"
+   ]
+  },
+  "VAEDecode": {
+   "input": {
+    "required": {
+     "samples": [
+      "LATENT",
+      {
+       "tooltip": "The latent to be decoded."
+      }
+     ],
+     "vae": [
+      "VAE",
+      {
+       "tooltip": "The VAE model used for decoding the latent."
+      }
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "samples",
+     "vae"
+    ]
+   },
+   "output": [
+    "IMAGE"
+   ],
+   "output_name": [
+    "IMAGE"
+   ]
+  },
+  "SaveImage": {
+   "input": {
+    "required": {
+     "images": [
+      "IMAGE",
+      {
+       "tooltip": "The images to save."
+      }
+     ],
+     "filename_prefix": [
+      "STRING",
+      {
+       "default": "ComfyUI",
+       "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      }
+     ]
+    },
+    "hidden": {
+     "prompt": "PROMPT",
+     "extra_pnginfo": "EXTRA_PNGINFO"
+    }
+   },
+   "input_order": {
+    "required": [
+     "images",
+     "filename_prefix"
+    ],
+    "hidden": [
+     "prompt",
+     "extra_pnginfo"
+    ]
+   },
+   "output": [
+    "IMAGE"
+   ],
+   "output_name": [
+    "images"
+   ]
+  },
+  "ImageScale": {
+   "input": {
+    "required": {
+     "image": [
+      "IMAGE"
+     ],
+     "upscale_method": [
+      [
+       "nearest-exact",
+       "bilinear",
+       "area",
+       "bicubic",
+       "lanczos"
+      ]
+     ],
+     "width": [
+      "INT",
+      {
+       "default": 512,
+       "min": 0,
+       "max": 16384,
+       "step": 1
+      }
+     ],
+     "height": [
+      "INT",
+      {
+       "default": 512,
+       "min": 0,
+       "max": 16384,
+       "step": 1
+      }
+     ],
+     "crop": [
+      [
+       "disabled",
+       "center"
+      ]
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "image",
+     "upscale_method",
+     "width",
+     "height",
+     "crop"
+    ]
+   },
+   "output": [
+    "IMAGE"
+   ],
+   "output_name": [
+    "IMAGE"
+   ]
+  },
+  "RoomfitFitMesh": {
+   "input": {
+    "required": {
+     "mesh": [
+      "MESH",
+      {}
+     ],
+     "width_cm": [
+      "FLOAT",
+      {
+       "default": 100,
+       "min": 1,
+       "max": 2000,
+       "step": 0.5
+      }
+     ],
+     "depth_cm": [
+      "FLOAT",
+      {
+       "default": 100,
+       "min": 1,
+       "max": 2000,
+       "step": 0.5
+      }
+     ],
+     "height_cm": [
+      "FLOAT",
+      {
+       "default": 100,
+       "min": 1,
+       "max": 2000,
+       "step": 0.5
+      }
+     ],
+     "mode": [
+      [
+       "exact",
+       "uniform"
+      ],
+      {}
+     ]
+    }
+   },
+   "input_order": {
+    "required": [
+     "mesh",
+     "width_cm",
+     "depth_cm",
+     "height_cm",
+     "mode"
+    ]
+   },
+   "output": [
+    "MESH",
+    "STRING"
+   ],
+   "output_name": [
+    "mesh",
+    "fit_report"
+   ]
+  }
+ }
+}

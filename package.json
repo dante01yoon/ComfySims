@@ -11,7 +11,9 @@
     "fixtures:build": "tsx harness/tools/build-fixtures.ts",
     "web:dev": "vite web --port 5179 --strictPort",
     "web:build": "vite build web",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "web:build:nodepack": "vite build web --base /roomfit/ --outDir ../nodes/roomfit/editor --emptyOutDir",
+    "comfy:snapshot": "node harness/tools/snapshot-object-info.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.2.1",

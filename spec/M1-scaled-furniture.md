@@ -26,7 +26,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-5 | active | Using listed asset dimensions (never mesh bounds), two placed items whose footprints overlap are reported as colliding; items that only touch are not |
 | AC-6 | active | Using listed asset dimensions, an item whose footprint leaves the room, or whose height exceeds the ceiling, is reported as out of bounds |
 | AC-7 | active | Snapping puts floor positions on a 5 cm grid (height untouched) and rotation on 15° steps normalized to [0, 360) |
-| AC-8 | planned | Every `class_type` in `workflows/*.json` exists in the pinned ComfyUI node catalog snapshot |
+| AC-8 | active | `workflows/product-to-glb.json` and `workflows/render-from-depth.json` lint clean against the pinned node catalog (classes, required inputs, link targets and types, combo values) and tag their input nodes |
 | AC-9 | active | The editor exports depth (near = bright), camera-space normal and object-mask PNGs from the current camera at the requested size |
 | AC-10 | manual | End to end: fixture sofa photo → fitted GLB → placed in the fixture room → photoreal render (evidence: demo recording) |
 | AC-11 | active | `uniform` fit keeps the source proportions (±0.5%) and fits inside the listed box, touching it on at least one axis (±1 cm) |
@@ -36,6 +36,9 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-15 | active | Moving and rotating items in the editor snap (AC-7), and collisions and out-of-bounds (AC-5, AC-6) update and highlight live |
 | AC-16 | active | Saving returns the edited layout, which passes the layout contract |
 | AC-17 | active | Undo and redo cover move, rotate and remove; loading starts a fresh history; a new edit clears redo |
+| AC-18 | active | The node pack fits ComfyUI MESH vertices like `fitGlb` (same sizes, pivot and report), per item of a padded batch, drops normals after non-uniform scale, and returns a reason for flat meshes |
+| AC-19 | active | ComfyUI started with the node pack registers `RoomfitFitMesh` exactly as `spec/contracts/roomfit-nodes.json` says and serves the built editor at `/roomfit/` |
+| AC-20 | active | `buildProductPrompt` and `buildRenderPrompt` wire inputs into the tagged nodes of a workflow without mutating it, and list every missing tag |
 
 ## Decisions behind this spec
 
@@ -43,6 +46,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 - Listed dimensions are the truth; fitting is a visual mode (`exact` | `uniform`): [ADR-0002](../docs/adr/0002-fit-per-axis-to-listed-dimensions.md)
 - Harness-first, spec-driven workflow: [ADR-0003](../docs/adr/0003-harness-first-spec-driven.md)
 - Editor stack and agent-legible API: [ADR-0004](../docs/adr/0004-editor-stack-and-agent-api.md)
+- Node pack, workflow contract and local ComfyUI in the harness: [ADR-0005](../docs/adr/0005-node-pack-and-workflow-contract.md)
 
 ## Spec changes
 
@@ -102,3 +106,26 @@ snapRotation(degrees: number, stepDegrees?: number): number
   - `depth`: grayscale, linear between nearest and farthest rendered point, near = 255
   - `normal`: camera-space normals as RGB = (n + 1) / 2, so a surface facing the camera is (128, 128, 255)
   - `mask`: items white (255), everything else black (0)
+
+## Node pack, workflows and prompt builders (AC-8, AC-18 ~ AC-20)
+
+**Node pack** — `nodes/roomfit/` is a ComfyUI custom node folder.
+- `fit.py`: `fit_mesh(mesh: Types.MESH, dimensions: {"width","depth","height"} in cm, mode: "exact" | "uniform")` returns `{"ok": True, "mesh": MESH, "reports": [FitReport, ...]}` (one report per batch item, same keys as the TypeScript `FitReport`) or `{"ok": False, "reason": "degenerate-bounds", "index": i}`. Never mutates its input. MESH vertices are meters (what `SaveGLB` writes); same frame as ADR-0002. Padded batches: only the first `vertex_counts[i]` rows of item `i` are read and moved. Normals are set to `None` after a non-uniform scale and kept after a uniform one; every other MESH field is carried over.
+- `__init__.py`: registers `RoomfitFitMesh` exactly as `spec/contracts/roomfit-nodes.json` (the node raises `ValueError(reason)` on a failed fit; `fit_report` output is the reports list as JSON), and serves `nodes/roomfit/editor/` (built by `pnpm web:build:nodepack`, git-ignored) at `/roomfit/` through ComfyUI's `PromptServer` routes.
+- Python acceptance tests run in the ComfyUI venv (`ROOMFIT_COMFYUI_DIR`, default `~/Desktop/github/ComfyUI`); AC-19 starts that ComfyUI on CPU with `--base-directory .harness/comfy-base` so the checkout itself is never modified.
+
+**Workflows** — ComfyUI API-format JSON in `workflows/`. Input nodes carry `_meta.title` tags:
+- `product-to-glb`: `roomfit:product-image` (LoadImage), `roomfit:seed` (KSampler), `roomfit:fit` (RoomfitFitMesh), `roomfit:save` (SaveGLB fed by the fit). Local path: Hunyuan3D 2 (`ImageOnlyCheckpointLoader` → `CLIPVisionEncode` → `Hunyuan3Dv2Conditioning` → `KSampler` → `VAEDecodeHunyuan3D` → `VoxelToMesh`).
+- `render-from-depth`: `roomfit:depth` (LoadImage of the depth pass), `roomfit:positive` / `roomfit:negative` (CLIPTextEncode), `roomfit:seed` (KSampler), `roomfit:save` (SaveImage), through a depth ControlNet.
+- Model file names are not checked by the lint (the local catalog has none installed); the AC-10 demo pins them.
+- Catalog: `spec/contracts/comfyui-object-info.json`, regenerated in a spec session with `pnpm comfy:snapshot <object_info.json>`.
+
+**Prompt builders** — `packages/comfy/src/index.ts`, pure:
+
+```ts
+type PromptOutcome = { ok: true; prompt: ApiWorkflow } | { ok: false; missing: string[] }
+buildProductPrompt(workflow, { imageName, dimensions, mode, seed }): PromptOutcome
+buildRenderPrompt(workflow, { depthImageName, prompt, negativePrompt, seed }): PromptOutcome
+```
+
+`ApiWorkflow` is the type in `harness/tools/lint-workflow.ts`. `missing` lists absent tags in the order the builder needs them (product: image, fit, seed; render: depth, positive, negative, seed).
