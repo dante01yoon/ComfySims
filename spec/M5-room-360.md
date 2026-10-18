@@ -90,7 +90,7 @@ Seam = mean |column 0 − column 2047| in RGB, against 3.3 between two ordinary 
 | AC-66 | active | Moving an item in the room marks that room's panorama stale; "Regenerate" queues a new job; nothing regenerates automatically |
 | AC-67 | active | `view_360` MCP tool returns PNG image content and a saved path; listed in `mcp-tools.json` |
 | AC-68 | active | `pano360-from-depth.json` lints against the Cloud catalog snapshot |
-| AC-69 | manual | Recording on real Comfy Cloud: the demo bedroom as a 360° view, looking around past the reading corner |
+| AC-69 | manual | Recording on real Comfy Cloud: the demo bedroom as a 360° view, looking around past the reading corner (evidence 2026-10-18: `docs/recordings/demo-ac69-360.md`; found: large flat items like the wardrobe come out smudged) |
 
 ## 9. Test plan
 
