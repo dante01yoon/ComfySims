@@ -1,0 +1,1 @@
+계약(spec/contracts/editor-api.ts)에 auto 모드가 추가됐어. spec/M2-home-studio.md 의 "Fitting real generated furniture" 절대로 에디터 패널의 맞춤 모드 기본값을 auto로 바꾸고 선택지에 auto를 넣어줘. 상태줄에는 실제로 쓴 모드와 회전 각도를 같이 보여줘(예: "Placed — auto → uniform, turned 32°"). AGENTS.md 규칙을 따르고, 끝나면 짧게 알려줘.
