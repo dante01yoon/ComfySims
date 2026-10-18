@@ -16,7 +16,7 @@ const started = Date.now()
 const mark = (label) => { marks.push({ label, t: (Date.now() - started) / 1000 }); console.log(`${marks.at(-1).t.toFixed(1)}s ${label}`) }
 
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
-const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: `${OUT}/video`, size: { width: 1280, height: 720 } } })
+const context = await browser.newContext({ viewport: { width: 1600, height: 900 }, recordVideo: { dir: `${OUT}/video`, size: { width: 1600, height: 900 } } })
 const page = await context.newPage()
 await page.goto('http://127.0.0.1:5179/')
 await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')

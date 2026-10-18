@@ -46,7 +46,7 @@ Demo sentence: *"Does this sofa fit my living room?" — answered with a real-si
 | AC-25 | active | The Comfy Cloud API key is added by the local dev server only: it never appears in browser requests or served code, and it is not forwarded to the signed storage redirect |
 | AC-26 | active | The side panel exposes the product and render flows with labelled controls and a status line |
 | AC-28 | active | The render result opens as a large overlay over the 3D view (at least half the viewport wide) that can be closed; while a ComfyUI job runs, the status line shows the step and elapsed seconds |
-| AC-27 | manual | A screen recording of the real editor driving Comfy Cloud end to end: photo → 3D → placed → render (evidence: recording) |
+| AC-27 | manual | A screen recording of the real editor driving Comfy Cloud end to end: photo → 3D → placed → render (evidence 2026-10-18: `docs/recordings/demo-ac27-cloud-live.md`) |
 
 ## Decisions behind this spec
 
