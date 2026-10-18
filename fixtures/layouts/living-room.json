@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "id": "layout-living-room",
+  "name": "Living room fixture",
+  "units": "cm",
+  "room": { "kind": "box", "width": 420, "depth": 360, "height": 240 },
+  "assets": [
+    {
+      "id": "asset-sofa-001",
+      "name": "Three-seat sofa",
+      "uri": "fixtures/glb/sofa-200x90x85-bottom-center.glb",
+      "dimensions": { "width": 200, "depth": 90, "height": 85 },
+      "source": { "kind": "generated", "workflow": "product-to-glb" }
+    }
+  ],
+  "items": [
+    {
+      "id": "item-sofa",
+      "assetId": "asset-sofa-001",
+      "position": { "x": 0, "y": 0, "z": -125 },
+      "rotationY": 0
+    }
+  ]
+}

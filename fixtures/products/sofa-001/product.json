@@ -1,0 +1,7 @@
+{
+  "name": "Three-seat sofa (fixture)",
+  "dimensions": { "width": 200, "depth": 90, "height": 85 },
+  "image": null,
+  "generatedMeshStandIn": "../../glb/generated-offset-box.glb",
+  "expectedFitted": "../../glb/sofa-200x90x85-bottom-center.glb"
+}
