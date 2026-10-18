@@ -1,0 +1,1 @@
+spec/M6-backend-and-workflows.md §5 Readiness가 바뀌었어: Cloud에서는 노드 클래스만 보고 모델 파일은 로컬에서만 검사해. 실제 Comfy Cloud 카탈로그를 fixtures/catalogs/comfy-cloud-live.json 으로 고정했고, acceptance/readiness.test.ts 가 `missingFromCatalog(workflow, catalog, backendKind)` 세 번째 인자를 기대하며 빨개. 이걸 구현하고 에디터가 현재 백엔드 종류를 넘기게 해서 pnpm verify 전체가 통과하게 해줘. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.
