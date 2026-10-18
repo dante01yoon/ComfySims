@@ -29,6 +29,8 @@ Show a whole home the way the reference does (Meng To, 2026-10-15: a cut-away 3D
 | AC-42 | active | Rendering in the studio uses the current (focused) view and keeps it |
 | AC-43 | active | The Python node pack aligns yaw and supports `auto` exactly like the TypeScript fit (same yaw up to front/back, same chosen mode), reports `requested` and `yawDegrees`, and can switch alignment off |
 | AC-44 | active | A focused room is framed from above (elevation 55–75°) so walls do not hide it; the studio has a "Render this view" button whose prompt is built from the focused room and the scene preset |
+| AC-45 | active | Focusing a room in the studio cuts all walls down to 110 cm (dollhouse cutaway) so furniture against any wall stays visible; whole-house view keeps full-height walls |
+| AC-46 | active | Rendering with a focused room shoots an eye-level photo (camera 140–160 cm high, inside the room, looking across it) and restores the view; without focus it renders the current view |
 | AC-35 | manual | A studio recording of the demo house that holds up next to the reference: cut-away walls, warm materials, landscape, presets switching (evidence 2026-10-18: `docs/recordings/demo-ac35-studio.md`) |
 
 ## Plan rooms (AC-29 ~ AC-31)
@@ -79,9 +81,16 @@ Added after the spec session left the editor contract behind three times (impl-0
 - `findSpot(layout, zoneId, dimensions)` in `packages/placement` returns `FindSpotOutcome` (`packages/schema/src/domain.ts`). Candidates: the solid stretches of walls bounding the zone (doors and windows excluded), longest first; along each, from its middle outwards in 5 cm steps; the item's back (−Z) flush against the wall's inner face (+0.1 cm), front (+Z, ADR-0002) facing into the zone; positions snapped to 5 cm along the wall; first candidate with no collisions and no out-of-bounds wins. Box rooms: the four walls of the box. This resolves the open "face the room" question.
 - `focusZone(zoneId | null)`: camera target at the zone's centre, distance fitted to the zone, same three-quarter elevation; `null` returns to the whole-house frame. Studio shows one chip per zone (button named by the zone name) above the preset bar; the active one is pressed.
 - `addProductFromPhoto({ …, zoneId? })`: target zone = `zoneId` ?? focused zone; if there is one, the item goes where `findSpot` says (failure `no-space`, nothing added); otherwise as before (room centre).
-- `renderInComfy` renders from the current camera and leaves it unchanged; works in both views.
+- `renderInComfy` leaves the camera unchanged. With a focused room it renders from an eye-level camera (AC-46); otherwise from the current camera. `state().lastRenderCamera` reports the camera used.
 
 ## Node pack parity and studio follow-ups (AC-43, AC-44)
 
 - `fit_mesh(mesh, dimensions, mode, align="auto")`: same search as `fitGlbBytes` (0.5° steps over 0–90°, then 90° to put the long side on the longer listed axis, ties keep 0°); `mode` accepts `auto`; reports gain `requested` and `yawDegrees` (AC-18 expectations updated). `RoomfitFitMesh.mode` options are `auto, exact, uniform` with `auto` first (contract updated).
 - Room focus elevation 60° (whole-house view stays at its 30–65°). The studio shows a "Render this view" button next to the presets; it renders the current view with the prompt "Photograph of the <room name> of a bright modern home, <preset> light, …" (render overlay shows the prompt), raised by impl-11.
+
+## Found by recording the walkthrough (AC-45, AC-46)
+
+The first real-Cloud walkthrough (2026-10-18) showed two problems no test caught: (1) "Render this view" from the 60° room framing gave an overhead miniature, not an interior photo; (2) a lamp placed correctly against the office's east wall was hidden behind that full-height wall from the studio camera.
+
+- Cutaway: `state().wallCutCm` is 270 (the plan's `wallHeight`) in the whole-house view and 110 when a room is focused; walls, door heads and window parts above the cut are not drawn (placement rules still use the real wall height).
+- Eye-level room shot: camera at 150 cm, placed 40 cm in from the zone corner farthest from the zone's largest item, looking at the zone centre at 90 cm; render uses this camera for `exportPasses`, then restores the previous camera. Without focus, the current camera is used. `state().lastRenderCamera` reports it.

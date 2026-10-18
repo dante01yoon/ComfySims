@@ -104,3 +104,32 @@ test('AC-44 the studio Render button renders the current room with a prompt from
   await expect(page.getByText(/living/i).last()).toBeVisible()
   await expect(page.getByText(/evening/i).last()).toBeVisible()
 })
+
+test('AC-45 focusing a room cuts the walls down so nothing against a wall is hidden', async ({ page }) => {
+  expect(await page.evaluate(() => window.roomfit.state().wallCutCm)).toBe(270)
+  await page.evaluate(() => window.roomfit.focusZone('office'))
+  expect(await page.evaluate(() => window.roomfit.state().wallCutCm)).toBe(110)
+  await page.evaluate(() => window.roomfit.focusZone(null))
+  expect(await page.evaluate(() => window.roomfit.state().wallCutCm)).toBe(270)
+})
+
+test('AC-46 rendering a focused room shoots it at eye level from inside the room and restores the view', async ({ page }) => {
+  await page.evaluate(() => window.roomfit.focusZone('living'))
+  const before = await page.evaluate(() => window.roomfit.camera())
+  const outcome = await page.evaluate(() => window.roomfit.renderInComfy({ prompt: 'warm living room', seed: 3, size: { width: 576, height: 448 } }))
+  if (!outcome.ok) throw new Error(outcome.message)
+
+  const shot = (await page.evaluate(() => window.roomfit.state().lastRenderCamera))!
+  expect(shot.position.y).toBeGreaterThanOrEqual(140)
+  expect(shot.position.y).toBeLessThanOrEqual(160)
+  expect(inside('living', shot.position)).toBe(true)
+  expect(inside('living', shot.target)).toBe(true)
+  expect(await page.evaluate(() => window.roomfit.camera())).toEqual(before)
+})
+
+test('AC-46 rendering without a focused room uses the current view', async ({ page }) => {
+  const before = await page.evaluate(() => window.roomfit.camera())
+  const outcome = await page.evaluate(() => window.roomfit.renderInComfy({ prompt: 'house', seed: 1, size: { width: 576, height: 448 } }))
+  if (!outcome.ok) throw new Error(outcome.message)
+  expect(await page.evaluate(() => window.roomfit.state().lastRenderCamera)).toEqual(before)
+})

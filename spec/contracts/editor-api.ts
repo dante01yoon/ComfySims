@@ -21,6 +21,8 @@ export type EditorState = {
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
+  wallCutCm: number
+  lastRenderCamera: { position: Vec3; target: Vec3 } | null
 }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
