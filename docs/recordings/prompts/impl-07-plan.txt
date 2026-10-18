@@ -1,0 +1,1 @@
+spec/M2-home-studio.md 의 active AC들(AC-29~AC-31)을 초록으로 만들어줘. 레이아웃 계약에 plan 방(벽·문·창·구역)이 추가돼서 placement와 에디터가 따라와야 해. 에디터 뷰에서는 plan 방의 벽을 두께 있는 상자로, 문·창 구멍을 뚫어서 보여줘. 결정은 docs/adr/0007 을 봐. AGENTS.md 규칙을 따르고, 끝나면 무엇을 했는지 짧게 알려줘.
