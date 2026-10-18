@@ -31,8 +31,8 @@ describe('AC-21 ComfyUI client', () => {
     const [file] = savedFiles(built.prompt, finished.outputs)
     const downloaded = await comfy.download(file!)
 
-    expect(fake.prompts.get(queued.id)!.prompt['122'].inputs.image).toBe(uploaded.name)
-    expect(fake.prompts.get(queued.id)!.prompt['3'].inputs.seed).toBe(5)
+    expect(fake.prompts.get(queued.id)!.prompt['122']!.inputs.image).toBe(uploaded.name)
+    expect(fake.prompts.get(queued.id)!.prompt['3']!.inputs.seed).toBe(5)
     expect(statuses).toEqual(['in_progress', 'completed'])
     expect(file).toEqual({ filename: 'product_00001_.glb', subfolder: 'roomfit', type: 'output' })
     expect(downloaded.ok && new TextDecoder().decode(downloaded.bytes.slice(0, 4))).toBe('glTF')

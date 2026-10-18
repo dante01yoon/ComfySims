@@ -3,12 +3,25 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { Box3, type Object3D, type Scene } from 'three'
 
-import { collisions, outOfBounds } from '../../packages/placement/src/index.ts'
-import { parseLayout, type RoomLayout } from '../../packages/schema/src/index.ts'
-import type { EditorState, RoomfitEditorApi, SceneItem } from '../../spec/contracts/editor-api.ts'
+import { buildPhotoTo3dPrompt, buildRenderPrompt, type Failure } from '../../packages/comfy/src/index.ts'
+import { fitGlbBytes } from '../../packages/fit/src/index.ts'
+import { collisions, outOfBounds, snapPosition } from '../../packages/placement/src/index.ts'
+import { Dimensions, parseLayout, type Asset, type PlacedItem, type RoomLayout } from '../../packages/schema/src/index.ts'
+import type {
+  ComfyFailure,
+  ComfyJob,
+  EditorState,
+  ProductRequest,
+  RenderRequest,
+  RoomfitEditorApi,
+  SceneItem
+} from '../../spec/contracts/editor-api.ts'
+import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
+import renderWorkflow from '../../workflows/render-from-depth.json'
+import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, redo, undo, type History } from './history.ts'
-import { loadMesh } from './meshes.ts'
+import { loadMesh, meshKey } from './meshes.ts'
 import { exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -16,12 +29,16 @@ type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 type Size = { width: number; height: number }
 
 const MAX_PASS_SIZE = 8192
+const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
+const PRODUCT_WORKFLOW = 'cloud/product-to-glb-pixal3d'
 
 export type Editor = {
   history: History<RoomLayout>
   selectedId: string | null
   meshes: ReadonlyMap<string, Object3D | null>
   gesture: Gesture
+  jobs: readonly ComfyJob[]
+  lastRender: string | null
   revision: number
 }
 
@@ -35,7 +52,15 @@ const emptyLayout: RoomLayout = {
   items: []
 }
 
-let editor: Editor = { history: fresh(emptyLayout), selectedId: null, meshes: new Map(), gesture: 'none', revision: 0 }
+let editor: Editor = {
+  history: fresh(emptyLayout),
+  selectedId: null,
+  meshes: new Map(),
+  gesture: 'none',
+  jobs: [],
+  lastRender: null,
+  revision: 0
+}
 const listeners = new Set<() => void>()
 
 let getThree: (() => RootState) | null = null
@@ -63,9 +88,10 @@ function edit(next: RoomLayout): void {
 }
 
 function requestMeshes(layout: RoomLayout): void {
-  for (const { uri } of layout.assets) {
-    void loadMesh(uri).then((mesh) => {
-      if (!editor.meshes.has(uri)) update({ meshes: new Map(editor.meshes).set(uri, mesh) })
+  for (const asset of layout.assets) {
+    const key = meshKey(asset)
+    void loadMesh(asset).then((mesh) => {
+      if (!editor.meshes.has(key)) update({ meshes: new Map(editor.meshes).set(key, mesh) })
     })
   }
 }
@@ -76,7 +102,7 @@ function nextFrame(): Promise<number> {
 
 async function rendered(): Promise<RootState> {
   await threeReady
-  await Promise.all(editor.history.present.assets.map(({ uri }) => loadMesh(uri)))
+  await Promise.all(editor.history.present.assets.map(loadMesh))
   while (committedRevision < editor.revision) await nextFrame()
   return getThree!()
 }
@@ -155,8 +181,100 @@ function state(): EditorState {
     collisions: collisions(history.present),
     outOfBounds: outOfBounds(history.present),
     canUndo: history.past.length > 0,
-    canRedo: history.future.length > 0
+    canRedo: history.future.length > 0,
+    jobs: [...editor.jobs],
+    lastRender: editor.lastRender
   }
+}
+
+function reportJob(job: ComfyJob): void {
+  update({ jobs: [...editor.jobs, job] })
+}
+
+function rejected(kind: ComfyJob['kind'], message: string): Failure {
+  reportJob({ kind, status: 'failed', message })
+  return { ok: false, reason: 'rejected', message }
+}
+
+function uniqueId(name: string, taken: readonly { id: string }[]): string {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product'
+  const ids = new Set(taken.map(({ id }) => id))
+  let id = base
+  for (let suffix = 2; ids.has(id); suffix++) id = `${base}-${suffix}`
+  return id
+}
+
+function roundedToFloat32Noise(distortion: number): number {
+  return Math.round(distortion * 1e4) / 1e4
+}
+
+async function blobAt(url: string): Promise<Blob> {
+  return (await fetch(url)).blob()
+}
+
+function placeAtRoomCenter(asset: Asset): PlacedItem {
+  const layout = editor.history.present
+  const item: PlacedItem = {
+    id: uniqueId(asset.id, layout.items),
+    assetId: asset.id,
+    position: snapPosition({ x: 0, y: 0, z: 0 }),
+    rotationY: 0
+  }
+  const next = { ...layout, assets: [...layout.assets, asset], items: [...layout.items, item] }
+  setHistory(commit(editor.history, next), 'none')
+  requestMeshes(next)
+  return item
+}
+
+async function addProductFromPhoto(request: ProductRequest): ReturnType<RoomfitEditorApi['addProductFromPhoto']> {
+  const mode = request.mode ?? 'exact'
+  const name = request.name.trim()
+  if (!name) return rejected('product', 'the product needs a name')
+  if (!Dimensions.safeParse(request.dimensions).success) return rejected('product', 'width, depth and height must be positive centimeters')
+
+  const photo = await blobAt(`data:application/octet-stream;base64,${request.imageBase64}`)
+  const seed = request.seed ?? randomSeed()
+  const generated = await generate('product', reportJob, { file: photo, fileName: request.fileName }, (imageName) =>
+    buildPhotoTo3dPrompt(productWorkflow, { imageName, seed })
+  )
+  if (!generated.ok) return generated
+
+  reportJob({ kind: 'product', status: 'fitting' })
+  const fitted = await fitGlbBytes(generated.bytes, request.dimensions, mode)
+  if (!fitted.ok) {
+    const failure: ComfyFailure = { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.reason}` }
+    reportJob({ kind: 'product', status: 'failed', message: failure.message })
+    return failure
+  }
+  const { flagged } = fitted.report
+  const distortion = roundedToFloat32Noise(fitted.report.distortion)
+  const item = placeAtRoomCenter({
+    id: uniqueId(name, editor.history.present.assets),
+    name,
+    uri: comfyOutputUri(generated.file),
+    dimensions: request.dimensions,
+    source: { kind: 'generated', workflow: PRODUCT_WORKFLOW },
+    fit: { mode, distortion }
+  })
+  reportJob({ kind: 'product', status: 'done' })
+  return { ok: true, itemId: item.id, report: { mode, distortion, flagged } }
+}
+
+async function renderInComfy(request: RenderRequest): ReturnType<RoomfitEditorApi['renderInComfy']> {
+  const size = request.size ?? DEFAULT_RENDER_SIZE
+  if (!isPassSize(size)) return rejected('render', `the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
+  const seed = request.seed ?? randomSeed()
+  const depth = await blobAt((await api.exportPasses(size)).depth)
+  const generated = await generate('render', reportJob, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
+    buildRenderPrompt(renderWorkflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
+  )
+  if (!generated.ok) return generated
+
+  const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
+  if (editor.lastRender) URL.revokeObjectURL(editor.lastRender)
+  update({ lastRender: image })
+  reportJob({ kind: 'render', status: 'done' })
+  return { ok: true, image }
 }
 
 /** The `window.roomfit` implementation; UI gestures call these same functions. */
@@ -183,5 +301,7 @@ export const api: RoomfitEditorApi = {
     if (!isPassSize(size)) throw new RangeError(`pass size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
     const { gl, scene, camera } = await rendered()
     return exportPasses(gl, scene, camera, size)
-  }
+  },
+  addProductFromPhoto,
+  renderInComfy
 }

@@ -4,8 +4,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Vector3, type Material, type Object3D } from 'three'
 
 import { collisions, outOfBounds } from '../../packages/placement/src/index.ts'
-import { serializeLayout, type Asset, type PlacedItem, type Room as BoxRoom } from '../../packages/schema/src/index.ts'
+import { serializeLayout, type Asset, type FitMode, type PlacedItem, type Room as BoxRoom } from '../../packages/schema/src/index.ts'
+import type { ComfyJob } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
+import { meshKey } from './meshes.ts'
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -203,7 +205,80 @@ function Panel() {
         <div key={`${itemId}|${reason}`} className="problem">{itemId}: {reason}</div>
       ))}
       {collidingPairs.length + escapes.length === 0 && <div>None</div>}
+      <ComfyPanel />
     </aside>
+  )
+}
+
+const SIZE_FIELDS = [
+  ['width', 'Width (cm)'],
+  ['depth', 'Depth (cm)'],
+  ['height', 'Height (cm)']
+] as const
+
+function base64Of(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function statusLine(job: ComfyJob | undefined): string {
+  if (!job) return 'Ready'
+  if (job.status === 'done') return job.kind === 'product' ? 'Placed' : 'Rendered'
+  if (job.status === 'failed') return `Failed: ${job.message ?? 'unknown error'}`
+  return `${job.kind === 'product' ? 'Generate 3D' : 'Render'}: ${job.status.replace('_', ' ')}…`
+}
+
+function ComfyPanel() {
+  const { jobs, lastRender } = useSyncExternalStore(subscribe, snapshot)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [name, setName] = useState('')
+  const [size, setSize] = useState({ width: '', depth: '', height: '' })
+  const [mode, setMode] = useState<FitMode>('exact')
+  const [prompt, setPrompt] = useState('')
+  const job = jobs.at(-1)
+  const busy = job !== undefined && job.status !== 'done' && job.status !== 'failed'
+
+  const generate3d = async () => {
+    if (!photo) return
+    const dimensions = { width: Number(size.width), depth: Number(size.depth), height: Number(size.height) }
+    await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode })
+  }
+
+  return (
+    <>
+      <h2>Product from photo</h2>
+      <label>
+        Product photo <input type="file" accept="image/*" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
+      </label>
+      <label>
+        Product name <input value={name} onChange={(event) => setName(event.target.value)} />
+      </label>
+      {SIZE_FIELDS.map(([axis, label]) => (
+        <label key={axis}>
+          {label}{' '}
+          <input type="number" min="1" value={size[axis]} onChange={(event) => setSize({ ...size, [axis]: event.target.value })} />
+        </label>
+      ))}
+      <label>
+        Fit mode{' '}
+        <select value={mode} onChange={(event) => setMode(event.target.value === 'uniform' ? 'uniform' : 'exact')}>
+          <option value="exact">exact</option>
+          <option value="uniform">uniform</option>
+        </select>
+      </label>
+      <button onClick={generate3d} disabled={busy || !photo}>Generate 3D</button>
+      <h2>Render</h2>
+      <label>
+        Render prompt <input value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+      </label>
+      <button onClick={() => api.renderInComfy({ prompt })} disabled={busy || !prompt.trim()}>Render</button>
+      <div role="status">{statusLine(job)}</div>
+      {lastRender && <img src={lastRender} alt="Render result" />}
+    </>
   )
 }
 
@@ -246,7 +321,7 @@ export function App() {
               key={item.id}
               item={item}
               asset={asset}
-              mesh={editor.meshes.get(asset.uri)}
+              mesh={editor.meshes.get(meshKey(asset))}
               emphasis={emphasisOf(item.id, problems, editor.selectedId)}
             />
           ) : null
