@@ -1,0 +1,1 @@
+spec/M3-house-workspace.md (Approved) 의 빨간 AC들을 초록으로 만들어줘: AC-23·24·44(작업 모델 변경으로 테스트가 바뀜), AC-47~AC-52(작업 패널·동시 실행·예상 시간·방 라벨·이름 변경·에셋 라이브러리). AC-53(3D 사진)은 다음 세션이니 하지 마. 계약은 packages/schema/src/domain.ts 와 spec/contracts/editor-api.ts, 결정은 ADR-0008. AGENTS.md 규칙을 따르고, 끝나기 전에 스튜디오에서 작업 패널과 라벨이 보이는 스크린샷을 직접 확인하고 짧게 알려줘.
