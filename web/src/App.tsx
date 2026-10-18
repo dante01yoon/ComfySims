@@ -10,7 +10,6 @@ import {
   type Asset,
   type BoxRoom,
   type FitMode,
-  type FloorMaterial,
   type PlacedItem,
   type PlanRoom,
   type Room,
@@ -19,14 +18,16 @@ import {
 } from '../../packages/schema/src/index.ts'
 import type { ComfyJob, ComfyJobStatus } from '../../spec/contracts/editor-api.ts'
 import { api, attachControls, attachThree, beginDrag, endDrag, loadUnknown, markCommitted, select, snapshot, subscribe } from './editor.ts'
+import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
+import { PresetBar, StudioScene } from './studio.tsx'
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
 const floorPlane = new Plane(new Vector3(0, 1, 0), 0)
 const emphasisColors = { none: new Color(0x000000), selected: new Color(0x1f4f8f), problem: new Color(0xb3261e) }
 
-const floorColors: Record<FloorMaterial, string> = { oak: '#c9a46c', walnut: '#7a5536', tile: '#d9d6cf', concrete: '#a7a39c', carpet: '#b9ad9a' }
+const WALL_PLASTER = '#efe4d1'
 
 type Emphasis = keyof typeof emphasisColors
 
@@ -59,7 +60,9 @@ function wallBoxes(room: PlanRoom): WallBox[] {
         rotationY
       }
     }
-    const solid = solidStretches(wall, room.openings, ['door', 'window']).map((stretch) => box(`${stretch[0]}`, stretch, 0, room.wallHeight))
+    const halfThickness = room.wallThickness / 2
+    const joined = ([start, end]: [number, number]): [number, number] => [start === 0 ? -halfThickness : start, end === length ? length + halfThickness : end]
+    const solid = solidStretches(wall, room.openings, ['door', 'window']).map((stretch) => box(`${stretch[0]}`, joined(stretch), 0, room.wallHeight))
     const aroundOpenings = room.openings
       .filter((opening) => opening.wallId === wall.id)
       .flatMap((opening): WallBox[] => {
@@ -84,15 +87,15 @@ function PlanRoomView({ room }: { room: PlanRoom }) {
   return (
     <group>
       {shapes.map(({ zone, shape }) => (
-        <mesh key={zone.id} rotation-x={-Math.PI / 2}>
+        <mesh key={zone.id} rotation-x={-Math.PI / 2} receiveShadow>
           <shapeGeometry args={[shape]} />
-          <meshStandardMaterial color={floorColors[zone.floor]} />
+          <meshStandardMaterial map={floorTexture(zone.floor)} roughness={zone.floor === 'tile' ? 0.45 : 0.75} />
         </mesh>
       ))}
       {boxes.map((wall) => (
-        <mesh key={wall.key} position={wall.center} rotation-y={wall.rotationY}>
+        <mesh key={wall.key} position={wall.center} rotation-y={wall.rotationY} castShadow receiveShadow>
           <boxGeometry args={wall.size} />
-          <meshStandardMaterial color="#ece8e1" />
+          <meshStandardMaterial color={WALL_PLASTER} roughness={0.95} />
         </mesh>
       ))}
     </group>
@@ -136,6 +139,7 @@ function itemModel(source: Object3D): Object3D {
   const copy = source.clone()
   copy.traverse((object) => {
     if (!(object instanceof Mesh)) return
+    object.castShadow = object.receiveShadow = true
     if (!object.geometry.hasAttribute('normal')) object.geometry.computeVertexNormals()
     object.material = Array.isArray(object.material) ? object.material.map(doubleSidedCopy) : doubleSidedCopy(object.material)
   })
@@ -191,7 +195,7 @@ function Item({ item, asset, mesh, emphasis }: ItemProps) {
       {model ? (
         <primitive object={model} scale={METERS_TO_CM} />
       ) : (
-        <mesh position-y={height / 2}>
+        <mesh position-y={height / 2} castShadow receiveShadow>
           <boxGeometry args={[width, height, depth]} />
           <meshStandardMaterial color="#8d9399" emissive={emphasisColors[emphasis]} />
         </mesh>
@@ -238,7 +242,7 @@ function download(): void {
   URL.revokeObjectURL(link.href)
 }
 
-function Panel() {
+function Panel({ hidden }: { hidden: boolean }) {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const [loadIssues, setLoadIssues] = useState<string[]>([])
   const { collisions: collidingPairs, outOfBounds: escapes, canUndo, canRedo, selectedId, layout } = useMemo(() => api.state(), [editor])
@@ -252,7 +256,7 @@ function Panel() {
   }
 
   return (
-    <aside>
+    <aside hidden={hidden}>
       <Field label="Open layout">
         <input type="file" accept=".json,application/json" onChange={open} />
       </Field>
@@ -473,30 +477,43 @@ export function App() {
     () => new Set([...collisions(layout).flatMap(({ a, b }) => [a, b]), ...outOfBounds(layout).map(({ itemId }) => itemId)]),
     [layout]
   )
+  const studio = editor.view === 'studio'
   useKeyboardShortcuts()
 
   return (
     <>
-      <Canvas camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
-        <Bridge revision={editor.revision} />
-        <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />
-        <directionalLight position={[200, 400, 300]} intensity={1.5} />
-        <OrbitControls makeDefault ref={attachControls} />
-        <RoomView room={layout.room} />
-        {layout.items.map((item) => {
-          const asset = assets.get(item.assetId)
-          return asset ? (
-            <Item
-              key={item.id}
-              item={item}
-              asset={asset}
-              mesh={editor.meshes.get(meshKey(asset))}
-              emphasis={emphasisOf(item.id, problems, editor.selectedId)}
-            />
-          ) : null
-        })}
-      </Canvas>
-      <Panel />
+      <main className={studio ? 'viewport studio' : 'viewport'}>
+        <Canvas shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
+          <Bridge revision={editor.revision} />
+          {studio ? (
+            <StudioScene room={layout.room} />
+          ) : (
+            <>
+              <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />
+              <directionalLight position={[200, 400, 300]} intensity={1.5} />
+            </>
+          )}
+          <OrbitControls makeDefault ref={attachControls} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />
+          <RoomView room={layout.room} />
+          {layout.items.map((item) => {
+            const asset = assets.get(item.assetId)
+            return asset ? (
+              <Item
+                key={item.id}
+                item={item}
+                asset={asset}
+                mesh={editor.meshes.get(meshKey(asset))}
+                emphasis={emphasisOf(item.id, problems, editor.selectedId)}
+              />
+            ) : null
+          })}
+        </Canvas>
+        {studio && <PresetBar />}
+        <button className="view-toggle" onClick={() => api.setView(studio ? 'editor' : 'studio')}>
+          {studio ? 'Editor' : 'Studio'}
+        </button>
+      </main>
+      <Panel hidden={studio} />
     </>
   )
 }

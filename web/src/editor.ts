@@ -25,6 +25,7 @@ import { comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
+import { studioCamera } from './framing.ts'
 import { exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -320,7 +321,10 @@ export const api: RoomfitEditorApi = {
   },
   addProductFromPhoto,
   renderInComfy,
-  setView: (view) => update({ view }),
+  setView: (view) => {
+    update({ view })
+    if (view === 'studio') api.setCamera(studioCamera(editor.history.present.room))
+  },
   setScene: (scene) => update({ scene }),
   lighting: () => ({ preset: editor.scene, ...SCENE_LIGHTING[editor.scene] }),
   camera: () => {

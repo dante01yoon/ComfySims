@@ -9,6 +9,16 @@
       body { font: 13px/1.4 system-ui, sans-serif; background: #1d1f22; color: #e8e6e3; }
       :root { --panel: 300px; --line: #33363a; --muted: #9a9da1; --field: #26292d; --accent: #4f8cf0; }
       #root { display: grid; grid-template-columns: 1fr var(--panel); }
+      #root:has(> aside[hidden]) { grid-template-columns: 1fr; }
+      aside[hidden] { display: none; }
+      .viewport { position: relative; min-width: 0; min-height: 0; }
+      .viewport.studio { background: radial-gradient(ellipse at 50% 45%, #4a4c50, #2c2d30 75%); }
+      .view-toggle { position: absolute; top: 14px; right: 14px; font: inherit; font-weight: 500; color: #f4efe8; background: rgba(28, 29, 31, .55); border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; padding: 6px 14px; cursor: pointer; backdrop-filter: blur(10px); }
+      .preset-bar { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(24, 25, 27, .5); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(14px); box-shadow: 0 8px 30px rgba(0, 0, 0, .25); }
+      .preset-bar button { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 500; color: rgba(244, 239, 232, .78); background: transparent; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s; }
+      .preset-bar button:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+      .preset-bar button[aria-pressed=true] { color: #1c1c1e; background: rgba(250, 246, 240, .92); }
+      .preset-bar .dot { width: 8px; height: 8px; border-radius: 50%; }
       aside { padding: 14px 16px; border-left: 1px solid var(--line); overflow: auto; display: flex; flex-direction: column; gap: 10px; }
       aside h2 { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
       aside h2:first-of-type { border-top: 0; padding-top: 0; }
