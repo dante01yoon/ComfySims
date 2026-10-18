@@ -201,6 +201,23 @@ server.registerTool(
 )
 
 server.registerTool(
+  'view_360',
+  {
+    description:
+      'Generate a photoreal 360° panorama of a room from its standing point, conditioned on the layout, and open it in the editor\'s look-around viewer. A prompt must start with "equirectangular 360 image". Waits for the job (about a minute); returns the image and the path of the saved PNG.',
+    inputSchema: { room, prompt: z.string().min(1).optional(), preset: z.enum(SCENE_PRESETS).optional() }
+  },
+  async ({ room, prompt, preset }) => {
+    const editor = editorFor('view_360')
+    const zoneId = zoneIdOf((await editor('state')).layout, room)
+    if (preset !== undefined) await editor('setScene', preset)
+    const { jobId, image } = succeeded(await editor('view360', { zoneId, prompt }))
+    const data = await editor('base64At', image)
+    return { content: [...json({ jobId, path: await saveRender(jobId, data) }).content, { type: 'image', data, mimeType: 'image/png' }] }
+  }
+)
+
+server.registerTool(
   'photo3d',
   { description: 'Turn a finished render (renderJobId) or a local photo (path) into a 3D photo shown in the editor\'s viewer. Waits for the job.', inputSchema: { renderJobId: z.string().min(1).optional(), path: z.string().min(1).optional() } },
   async ({ renderJobId, path }) => {

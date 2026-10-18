@@ -34,9 +34,14 @@ async function brightnessRow(page: Page, image: string, pitchDegrees: number) {
 
 const yawOfColumn = (column: number, width: number) => ((column + 0.5) / width) * 360 - 180
 const angleBetween = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180)
-const nearestYawAround = (row: number[], expectedYaw: number, windowDegrees = 30) => {
+const centreOfNearestRunAround = (row: number[], expectedYaw: number, windowDegrees = 30) => {
   const candidates = row.map((value, column) => ({ value, yaw: yawOfColumn(column, row.length) })).filter(({ yaw }) => angleBetween(yaw, expectedYaw) <= windowDegrees)
-  return candidates.reduce((best, next) => (next.value > best.value ? next : best)).yaw
+  const nearest = Math.max(...candidates.map(({ value }) => value))
+  const plateau = candidates.filter(({ value }) => value >= nearest - 0.5)
+  const radians = (degrees: number) => (degrees * Math.PI) / 180
+  const sin = plateau.reduce((sum, { yaw }) => sum + Math.sin(radians(yaw)), 0)
+  const cos = plateau.reduce((sum, { yaw }) => sum + Math.cos(radians(yaw)), 0)
+  return (Math.atan2(sin, cos) * 180) / Math.PI
 }
 
 test.describe('AC-63 depth panorama', () => {
@@ -51,7 +56,7 @@ test.describe('AC-63 depth panorama', () => {
 
     const belowSills = await brightnessRow(page, panorama.image, -20)
     for (const [wall, yaw] of [['south +Z', 0], ['east +X', 90], ['north -Z', 180], ['west -X', -90]] as const) {
-      expect(angleBetween(nearestYawAround(belowSills, yaw), yaw), wall).toBeLessThanOrEqual(2)
+      expect(angleBetween(centreOfNearestRunAround(belowSills, yaw), yaw), wall).toBeLessThanOrEqual(2)
     }
     const eyeLevel = await brightnessRow(page, panorama.image, 0)
     const westWindow = eyeLevel[Math.round(((-90 + 180) / 360) * panorama.width)]!

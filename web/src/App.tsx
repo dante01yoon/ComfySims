@@ -34,6 +34,7 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
+import { PanoramaViewer } from './panorama-viewer.tsx'
 import { PhotoViewer } from './photo-viewer.tsx'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
 import { base64Of, elapsedSeconds, RoomLabels, useClock, WorkspaceRail } from './workspace.tsx'
@@ -340,7 +341,13 @@ const STEP_LABELS: Record<JobKind, Partial<Record<JobStep, string>>> = {
     generating: 'Rendering on ComfyUI',
     downloading: 'Downloading the render'
   },
-  photo3d: {}
+  photo3d: {},
+  pano360: {
+    uploading: 'Uploading depth panorama',
+    queued: 'Queued on ComfyUI',
+    generating: 'Generating the 360° view on ComfyUI',
+    downloading: 'Downloading the 360° view'
+  }
 }
 
 type FitSummary = Extract<Awaited<ReturnType<RoomfitEditorApi['addProductFromPhoto']>>, { ok: true }>['report']
@@ -524,6 +531,7 @@ export function App() {
       {railOpen && <WorkspaceRail />}
       <OpenedRender studio={studio} />
       <PhotoViewer />
+      <PanoramaViewer />
     </>
   )
 }

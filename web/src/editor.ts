@@ -3,9 +3,9 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { Box3, type Object3D, type Scene } from 'three'
 
-import { buildPhotoTo3dPrompt, buildRenderPrompt, buildRoomPhotoPrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildRenderPrompt, buildRoomPhotoPrompt, studioPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
-import { collisions, findSpot, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
+import { collisions, findSpot, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
   Dimensions,
   MAX_CONCURRENT_JOBS,
@@ -22,6 +22,7 @@ import {
 } from '../../packages/schema/src/index.ts'
 import type {
   ComfyFailure,
+  DepthPanorama,
   EditorState,
   EditorView,
   Lighting,
@@ -31,8 +32,10 @@ import type {
   RoomfitEditorApi,
   SceneItem,
   ScenePreset,
-  Vec3
+  Vec3,
+  Viewer360
 } from '../../spec/contracts/editor-api.ts'
+import panoramaWorkflow from '../../workflows/cloud/pano360-from-depth.json'
 import photoWorkflow from '../../workflows/cloud/photo-to-3d-moge.json'
 import productWorkflow from '../../workflows/cloud/product-to-glb-pixal3d.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
@@ -40,14 +43,15 @@ import { comfyOutputUri, generate, randomSeed, type ComfyInput } from './comfy.t
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, studioCamera } from './framing.ts'
-import { exportPasses } from './passes.ts'
+import { boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, studioCamera } from './framing.ts'
+import { exportDepthPanorama, exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 type Size = { width: number; height: number }
 type CameraPose = { position: Vec3; target: Vec3 }
 type PhotoViewer = EditorState['photoViewer']
+type PanoramaViewer = Omit<Viewer360, 'stale'>
 
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
@@ -55,6 +59,11 @@ const PRODUCT_WORKFLOW = 'cloud/product-to-glb-pixal3d'
 const FOCUSED_WALL_CUT_CM = 110
 const PHOTO_YAW_LIMIT_DEG = 20
 const PHOTO_PITCH_LIMIT_DEG = 10
+const PANORAMA_SIZE: Size = { width: 2048, height: 1024 }
+const EYE_HEIGHT_CM = 160
+const PANORAMA_PREFIX = 'equirectangular 360 image'
+const VIEWER_PITCH_LIMIT_DEG = 80
+const VIEWER_FOV_DEG = { min: 40, max: 100, start: 75 }
 
 export type Editor = {
   history: History<RoomLayout>
@@ -65,6 +74,7 @@ export type Editor = {
   lastRender: string | null
   openedRender: { image: string; caption: string } | null
   photoViewer: PhotoViewer
+  viewer360: PanoramaViewer | null
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
@@ -100,6 +110,7 @@ let editor: Editor = {
   lastRender: null,
   openedRender: null,
   photoViewer: null,
+  viewer360: null,
   view: 'editor',
   scene: 'work',
   focusedZone: null,
@@ -245,6 +256,7 @@ function state(): EditorState {
     scene: editor.scene,
     focusedZone: editor.focusedZone,
     photoViewer: editor.photoViewer,
+    viewer360: editor.viewer360 && { ...editor.viewer360, stale: isStalePanorama(editor.viewer360.jobId) },
     wallCutCm: wallCutCm(editor),
     lastRenderCamera: editor.lastRenderCamera,
     undoLabels: labels(history),
@@ -259,9 +271,13 @@ export function wallCutCm({ history, focusedZone, shootingEyeLevel }: Editor): n
   return focusedZone !== null && !shootingEyeLevel ? Math.min(FOCUSED_WALL_CUT_CM, full) : full
 }
 
-function focusedZone(): Zone | undefined {
+function zoneById(zoneId: string | null): Zone | undefined {
   const { room } = editor.history.present
-  return room.kind === 'plan' ? room.zones.find(({ id }) => id === editor.focusedZone) : undefined
+  return room.kind === 'plan' ? room.zones.find(({ id }) => id === zoneId) : undefined
+}
+
+function focusedZone(): Zone | undefined {
+  return zoneById(editor.focusedZone)
 }
 
 function focusFrame(): CameraPose {
@@ -288,6 +304,29 @@ async function passesFrom(shot: CameraPose, size: Size): Promise<RenderPasses> {
     return await api.exportPasses(size)
   } finally {
     api.setCamera(previous)
+    update({ shootingEyeLevel: false })
+  }
+}
+
+function standingPointIn(zone: Zone): { x: number; z: number } {
+  const layout = editor.history.present
+  const clearances = layout.items.flatMap(({ assetId, position: { x, z } }) => {
+    const asset = layout.assets.find(({ id }) => id === assetId)
+    return asset ? [{ x, z, half: Math.max(asset.dimensions.width, asset.dimensions.depth) / 2 }] : []
+  })
+  return standingPoint(zone.polygon, clearances, (point) => zoneAt(layout, point) === zone.id)
+}
+
+async function depthPanoramaOf(zone: Zone): Promise<DepthPanorama> {
+  const layout = editor.history.present
+  const point = standingPointIn(zone)
+  const ceiling = { heightCm: layout.room.kind === 'plan' ? layout.room.wallHeight : layout.room.height, covers: (at: { x: number; z: number }) => zoneAt(layout, at) !== null }
+  update({ shootingEyeLevel: true })
+  try {
+    const { gl, scene } = await rendered()
+    const image = exportDepthPanorama(gl, scene, { x: point.x, y: EYE_HEIGHT_CM, z: point.z }, ceiling, PANORAMA_SIZE)
+    return { image, ...PANORAMA_SIZE, standingPoint: point, eyeHeightCm: EYE_HEIGHT_CM }
+  } finally {
     update({ shootingEyeLevel: false })
   }
 }
@@ -561,6 +600,84 @@ export function turnPhoto(yawDegrees: number, pitchDegrees: number): void {
   })
 }
 
+type Panorama = { zoneId: string; itemsWhenTaken: string }
+
+const panoramas = new Map<string, Panorama>()
+
+function itemsSignature(layout: RoomLayout, zoneId: string): string {
+  const inZone = new Set(itemsInZone(layout, zoneId))
+  return JSON.stringify(layout.items.filter(({ id }) => inZone.has(id)))
+}
+
+/** Whether items in the room of a 360° view changed since its depth panorama was taken. */
+export function isStalePanorama(jobId: string): boolean {
+  const panorama = panoramas.get(jobId)
+  return panorama !== undefined && itemsSignature(editor.history.present, panorama.zoneId) !== panorama.itemsWhenTaken
+}
+
+function panoramaPrompt(zone: Zone, prompt: string | undefined): string {
+  const text = prompt ?? `${zone.name}, ${studioPrompt(zone.name, editor.scene)}`
+  return text.startsWith(PANORAMA_PREFIX) ? text : `${PANORAMA_PREFIX}, ${text}`
+}
+
+async function panoramaShot(zone: Zone, prompt: string, step: Step, id: string): Promise<Finished<{ image: string }> | ComfyFailure> {
+  const depth = await oneAtATime(() => {
+    panoramas.set(id, { zoneId: zone.id, itemsWhenTaken: itemsSignature(editor.history.present, zone.id) })
+    return depthPanoramaOf(zone)
+  })
+  const generated = await generate(step, { file: await blobAt(depth.image), fileName: 'roomfit-depth-pano.png' }, (depthImageName) =>
+    buildRenderPrompt(panoramaWorkflow, { depthImageName, prompt, negativePrompt: '', seed: randomSeed() })
+  )
+  if (!generated.ok) return generated
+  const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
+  return { ok: true, value: { image }, result: { image } }
+}
+
+async function panoramaOf(zoneId: string, prompt: string | undefined): Promise<Started<{ image: string }>> {
+  const zone = zoneById(zoneId)
+  if (!zone) return rejection(`there is no room called ${zoneId}`)
+  const title = `360° view · ${zone.name}`
+  if (editor.jobs.some((job) => job.kind === 'pano360' && job.title === title && !isFinished(job))) return rejection(`a 360° view of ${zone.name} is already being made`)
+  const outcome = await runJob('pano360', title, (step, id) => panoramaShot(zone, panoramaPrompt(zone, prompt), step, id), () => panoramaOf(zoneId, prompt))
+  if (outcome.ok) open360(outcome.jobId)
+  return outcome
+}
+
+function view360({ zoneId, prompt }: { zoneId?: string; prompt?: string } = {}): ReturnType<RoomfitEditorApi['view360']> {
+  const target = zoneId ?? editor.focusedZone
+  return target === null ? Promise.resolve({ ok: false, reason: 'no-room' }) : panoramaOf(target, prompt)
+}
+
+function open360(jobId: string): void {
+  const job = editor.jobs.find(({ id, kind }) => id === jobId && kind === 'pano360')
+  const panorama = panoramas.get(jobId)
+  if (job?.result?.image && panorama) update({ viewer360: { jobId, zoneId: panorama.zoneId, yawDegrees: 0, pitchDegrees: 0, fovDegrees: VIEWER_FOV_DEG.start } })
+}
+
+function wrappedDegrees(degrees: number): number {
+  return ((((degrees + 180) % 360) + 360) % 360) - 180
+}
+
+/** Turns the open 360° view: yaw wraps around, pitch stays within ±80°. */
+export function turn360(yawDegrees: number, pitchDegrees: number): void {
+  const viewer = editor.viewer360
+  if (!viewer) return
+  update({
+    viewer360: {
+      ...viewer,
+      yawDegrees: wrappedDegrees(viewer.yawDegrees + yawDegrees),
+      pitchDegrees: clamped(viewer.pitchDegrees + pitchDegrees, VIEWER_PITCH_LIMIT_DEG)
+    }
+  })
+}
+
+/** Widens (positive) or narrows the open 360° view's field of view, kept within 40–100°. */
+export function zoom360(fovDegrees: number): void {
+  const viewer = editor.viewer360
+  if (!viewer) return
+  update({ viewer360: { ...viewer, fovDegrees: Math.min(VIEWER_FOV_DEG.max, Math.max(VIEWER_FOV_DEG.min, viewer.fovDegrees + fovDegrees)) } })
+}
+
 /** The caption of a job's source: the render's room and scene, or the uploaded file name. */
 export function captionOf(jobId: string): string {
   return captions.get(jobId) ?? ''
@@ -648,6 +765,13 @@ export const api: RoomfitEditorApi = {
   },
   focusZone,
   screenshot,
+  depthPanorama: (zoneId) => {
+    const zone = zoneById(zoneId)
+    return zone ? oneAtATime(() => depthPanoramaOf(zone)) : Promise.resolve({ ok: false, reason: 'unknown-zone' })
+  },
+  view360,
+  open360,
+  close360: () => update({ viewer360: null }),
   setActionLabel: (label) => {
     actionLabel = label
   }

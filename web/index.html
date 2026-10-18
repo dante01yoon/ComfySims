@@ -39,7 +39,8 @@
       aside .place-menu button { border: 0; background: transparent; text-align: left; }
       aside .place-menu button:hover { background: #3a3e44; }
       .preset-bar { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(24, 25, 27, .5); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(14px); box-shadow: 0 8px 30px rgba(0, 0, 0, .25); }
-      .preset-bar button { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 500; color: rgba(244, 239, 232, .78); background: transparent; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s; }
+      .preset-bar button { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 500; color: rgba(244, 239, 232, .78); background: transparent; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s; white-space: nowrap; }
+      .preset-bar button:disabled { opacity: .45; cursor: default; }
       .preset-bar button:hover { color: #fff; background: rgba(255, 255, 255, .08); }
       .preset-bar button[aria-pressed=true] { color: #1c1c1e; background: rgba(250, 246, 240, .92); }
       .preset-bar .dot { width: 8px; height: 8px; border-radius: 50%; }

@@ -68,6 +68,34 @@ export function eyeLevelCamera(polygon: readonly { x: number; z: number }[], foo
   }
 }
 
+type Clearance = { x: number; z: number; half: number }
+
+const STANDING_GRID_CM = 10
+
+function clearOf(point: { x: number; z: number }, clearances: readonly Clearance[]): boolean {
+  return clearances.every(({ x, z, half }) => Math.abs(point.x - x) > half || Math.abs(point.z - z) > half)
+}
+
+/** Where to stand in a zone: its centroid, or else the nearest 10 cm grid point inside it clear of every item footprint. */
+export function standingPoint(
+  polygon: readonly { x: number; z: number }[],
+  clearances: readonly Clearance[],
+  inside: (point: { x: number; z: number }) => boolean
+): { x: number; z: number } {
+  const centroid = polygonCentroid(polygon)
+  if (clearOf(centroid, clearances)) return centroid
+  const { min, max } = polygonBounds(polygon)
+  const grid = (from: number, to: number) => {
+    const first = Math.ceil(from / STANDING_GRID_CM)
+    return Array.from({ length: Math.floor(to / STANDING_GRID_CM) - first + 1 }, (_, index) => (first + index) * STANDING_GRID_CM)
+  }
+  const free = grid(min.x, max.x)
+    .flatMap((x) => grid(min.z, max.z).map((z) => ({ x, z })))
+    .filter((point) => inside(point) && clearOf(point, clearances))
+  const distance = (point: { x: number; z: number }) => Math.hypot(point.x - centroid.x, point.z - centroid.z)
+  return free.reduce((best, point) => (distance(point) < distance(best) ? point : best), free[0] ?? centroid)
+}
+
 /** The studio camera framing a floor-plan extent from the south-east, steeper for a single room so its walls do not hide it. */
 export function studioCamera(bounds: Bounds, framing: 'house' | 'room' = 'house'): { position: Vec3; target: Vec3 } {
   const target = boundsCenter(bounds)

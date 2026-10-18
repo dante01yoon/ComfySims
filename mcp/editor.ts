@@ -13,7 +13,7 @@ type Waiter = { resolve: (value: unknown) => void; reject: (error: Error) => voi
 
 const STATE_TIMEOUT_MS = 10_000
 const JOB_TIMEOUT_MS = 15 * 60_000
-const JOB_METHODS = new Set<Method>(['addProductFromPhoto', 'renderInComfy', 'photo3d', 'retryJob'])
+const JOB_METHODS = new Set<Method>(['addProductFromPhoto', 'renderInComfy', 'photo3d', 'retryJob', 'view360'])
 
 /** Calls the open editor tab through the dev server's bridge, connecting on first use and again after a disconnect. */
 export function editorBridge({ url, tokenFile }: { url: string; tokenFile: string }) {

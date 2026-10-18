@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent, t
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
 import type { Asset, Job, Room, Zone } from '../../packages/schema/src/index.ts'
-import { api, clearFinishedJobs, isFinished, openRender, select, snapshot, subscribe } from './editor.ts'
+import { api, clearFinishedJobs, isFinished, isStalePanorama, openRender, select, snapshot, subscribe } from './editor.ts'
 import { polygonCentroid } from './framing.ts'
 import { meshKey } from './meshes.ts'
 import { thumbnailOf } from './thumbnails.ts'
 
 const CLOCK_TICK_MS = 250
-const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open' } as const
+const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open', pano360: 'Open' } as const
 
 export function base64Of(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -56,6 +56,7 @@ function runAction(job: Job): void {
   if (job.kind === 'product' && itemId) return showItem(itemId)
   if (job.kind === 'render' && image) return openRender(image, job.title)
   if (job.kind === 'photo3d') api.openPhoto3d(job.id)
+  if (job.kind === 'pano360') api.open360(job.id)
 }
 
 function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: number }) {
@@ -82,9 +83,11 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
       {step === 'done' && (
         <div className="job-result">
           {image && <img src={image} alt={job.title} />}
+          {job.kind === 'pano360' && isStalePanorama(job.id) && <div className="problem">Layout changed since this view</div>}
           <div className="button-row">
             <button onClick={() => runAction(job)}>{ACTION_LABELS[job.kind]}</button>
             {job.kind === 'render' && <button onClick={() => void api.photo3d({ kind: 'render', jobId: job.id })}>View as 3D photo</button>}
+            {job.kind === 'pano360' && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
           </div>
         </div>
       )}
