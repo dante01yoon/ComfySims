@@ -10,7 +10,8 @@
       "name": "Three-seat sofa",
       "uri": "fixtures/glb/sofa-200x90x85-bottom-center.glb",
       "dimensions": { "width": 200, "depth": 90, "height": 85 },
-      "source": { "kind": "generated", "workflow": "product-to-glb" }
+      "source": { "kind": "generated", "workflow": "product-to-glb" },
+      "fit": { "mode": "exact", "distortion": 1 }
     }
   ],
   "items": [

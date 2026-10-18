@@ -27,12 +27,20 @@ export const AssetSource = z.discriminatedUnion('kind', [
   })
 ])
 
+export const FitMode = z.enum(['exact', 'uniform'])
+
+export const AssetFit = z.strictObject({
+  mode: FitMode,
+  distortion: z.number().finite().min(1)
+})
+
 export const Asset = z.strictObject({
   id: z.string().min(1),
   name: z.string().min(1),
   uri: z.string().min(1),
   dimensions: Dimensions,
-  source: AssetSource
+  source: AssetSource,
+  fit: AssetFit.optional()
 })
 
 export const PlacedItem = z.strictObject({
@@ -82,6 +90,8 @@ export const RoomLayout = z
 
 export type Dimensions = z.infer<typeof Dimensions>
 export type Room = z.infer<typeof Room>
+export type FitMode = z.infer<typeof FitMode>
+export type AssetFit = z.infer<typeof AssetFit>
 export type Asset = z.infer<typeof Asset>
 export type PlacedItem = z.infer<typeof PlacedItem>
 export type RoomLayout = z.infer<typeof RoomLayout>
