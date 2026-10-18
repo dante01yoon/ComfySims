@@ -1,0 +1,1 @@
+spec/M2-home-studio.md 의 빨간 AC들(AC-43, AC-44)을 초록으로 만들어줘. Python 노드팩의 회전 정렬·auto 모드(TS와 같은 알고리즘)와, 스튜디오의 방 포커스 각도와 "Render this view" 버튼이야. 스펙의 "Node pack parity and studio follow-ups" 절을 봐. AGENTS.md 규칙을 따르고, 끝나면 짧게 알려줘.
