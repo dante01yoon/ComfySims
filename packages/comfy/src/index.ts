@@ -79,6 +79,12 @@ function modelOptions(spec: unknown): unknown[] | null {
   return Array.isArray(options) && !isUpload ? options : null
 }
 
+/** The choices a ComfyUI's `/api/object_info` catalog lists for a node input, or null when the input is not a choice list. */
+export function inputOptions(catalog: Record<string, unknown>, classType: string, inputName: string): unknown[] | null {
+  const input = CatalogNode.safeParse(catalog[classType]).data?.input
+  return modelOptions({ ...input?.required, ...input?.optional }[inputName])
+}
+
 /** Node classes a workflow uses that a ComfyUI's `/api/object_info` catalog lacks, plus model files it lacks on Local only. */
 export function missingFromCatalog(workflow: ApiWorkflow, catalog: Record<string, unknown>, backendKind: BackendKind): string[] {
   const missing = new Set<string>()
@@ -88,10 +94,8 @@ export function missingFromCatalog(workflow: ApiWorkflow, catalog: Record<string
       continue
     }
     if (backendKind === 'cloud') continue
-    const input = CatalogNode.safeParse(catalog[class_type]).data?.input
-    const specs = { ...input?.required, ...input?.optional }
     for (const [name, value] of Object.entries(inputs)) {
-      const options = modelOptions(specs[name])
+      const options = inputOptions(catalog, class_type, name)
       if (typeof value === 'string' && options && !options.includes(value)) missing.add(value)
     }
   }

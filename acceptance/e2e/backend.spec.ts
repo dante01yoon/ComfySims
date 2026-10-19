@@ -26,7 +26,10 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.roomfit.setBackend({ kind: 'cloud' }))
 })
 test.afterEach(async ({ page }) => {
-  if (!page.isClosed()) await page.evaluate(() => window.roomfit.setBackend({ kind: 'cloud' }))
+  if (!page.isClosed()) {
+    await page.evaluate((url) => window.roomfit.setBackend({ kind: 'local', url }), LOCAL)
+    await page.evaluate(() => window.roomfit.setBackend({ kind: 'cloud' }))
+  }
 })
 
 test('AC-70 the backend switch sends new jobs to the chosen ComfyUI without a restart', async ({ page }) => {
@@ -79,7 +82,7 @@ test('AC-72 readiness names the missing nodes and models, and disables what cann
   const state = await page.evaluate(() => window.roomfit.setBackend({ kind: 'local' }))
   const missing = Object.fromEntries(state.unavailable.map(({ kind, missing: names }) => [kind, [...names].sort()]))
   expect(missing).toEqual({
-    photo3d: ['LoadMoGeModel', 'MoGeInference', 'MoGePointMapToMesh'],
+    photo3d: ['MoGePointMapToMesh'],
     pano360: ['Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors']
   })
 
@@ -87,7 +90,7 @@ test('AC-72 readiness names the missing nodes and models, and disables what cann
   if (!outcome.ok) throw new Error(outcome.message)
   const toPhoto = card(page, 'Room render · House').getByRole('button', { name: 'View as 3D photo' })
   await expect(toPhoto).toBeDisabled()
-  await expect(toPhoto).toHaveAttribute('title', /LoadMoGeModel/)
+  await expect(toPhoto).toHaveAttribute('title', /MoGePointMapToMesh/)
   await page.evaluate(() => window.roomfit.focusZone('bedroom'))
   const pano = page.getByRole('button', { name: '360° view' })
   await expect(pano).toBeDisabled()

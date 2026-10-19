@@ -58,7 +58,7 @@ Non-goals (M6)
 - Editor API (`spec/contracts/editor-api.ts`): `BackendState { kind, url, status, unavailable: { kind, missing }[], cloudConfigured }`, `JobWorkflow { file, backend, submitted }`; `backend()`, `setBackend({ kind, url? })`, `checkBackend()`, `jobWorkflow(jobId)`, `state().backend`.
 - `spec/contracts/mcp-tools.json`: `get_backend` → `{ kind, url, ready, unavailable: JobKind[] }`.
 - `workflows/sets.json`, `workflows/local/photo-to-3d-moge.json`.
-- Harness: a second fake ComfyUI on :8196 (storage :8195) acting as an older local ComfyUI (no MoGe nodes, only an SDXL ControlNet installed); both fakes serve `/api/object_info` and `/__last-prompt`.
+- Harness: a second fake ComfyUI on :8196 (storage :8195) acting as an older local ComfyUI (no `MoGePointMapToMesh` node, only an SDXL ControlNet installed; revised 2026-10-19 because Pixal3D also uses `LoadMoGeModel`/`MoGeInference`); both fakes serve `/api/object_info` and `/__last-prompt`.
 
 ## 7. ComfyUI workflows
 

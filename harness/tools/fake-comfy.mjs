@@ -5,7 +5,7 @@ const GLB = readFileSync(new URL('../../fixtures/glb/generated-offset-box.glb', 
 const PHOTO3D_GLB = readFileSync(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url))
 const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', import.meta.url))
 const snapshotAt = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'))
-const LOCAL_WITHOUT = ['LoadMoGeModel', 'MoGeInference', 'MoGePointMapToMesh']
+const LOCAL_WITHOUT = ['MoGePointMapToMesh']
 
 /** Every (node class, input, string value) the repo's workflows use: the fakes offer exactly these options, so their models count as installed. */
 function optionValuesUsedByWorkflows() {
@@ -22,7 +22,7 @@ const optionListOf = (spec) => {
   return null
 }
 
-/** /api/object_info as a backend would serve it, with the workflows' model files installed: `cloud` from the Cloud snapshot; `local` from the local snapshot without MoGe nodes and with only an SDXL ControlNet installed. */
+/** /api/object_info as a backend would serve it, with the workflows' model files installed: `cloud` from the Cloud snapshot; `local` from the local snapshot without the MoGe point-map-to-mesh node and with only an SDXL ControlNet installed. */
 function catalogOf(kind) {
   const snapshot = snapshotAt(kind === 'local' ? 'spec/contracts/comfyui-object-info.json' : 'spec/contracts/comfy-cloud-object-info.json')
   const classes = snapshot.classes.filter((name) => kind !== 'local' || !LOCAL_WITHOUT.includes(name))

@@ -8,13 +8,14 @@ import { z } from 'zod'
 
 import { studioPrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
-import { FitMode, PlanRoom, Site, type AssetProduct, type RoomLayout } from '../packages/schema/src/index.ts'
+import { FitMode, PlanRoom, Site, type AssetProduct, type JobKind, type RoomLayout } from '../packages/schema/src/index.ts'
 import type { EditorState, EditorView, ExteriorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
 import { editorBridge, type BridgedApi } from './editor.ts'
 
 const SCENE_PRESETS = ['reading', 'work', 'movie', 'evening'] as const satisfies readonly ScenePreset[]
 const VIEWS = ['editor', 'studio'] as const satisfies readonly EditorView[]
 const EXTERIOR_VIEWS = ['aerial', 'street'] as const satisfies readonly ExteriorView[]
+const JOB_KINDS = ['product', 'render', 'photo3d', 'pano360'] as const satisfies readonly JobKind[]
 const BLUEPRINT_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
 const RENDERS_DIR = fileURLToPath(new URL('../.harness/renders/', import.meta.url))
 
@@ -327,6 +328,34 @@ server.registerTool('screenshot', { description: 'Take a PNG screenshot of the e
 server.registerTool('get_jobs', { description: 'List the editor\'s ComfyUI jobs (products, renders, 3D photos) with their steps and results.' }, async () => {
   return json((await editorFor('get_jobs')('state')).jobs)
 })
+
+server.registerTool(
+  'list_workflows',
+  {
+    description:
+      'The workflow a job kind (product, render, photo3d, pano360) runs on the current backend, the built-in and custom alternatives with whether this ComfyUI can run them, and the model file of each loader input with the installed options.',
+    inputSchema: { kind: z.enum(JOB_KINDS) }
+  },
+  async ({ kind }) => json(await editorFor('list_workflows')('workflowChoice', kind))
+)
+
+server.registerTool(
+  'set_workflow',
+  {
+    description:
+      'Choose the workflow a job kind runs from now on (an option id from list_workflows) and, optionally, model files by slot key ("<nodeId>.<input>"). Changing the workflow resets that kind\'s model choices. Saved with the layout and undoable.',
+    inputSchema: { kind: z.enum(JOB_KINDS), workflow: z.string().min(1), models: z.record(z.string(), z.string().min(1)).optional() }
+  },
+  async ({ kind, workflow, models = {} }) => {
+    const editor = editorFor('set_workflow')
+    const chosen = await editor('setWorkflow', kind, workflow)
+    if (!chosen.ok) throw new Error(chosen.reason === 'wrong-kind' ? `${workflow} is not a ${kind} workflow. Call list_workflows for the options.` : `There is no workflow ${workflow}. Call list_workflows for the options.`)
+    for (const [key, value] of Object.entries(models)) {
+      if (!(await editor('setModel', kind, key, value)).ok) throw new Error(`The ${kind} workflow has no model slot ${key}. Call list_workflows for the slots.`)
+    }
+    return json(await editor('workflowChoice', kind))
+  }
+)
 
 server.registerTool('get_backend', { description: 'Which ComfyUI the editor queues new jobs on (local or cloud, with its URL), whether it is reachable, and which job kinds it cannot run. Switching is left to the user.' }, async () => {
   const { kind, url, status, unavailable } = await editorFor('get_backend')('backend')

@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.roomfit.ready())
   await page.evaluate((layout) => window.roomfit.load(layout), house)
   await page.evaluate(() => window.roomfit.setView('studio'))
-  await page.evaluate(() => window.roomfit.setBackend({ kind: 'local' }))
+  await page.evaluate((url) => window.roomfit.setBackend({ kind: 'local', url }), LOCAL)
 })
 test.afterEach(async ({ page }) => {
   if (!page.isClosed()) await page.evaluate(() => window.roomfit.setBackend({ kind: 'cloud' }))
@@ -34,7 +34,7 @@ test('AC-95 the choice lists built-in workflows with availability, defaults to s
   const photo = await page.evaluate(() => window.roomfit.workflowChoice('photo3d'))
   const localMoge = photo.options.find((option) => option.id === 'local/photo-to-3d-moge.json')!
   expect(localMoge.available).toBe(false)
-  expect(localMoge.missing).toContain('LoadMoGeModel')
+  expect(localMoge.missing).toContain('MoGePointMapToMesh')
 
   const renderChoice = await page.evaluate(() => window.roomfit.workflowChoice('render'))
   const unet = renderChoice.models.find((slot) => slot.key === '1.unet_name')!

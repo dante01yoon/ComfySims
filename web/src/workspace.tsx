@@ -3,8 +3,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
-import type { Asset, BackendKind, Job, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
-import type { BackendState, JobWorkflow } from '../../spec/contracts/editor-api.ts'
+import type { Asset, BackendKind, Job, JobKind, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
+import type { BackendState, JobWorkflow, WorkflowChoice, WorkflowOption } from '../../spec/contracts/editor-api.ts'
 import {
   api,
   cannotRun,
@@ -25,6 +25,7 @@ import { polygonCentroid } from './framing.ts'
 import { meshKey } from './meshes.ts'
 import { useEscapeCloses } from './panorama-viewer.tsx'
 import { thumbnailOf } from './thumbnails.ts'
+import { JOB_KINDS, workflowChoiceOf } from './workflows.ts'
 
 const CLOCK_TICK_MS = 250
 const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open', pano360: 'Open' } as const
@@ -467,7 +468,86 @@ function LibrarySection() {
   )
 }
 
-/** Right-hand rail with the jobs panel and the asset library, in both views. */
+const KIND_NAMES: Record<JobKind, string> = { product: 'Product → 3D', render: 'Room render', photo3d: '3D photo', pano360: '360° view' }
+
+function optionText({ label, available, missing }: WorkflowOption): string {
+  return available ? label : `${label} (unavailable: ${missing.join(', ')})`
+}
+
+function WorkflowPicker({ choice }: { choice: WorkflowChoice }) {
+  const { kind } = choice
+  const name = `${KIND_NAMES[kind]} workflow`
+  return (
+    <div className="workflow-choice">
+      <label className="field">
+        <span>{name}</span>
+        <select aria-label={name} value={choice.current} onChange={(event) => api.setWorkflow(kind, event.target.value)}>
+          {choice.options.map((option) => (
+            <option key={option.id} value={option.id}>{optionText(option)}</option>
+          ))}
+        </select>
+      </label>
+      {choice.models.map((slot) => (
+        <label key={slot.key} className="field">
+          <span>{slot.label}</span>
+          <select aria-label={slot.label} value={slot.value} onChange={(event) => api.setModel(kind, slot.key, event.target.value)}>
+            {slot.options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function AddWorkflow() {
+  const [kind, setKind] = useState<JobKind>('render')
+  const [error, setError] = useState<string | null>(null)
+  const add = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    const graph: unknown = await file.text().then((text) => JSON.parse(text)).catch(() => null)
+    const added = api.addCustomWorkflow(kind, file.name.replace(/\.json$/i, ''), graph)
+    setError(added.ok ? null : added.message)
+  }
+  return (
+    <div className="workflow-choice">
+      <h3>Add workflow</h3>
+      <label className="field">
+        <span>For</span>
+        <select aria-label="For" value={kind} onChange={(event) => setKind(event.target.value as JobKind)}>
+          {JOB_KINDS.map((option) => (
+            <option key={option} value={option}>{KIND_NAMES[option]}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span>Workflow JSON</span>
+        <input type="file" accept=".json,application/json" aria-label="Workflow JSON" onChange={add} />
+      </label>
+      {error && <div className="problem">{error}</div>}
+    </div>
+  )
+}
+
+function WorkflowsSection() {
+  const { history, backend, catalog } = useSyncExternalStore(subscribe, snapshot)
+  const layout = history.present
+  const choices = useMemo(() => JOB_KINDS.map((kind) => workflowChoiceOf(layout, backend.kind, catalog, kind)), [layout, backend.kind, catalog])
+  return (
+    <details className="rail-section">
+      <summary>Workflows</summary>
+      {choices.map((choice) => (
+        <WorkflowPicker key={choice.kind} choice={choice} />
+      ))}
+      <AddWorkflow />
+    </details>
+  )
+}
+
+/** Right-hand rail with the jobs panel, the asset library and the workflow choices, in both views. */
 export function WorkspaceRail() {
   const { agentConnected } = useSyncExternalStore(subscribe, snapshot)
   return (
@@ -476,6 +556,7 @@ export function WorkspaceRail() {
       {agentConnected && <div className="agent-badge" role="status">Agent connected</div>}
       <JobsSection />
       <LibrarySection />
+      <WorkflowsSection />
     </aside>
   )
 }

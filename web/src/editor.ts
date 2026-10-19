@@ -6,10 +6,11 @@ import { Box3, type Object3D, type PerspectiveCamera, type Scene } from 'three'
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
-import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, missingFromCatalog, studioPrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, studioPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
+  ApiGraph,
   AssetLabels,
   AssetProduct,
   Dimensions,
@@ -19,6 +20,7 @@ import {
   type BackendKind,
   type Blueprint,
   type FitReport,
+  type GenerationChoice,
   type Job,
   type JobKind,
   type JobStep,
@@ -47,21 +49,16 @@ import type {
   SceneItem,
   ScenePreset,
   Vec3,
-  Viewer360
+  Viewer360,
+  WorkflowChoice
 } from '../../spec/contracts/editor-api.ts'
-import cloudPanorama from '../../workflows/cloud/pano360-from-depth.json'
-import cloudPhoto from '../../workflows/cloud/photo-to-3d-moge.json'
-import cloudProduct from '../../workflows/cloud/product-to-glb-pixal3d.json'
-import localPhoto from '../../workflows/local/photo-to-3d-moge.json'
-import localProduct from '../../workflows/product-to-glb.json'
-import renderWorkflow from '../../workflows/render-from-depth.json'
-import workflowSets from '../../workflows/sets.json'
 import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyInput, type ComfyRun } from './comfy.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
 import { aerialCamera, boundsCenter, boxCorners, exteriorDepthRange, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
 import { exportDepthPanorama, exportPasses } from './passes.ts'
+import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unavailableJobs, workflowChoiceOf, workflowKindOf, type Catalog } from './workflows.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
@@ -73,15 +70,6 @@ type PanoramaViewer = Omit<Viewer360, 'stale'>
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
 const BACKEND_PATH = '/__roomfit/backend'
-const WORKFLOW_FILES: Record<string, ApiWorkflow> = {
-  'cloud/pano360-from-depth.json': cloudPanorama,
-  'cloud/photo-to-3d-moge.json': cloudPhoto,
-  'cloud/product-to-glb-pixal3d.json': cloudProduct,
-  'local/photo-to-3d-moge.json': localPhoto,
-  'product-to-glb.json': localProduct,
-  'render-from-depth.json': renderWorkflow
-}
-const JOB_KINDS: readonly JobKind[] = ['product', 'render', 'photo3d', 'pano360']
 const ServerBackend = z.object({ kind: z.enum(['local', 'cloud']), url: z.string(), localUrl: z.string(), cloudConfigured: z.boolean() })
 const DEFAULT_LOCAL_URL = 'http://127.0.0.1:8188'
 const FOCUSED_WALL_CUT_CM = 110
@@ -118,6 +106,7 @@ export type Editor = {
   lastRenderCamera: CameraPose | null
   agentConnected: boolean
   backend: BackendState
+  catalog: Catalog | null
   localUrl: string
   libraryFilter: string | null
   blueprintOpacity: number
@@ -160,6 +149,7 @@ let editor: Editor = {
   lastRenderCamera: null,
   agentConnected: false,
   backend: { kind: 'local', url: DEFAULT_LOCAL_URL, status: 'checking', unavailable: [], cloudConfigured: false },
+  catalog: null,
   localUrl: DEFAULT_LOCAL_URL,
   libraryFilter: null,
   blueprintOpacity: 50,
@@ -182,8 +172,13 @@ function currentLabel(): string {
   return actionLabel ?? 'editor'
 }
 
+function withReadiness(next: Editor): Editor {
+  return { ...next, backend: { ...next.backend, unavailable: unavailableJobs(next.history.present, next.backend.kind, next.catalog) } }
+}
+
 function update(change: Partial<Omit<Editor, 'revision'>>): void {
-  editor = { ...editor, ...change, revision: editor.revision + 1 }
+  const next = { ...editor, ...change, revision: editor.revision + 1 }
+  editor = 'history' in change || 'backend' in change || 'catalog' in change ? withReadiness(next) : next
   listeners.forEach((listener) => listener())
 }
 
@@ -599,9 +594,8 @@ async function runJob<T>(
   const blocked = cannotRun(backend, kind)
   if (blocked) return rejection(blocked)
   const id = `${kind}-${++startedJobs}`
-  const file = workflowSets[backend.kind][kind]
-  const workflow = WORKFLOW_FILES[file]
-  if (!workflow) return rejection(`workflows/${file} is not bundled with the editor`)
+  const { id: file, graph: workflow } = chosenWorkflow(editor.history.present, backend.kind, kind)
+  if (!workflow) return rejection(`there is no workflow ${file}`)
   retries.set(id, retry)
   workflows.set(id, { file, backend: backend.kind, submitted: workflow, url: backend.url })
   update({ jobs: [...editor.jobs, { id, kind, title, backend: backend.kind, steps: [] }] })
@@ -1037,6 +1031,7 @@ export function cannotRun(backend: BackendState, kind: JobKind): string | undefi
 type ServerBackend = z.infer<typeof ServerBackend>
 
 let backendChecks = 0
+let backendCheck: Promise<unknown> = Promise.resolve()
 
 async function jsonAt(url: string, init?: RequestInit): Promise<unknown> {
   try {
@@ -1047,15 +1042,8 @@ async function jsonAt(url: string, init?: RequestInit): Promise<unknown> {
   }
 }
 
-async function readinessOf(kind: BackendKind): Promise<Pick<BackendState, 'status' | 'unavailable'>> {
-  const catalog = z.record(z.string(), z.unknown()).safeParse(await jsonAt(catalogUrl(kind)))
-  if (!catalog.success) return { status: 'unreachable', unavailable: [] }
-  const unavailable = JOB_KINDS.flatMap((job) => {
-    const workflow = WORKFLOW_FILES[workflowSets[kind][job]]
-    const missing = workflow ? missingFromCatalog(workflow, catalog.data, kind) : [workflowSets[kind][job]]
-    return missing.length > 0 ? [{ kind: job, missing }] : []
-  })
-  return { status: 'ready', unavailable }
+async function catalogOf(kind: BackendKind): Promise<Catalog | null> {
+  return z.record(z.string(), z.unknown()).safeParse(await jsonAt(catalogUrl(kind))).data ?? null
 }
 
 async function serverBackend(init?: RequestInit): Promise<ServerBackend> {
@@ -1066,18 +1054,68 @@ async function serverBackend(init?: RequestInit): Promise<ServerBackend> {
 
 async function checked({ localUrl, ...server }: ServerBackend): Promise<BackendState> {
   const check = ++backendChecks
-  update({ backend: { ...server, status: 'checking', unavailable: [] }, localUrl })
-  const backend = { ...server, ...(await readinessOf(server.kind)) }
-  if (check === backendChecks) update({ backend })
-  return backend
+  update({ backend: { ...server, status: 'checking', unavailable: [] }, catalog: null, localUrl })
+  const catalog = await catalogOf(server.kind)
+  const status = catalog ? 'ready' : 'unreachable'
+  if (check === backendChecks) update({ backend: { ...server, status, unavailable: [] }, catalog })
+  return { ...server, status, unavailable: unavailableJobs(editor.history.present, server.kind, catalog) }
 }
 
-async function checkBackend(): Promise<BackendState> {
-  return checked(await serverBackend())
+function tracked(check: Promise<BackendState>): Promise<BackendState> {
+  backendCheck = check.catch(() => undefined)
+  return check
 }
 
-async function setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState> {
-  return checked(await serverBackend({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(choice) }))
+function checkBackend(): Promise<BackendState> {
+  return tracked(serverBackend().then(checked))
+}
+
+function setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState> {
+  return tracked(serverBackend({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(choice) }).then(checked))
+}
+
+function workflowChoiceIn({ history, backend, catalog }: Editor, kind: JobKind): WorkflowChoice {
+  return workflowChoiceOf(history.present, backend.kind, catalog, kind)
+}
+
+function commitGeneration(kind: JobKind, choice: GenerationChoice): void {
+  const layout = editor.history.present
+  setHistory(commit(editor.history, { ...layout, generation: { ...layout.generation, [kind]: choice } }, currentLabel()), 'none')
+}
+
+function setWorkflow(kind: JobKind, id: string): ReturnType<RoomfitEditorApi['setWorkflow']> {
+  const owner = workflowKindOf(editor.history.present, id)
+  if (owner === undefined) return { ok: false, reason: 'unknown-workflow' }
+  if (owner !== kind) return { ok: false, reason: 'wrong-kind' }
+  if (editor.history.present.generation?.[kind]?.workflow !== id) commitGeneration(kind, { workflow: id })
+  return { ok: true }
+}
+
+function setModel(kind: JobKind, key: string, value: string): ReturnType<RoomfitEditorApi['setModel']> {
+  const choice = workflowChoiceIn(editor, kind)
+  if (!choice.models.some((slot) => slot.key === key)) return { ok: false, reason: 'unknown-slot' }
+  const stored = editor.history.present.generation?.[kind]
+  commitGeneration(kind, { workflow: choice.current, models: { ...stored?.models, [key]: value } })
+  return { ok: true }
+}
+
+function refusedWorkflow(message: string, missingTags: string[] = []) {
+  return { ok: false, missingTags, message } as const
+}
+
+function addCustomWorkflow(kind: JobKind, name: string, graph: unknown): ReturnType<RoomfitEditorApi['addCustomWorkflow']> {
+  const parsed = ApiGraph.safeParse(graph)
+  if (!parsed.success) return refusedWorkflow('Not an API-format workflow: export it from ComfyUI with "Export (API)"')
+  const tags = missingTags(kind, parsed.data)
+  if (tags.length > 0) return refusedWorkflow(`Missing tags: ${tags.join(', ')}`, tags)
+  const trimmed = name.trim()
+  const layout = editor.history.present
+  const custom = layout.customWorkflows ?? {}
+  if (!trimmed) return refusedWorkflow('The workflow needs a name')
+  if (Object.hasOwn(custom, trimmed)) return refusedWorkflow(`There already is a custom workflow called ${trimmed}`)
+  if (Object.keys(custom).length >= MAX_CUSTOM_WORKFLOWS) return refusedWorkflow(`A layout holds at most ${MAX_CUSTOM_WORKFLOWS} custom workflows`)
+  setHistory(commit(editor.history, { ...layout, customWorkflows: { ...custom, [trimmed]: { kind, graph: parsed.data } } }, currentLabel()), 'none')
+  return { ok: true, id: `${CUSTOM_PREFIX}${trimmed}` }
 }
 
 /** The job's workflow file, backend and its URL, and the graph it submitted (its template until roomfit has filled it). */
@@ -1153,6 +1191,13 @@ export const api: RoomfitEditorApi = {
   setBackend,
   checkBackend,
   jobWorkflow,
+  workflowChoice: async (kind) => {
+    await backendCheck
+    return workflowChoiceIn(editor, kind)
+  },
+  setWorkflow,
+  setModel,
+  addCustomWorkflow,
   setAssetLabels,
   setAssetProduct,
   setLibraryFilter: (label) => update({ libraryFilter: labelInUse(editor.history.present, label) }),
