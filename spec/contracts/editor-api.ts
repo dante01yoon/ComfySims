@@ -53,8 +53,8 @@ export type JobWorkflow = { file: string; backend: BackendKind; submitted: Recor
 
 export type ExteriorView = 'aerial' | 'street'
 
-/** The camera and roof slab an exterior shot uses (roof top = wall height + 20 cm over the walls' bounding box). */
-export type ExteriorShot = { camera: { position: Vec3; target: Vec3 }; roof: { topCm: number; min: { x: number; z: number }; max: { x: number; z: number } } }
+/** The camera, roof slab, depth range and tree visibility an exterior shot uses (roof top = wall height + 20 cm over the walls' bounding box). */
+export type ExteriorShot = { camera: { position: Vec3; target: Vec3; fovDeg: number; aspect: number }; roof: { topCm: number; min: { x: number; z: number }; max: { x: number; z: number } }; depthRange: { nearCm: number; farCm: number }; trees: boolean }
 
 export type Issues = { path: string; message: string }[]
 

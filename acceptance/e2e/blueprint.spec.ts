@@ -61,24 +61,54 @@ test('AC-86 the blueprint underlay is drawn where its scale and origin put it, w
   expect((await page.evaluate((value) => window.roomfit.setBlueprint(value), { ...blueprint, cmPerPixel: 0 })).ok).toBe(false)
 })
 
-test('AC-87 exterior shots put a roof on the house, frame it from the air and the street, and render through ComfyUI', async ({ page }) => {
-  const aerial = await page.evaluate(() => window.roomfit.exteriorShot('aerial'))
+type Shot = { camera: { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number }; fovDeg: number; aspect: number }; roof: { topCm: number }; depthRange: { nearCm: number; farCm: number }; trees: boolean }
+
+function project(shot: Shot, point: { x: number; y: number; z: number }) {
+  const { position: eye, target } = shot.camera
+  const f = { x: target.x - eye.x, y: target.y - eye.y, z: target.z - eye.z }
+  const fl = Math.hypot(f.x, f.y, f.z)
+  const fw = { x: f.x / fl, y: f.y / fl, z: f.z / fl }
+  const right = { x: -fw.z, y: 0, z: fw.x }
+  const rl = Math.hypot(right.x, right.z)
+  const rt = { x: right.x / rl, y: 0, z: right.z / rl }
+  const up = { x: rt.y * fw.z - rt.z * fw.y, y: rt.z * fw.x - rt.x * fw.z, z: rt.x * fw.y - rt.y * fw.x }
+  const d = { x: point.x - eye.x, y: point.y - eye.y, z: point.z - eye.z }
+  const depth = d.x * fw.x + d.y * fw.y + d.z * fw.z
+  const tan = Math.tan((shot.camera.fovDeg * Math.PI) / 360)
+  return { x: (d.x * rt.x + d.z * rt.z) / (depth * tan * shot.camera.aspect), y: (d.x * up.x + d.y * up.y + d.z * up.z) / (depth * tan) }
+}
+
+const houseCorners = (top: number) => [-700, 700].flatMap((x) => [-500, 500].flatMap((z) => [0, top].map((y) => ({ x, y, z }))))
+
+test('AC-87 exterior shots frame the house, read as a house from the street, end the depth at the lot, and render through ComfyUI', async ({ page }) => {
+  const aerial = (await page.evaluate(() => window.roomfit.exteriorShot('aerial'))) as unknown as Shot & { roof: { topCm: number; min: unknown; max: unknown } }
   expect(aerial.roof).toEqual({ topCm: 290, min: { x: -700, z: -500 }, max: { x: 700, z: 500 } })
   const dx = aerial.camera.target.x - aerial.camera.position.x
   const dz = aerial.camera.target.z - aerial.camera.position.z
   const pitch = (Math.atan2(aerial.camera.position.y - aerial.camera.target.y, Math.hypot(dx, dz)) * 180) / Math.PI
   expect(pitch).toBeGreaterThanOrEqual(40)
   expect(pitch).toBeLessThanOrEqual(50)
+  const aerialPoints = houseCorners(290).map((corner) => project(aerial, corner))
+  const spanX = (Math.max(...aerialPoints.map((p) => p.x)) - Math.min(...aerialPoints.map((p) => p.x))) / 2
+  const spanY = (Math.max(...aerialPoints.map((p) => p.y)) - Math.min(...aerialPoints.map((p) => p.y))) / 2
+  expect(Math.max(spanX, spanY), 'house fills 50–80 % of the frame').toBeGreaterThanOrEqual(0.5)
+  expect(Math.max(spanX, spanY)).toBeLessThanOrEqual(0.8)
+  expect(aerialPoints.every((p) => Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1), 'whole house in frame').toBe(true)
+  const lotCornerDistance = Math.max(...[-1200, 1200].flatMap((x) => [-1000, 1000].map((z) => Math.hypot(x - aerial.camera.position.x, aerial.camera.position.y, z - aerial.camera.position.z))))
+  expect(aerial.depthRange.farCm).toBeLessThanOrEqual(lotCornerDistance + 1)
+  expect(aerial.depthRange.farCm).toBeGreaterThan(aerial.depthRange.nearCm)
+  expect(aerial.trees).toBe(false)
 
-  const street = await page.evaluate(() => window.roomfit.exteriorShot('street'))
+  const street = (await page.evaluate(() => window.roomfit.exteriorShot('street'))) as unknown as Shot
   expect(street.camera.position.y).toBe(160)
   const { x, z } = street.camera.position
-  expect(x < -700 || x > 700 || z < -500 || z > 500, 'street camera outside the house').toBe(true)
+  expect((x < -700 || x > 700) && (z < -500 || z > 500), 'street camera diagonal to the house: two façades').toBe(true)
   expect(x >= -1200 && x <= 1200 && z >= -1000 && z <= 1000, 'street camera on the lot').toBe(true)
+  expect(street.trees).toBe(false)
 
   await page.getByRole('button', { name: 'Render exterior' }).click()
   await expect(jobs(page).getByRole('article', { name: 'Exterior render · Aerial' })).toContainText('done', { timeout: 15_000 })
   await expect(jobs(page).getByRole('article', { name: 'Exterior render · Street' })).toContainText('done', { timeout: 15_000 })
   const prompts = (await (await fetch('http://127.0.0.1:8199/__prompts')).json()) as { positive: string | null }[]
-  expect(prompts.slice(-2).every((prompt) => /exterior/i.test(prompt.positive ?? ''))).toBe(true)
+  expect(prompts.slice(-2).every((prompt) => /exterior/i.test(prompt.positive ?? '') && /trees/i.test(prompt.positive ?? ''))).toBe(true)
 })

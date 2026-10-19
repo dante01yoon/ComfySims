@@ -56,7 +56,13 @@ Non-goals (M9)
 - Site: lot polygon in cm in the same coordinates as the house, ground `grass | gravel | paving | soil`, `houseRotationDeg`, optional `trees` (positions) and `path` (polyline), `northDeg`. Every wall end must lie inside (or on) the lot.
 - Default site (`defaultSite(room)` in `packages/placement`, used when the layout has none, and shown as `state().site`): the walls' bounding box + 500 cm on each side, `grass`, a path from the centre of the front door — the first door in the openings list on the outer wall with the largest z — straight to the lot edge, and trees placed deterministically inside the lot and at least 100 cm outside the house's bounding box.
 - The studio draws the lot (scene item `site-lot`, bounds = lot bounds), the ground material, and one tree per site tree (`site-tree-<index>`).
-- Exterior shots (`exteriorShot(view)`): a flat roof slab over the walls' bounding box with its top at wall height + 20 cm; aerial = pitch 40–50° from the south-east, looking at the house centre, framing the lot; street = eye 160 cm, on the lot outside the house, in front of the front door, looking at the house. In exterior depth passes trees are smooth canopies (sphere on a trunk), not the studio's low-poly shapes.
+- Exterior shots (`exteriorShot(view)`), revised 2026-10-19 after the AC-89 run (below):
+  - a flat roof slab over the walls' bounding box with its top at wall height + 20 cm;
+  - aerial: pitch 40–50° from the south-east, looking at the house centre, at the distance where the house's bounding box (floor to roof) fills 50–80 % of the frame's width or height;
+  - street: eye 160 cm, standing on the lot at the corner diagonal to the front door's wall (outside both the house's x and z extents), looking at the house centre, so two façades show;
+  - depth range: near = nearest house point, far = the farthest lot corner from the camera; anything beyond (sky, ground past the lot) is black;
+  - trees are left out of exterior depth passes (`trees: false`); the prompt asks for them instead.
+  - the shot reports its camera's `fovDeg` and `aspect` so the framing can be checked.
 - "Render exterior" queues two render jobs, "Exterior render · Aerial" and "Exterior render · Street", through `render-from-depth` with a prompt that starts with "Exterior architectural photograph".
 - Blueprint underlay: stored in the layout as `blueprint: { image (data URL ≤ 2 MB), cmPerPixel, origin: { x, z } }` so a reload keeps it.
 
@@ -82,6 +88,10 @@ Demo house, no site yet, studio camera set by hand; Comfy Cloud, seed 7, 1024 ×
 
 Both: the studio's low-poly trees come out as black polyhedra. Hence two rules in §5: a flat roof slab in exterior shots, and smooth tree canopies in exterior depth passes.
 
+### Found in the AC-89 agent run (2026-10-19)
+
+The agent read a new blueprint exactly (plan-diff 0 cm after aligning its origin), but all three exterior renders failed: a three-storey façade with a floating rhombus (aerial), a gabled two-storey house with glass bubbles (aerial, with trees), one wall with the door drawn as a window (street). The depth passes sent (captured with `demo/capture-exterior-depth.mjs`, `docs/spikes/m9/agent-run-depth.png`) were geometrically right but: the house filled a small part of the aerial frame and its depth was barely darker than the lawn (range ran to the horizon); the canopies' trunks were too thin, so the spheres read as floating balls; the street camera stood 5.5 m square-on to one wall because the lot leaves 5 m. Hence the revised rules above.
+
 ## 8. Acceptance criteria
 
 | AC | Status | Criterion |
@@ -90,7 +100,7 @@ Both: the studio's low-poly trees come out as black polyhedra. Hence two rules i
 | AC-84 | active | `set_house_plan` applies a valid plan undoably, rejects an invalid one with its issues, keeps items inside new rooms and reports the rest as moved to the library |
 | AC-85 | active | The studio draws the lot and trees from the site (default when none): `site-lot` and `site-tree-<i>` in the scene at their positions; an invalid site is rejected and changes nothing |
 | AC-86 | active | The blueprint underlay draws aligned under the plan (a known pixel lands on its cm position) with adjustable opacity, and survives save/load |
-| AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm, an aerial camera at 40–50° pitch and a street camera at 160 cm on the lot; "Render exterior" queues both renders with exterior prompts |
+| AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm; the aerial camera (40–50° pitch) frames the house at 50–80 %; the street camera (160 cm, on the lot) stands diagonal to the house so two façades show; the depth range ends at the farthest lot corner; trees are left out; "Render exterior" queues both renders with exterior prompts |
 | AC-88 | active | `pnpm plan-diff` reports 0 for identical plans and the right per-element errors for shifted walls and openings |
 | AC-89 | manual | Recording: Claude Code gets a floor-plan image, builds the house through the roomfit MCP, sets the site, and renders aerial and street views on Comfy Cloud |
 
@@ -119,4 +129,5 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 
 - 2026-10-18 Draft, from Dante's request (blueprint → house, land and design renders); spike on a synthetic blueprint: exact extraction.
 - 2026-10-18 Approved on the recommended answers.
+- 2026-10-19 AC-89 agent run: plan exact, exterior renders failed → exterior rules revised (framing, depth range, no trees, diagonal street view).
 - 2026-10-18 Exterior spike (roofless aerial, polyhedral trees → roof slab and smooth canopies); spec session: schema (`Site`, `Blueprint`), contracts, `plan-diff`, blueprint fixture, AC-83~88 tests; ACs active.
