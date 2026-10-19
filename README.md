@@ -10,10 +10,10 @@
 | --- | --- | --- |
 | A floor plan or blueprint image | an agent builds the house from it over MCP, checked against the plan drawn underneath, and lays out the lot | ✅ |
 | Product photo + listed size (+ store link) | exact-size 3D on ComfyUI, placed in a room, with its store link one click away | ✅ |
-| Only a product link | read the photo and size from the store page | 🧪 planned (spike) |
+| The store page you are viewing | the **Send to ComfySims** bookmarklet reads the photo, size, brand and link (JSON-LD, Amazon, Open Graph) and opens the editor with them filled ([evidence](docs/recordings/demo-ac109-import.md)) | ✅ |
 | Your ComfyUI: local, Comfy Cloud or both | picks a workflow per backend and job, shows what each backend can run | ✅ |
-| A render | room photos, 360° view, aerial and street exteriors from the layout's depth | ✅ |
-| Your own workflows (e.g. VideoHelperSuite walkthrough videos) | swap any job's workflow in `workflows/sets.json`; a video walkthrough job | ✅ swap · 🧪 video planned |
+| A render | room photos, 360° view, aerial and street exteriors from the layout's depth; **Lived-in** style keeps rooms from looking white and empty | ✅ |
+| Your own workflows and models (e.g. VideoHelperSuite walkthrough videos) | pick the workflow and model per job in the editor or over MCP, or add your own API-format workflow; a video walkthrough job | ✅ choice · 🧪 video planned |
 
 <p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a chair from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
 

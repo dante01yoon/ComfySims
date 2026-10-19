@@ -65,7 +65,7 @@ Non-goals (M11)
 | AC-106 | active | Opened with an import, the editor fills the add-product form (fields, size, photo) with the "check the size" note, or leaves the size empty with the "no size" note; generating keeps link, brand and store |
 | AC-107 | active | `/__roomfit/fetch-image` refuses other origins, non-http(s) URLs and non-images, and returns images |
 | AC-108 | active | MCP `add_product` accepts an image URL |
-| AC-109 | manual | Recording: a real store page in a real browser → bookmarklet → the product generated on Comfy Cloud and placed |
+| AC-109 | manual | Recording: a real store page in a real browser → bookmarklet → the product generated on Comfy Cloud and placed (evidence 2026-10-19: `docs/recordings/demo-ac109-import.md`) |
 
 ## 9. Test plan
 
