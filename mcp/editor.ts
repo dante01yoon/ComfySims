@@ -81,5 +81,3 @@ export function editorBridge({ url, tokenFile }: { url: string; tokenFile: strin
     })
   }
 }
-
-export type EditorCall = ReturnType<typeof editorBridge>

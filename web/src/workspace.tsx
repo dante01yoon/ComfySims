@@ -1,5 +1,6 @@
 import { Html } from '@react-three/drei'
-import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { ChangeEvent, KeyboardEvent, ReactNode, SyntheticEvent } from 'react'
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
@@ -38,9 +39,13 @@ export function useClock(running: boolean): number {
   const [now, setNow] = useState(Date.now)
   useEffect(() => {
     if (!running) return
-    setNow(Date.now())
-    const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS)
-    return () => clearInterval(timer)
+    const tick = () => setNow(Date.now())
+    const first = setTimeout(tick)
+    const timer = setInterval(tick, CLOCK_TICK_MS)
+    return () => {
+      clearTimeout(first)
+      clearInterval(timer)
+    }
   }, [running])
   return now
 }
@@ -96,7 +101,11 @@ function BackendChip() {
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState(localUrl)
   const container = useRef<HTMLDivElement>(null)
-  useEffect(() => setUrl(localUrl), [localUrl])
+  const [shownLocalUrl, setShownLocalUrl] = useState(localUrl)
+  if (shownLocalUrl !== localUrl) {
+    setShownLocalUrl(localUrl)
+    setUrl(localUrl)
+  }
   const close = useCallback(() => setOpen(false), [])
   useEscapeCloses(open ? close : null)
   useEffect(() => {

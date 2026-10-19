@@ -1,19 +1,5 @@
-import {
-  Color,
-  FloatType,
-  Mesh,
-  MeshBasicMaterial,
-  MeshNormalMaterial,
-  PerspectiveCamera,
-  ShaderMaterial,
-  Vector3,
-  WebGLRenderTarget,
-  type Camera,
-  type Material,
-  type Object3D,
-  type Scene,
-  type WebGLRenderer
-} from 'three'
+import { Color, FloatType, Mesh, MeshBasicMaterial, MeshNormalMaterial, PerspectiveCamera, ShaderMaterial, Vector3, WebGLRenderTarget } from 'three'
+import type { Camera, Material, Object3D, Scene, WebGLRenderer } from 'three'
 
 import type { RenderPasses, Vec3 } from '../../spec/contracts/editor-api.ts'
 
@@ -49,7 +35,7 @@ const distanceMaterial = new ShaderMaterial({
     void main() { gl_FragColor = vec4(length(vViewPosition), 0.0, 0.0, 1.0); }`
 })
 
-export function isItemPart(object: Object3D | null): boolean {
+function isItemPart(object: Object3D | null): boolean {
   return object !== null && (typeof object.userData.itemId === 'string' || isItemPart(object.parent))
 }
 

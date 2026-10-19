@@ -1,4 +1,4 @@
-export type Entry<T> = { state: T; label: string }
+type Entry<T> = { state: T; label: string }
 export type History<T> = { past: readonly Entry<T>[]; present: T; future: readonly Entry<T>[] }
 
 export function fresh<T>(present: T): History<T> {

@@ -8,10 +8,12 @@ import { z } from 'zod'
 
 import { scenePrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
-import { FitMode, PlanRoom, Site, type AssetProduct, type JobKind, type RoomLayout } from '../packages/schema/src/index.ts'
+import { FitMode, PlanRoom, Site } from '../packages/schema/src/index.ts'
+import type { AssetProduct, JobKind, RoomLayout } from '../packages/schema/src/index.ts'
 import type { EditorState, EditorView, ExteriorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
 import { fetchImage } from '../web/fetch-image.ts'
-import { editorBridge, type BridgedApi } from './editor.ts'
+import { editorBridge } from './editor.ts'
+import type { BridgedApi } from './editor.ts'
 
 const SCENE_PRESETS = ['reading', 'work', 'movie', 'evening'] as const satisfies readonly ScenePreset[]
 const VIEWS = ['editor', 'studio'] as const satisfies readonly EditorView[]

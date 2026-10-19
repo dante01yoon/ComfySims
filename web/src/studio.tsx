@@ -2,14 +2,16 @@ import { useFrame } from '@react-three/fiber'
 import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useSyncExternalStore } from 'react'
-import { Color, Shape, SRGBColorSpace, Vector2, type DirectionalLight, type HemisphereLight, type PointLight } from 'three'
+import { Color, Shape, SRGBColorSpace, Vector2 } from 'three'
+import type { DirectionalLight, HemisphereLight, PointLight } from 'three'
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import type { GroundMaterial, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
 import type { ExteriorShot, Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
 import { api, cannotRun, currentScenePrompt, siteOf, snapshot, subscribe } from './editor.ts'
 import { seededRandom } from './floors.ts'
-import { boundsCenter, compassDirection, polygonBounds, roomBounds, type Bounds } from './framing.ts'
+import { boundsCenter, compassDirection, polygonBounds, roomBounds } from './framing.ts'
+import type { Bounds } from './framing.ts'
 
 type Levels = Omit<Lighting, 'preset'>
 

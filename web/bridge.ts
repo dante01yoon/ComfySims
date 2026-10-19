@@ -3,7 +3,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
 import type { Plugin } from 'vite'
-import { WebSocketServer, type RawData, type WebSocket } from 'ws'
+import { WebSocketServer } from 'ws'
+import type { RawData, WebSocket } from 'ws'
 
 const BRIDGE_PATH = '/__roomfit-bridge'
 

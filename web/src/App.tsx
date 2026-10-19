@@ -1,24 +1,14 @@
 import { OrbitControls } from '@react-three/drei'
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
-import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, SRGBColorSpace, Texture, Vector2, Vector3, type Material, type Object3D } from 'three'
+import { Canvas, useThree } from '@react-three/fiber'
+import type { ThreeEvent } from '@react-three/fiber'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
+import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, SRGBColorSpace, Texture, Vector2, Vector3 } from 'three'
+import type { Material, Object3D } from 'three'
 
 import { collisions, houseExtent, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
-import {
-  AssetLabels,
-  FitMode,
-  ProductUrl,
-  serializeLayout,
-  type Asset,
-  type Blueprint,
-  type BoxRoom,
-  type PlacedItem,
-  type PlanRoom,
-  type Room,
-  type RoomLayout,
-  type Zone
-} from '../../packages/schema/src/index.ts'
-import type { Job, JobKind, JobStep } from '../../packages/schema/src/index.ts'
+import { AssetLabels, FitMode, ProductUrl, serializeLayout } from '../../packages/schema/src/index.ts'
+import type { Asset, Blueprint, BoxRoom, Job, JobKind, JobStep, PlacedItem, PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
 import type { ImportedProduct, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
 import {
   api,
@@ -305,7 +295,10 @@ function download(): void {
 function Panel({ hidden }: { hidden: boolean }) {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const [loadIssues, setLoadIssues] = useState<string[]>([])
-  const { collisions: collidingPairs, outOfBounds: escapes, canUndo, canRedo, selectedId, layout } = useMemo(() => api.state(), [editor])
+  const { history, selectedId } = editor
+  const layout = history.present
+  const collidingPairs = useMemo(() => collisions(layout), [layout])
+  const escapes = useMemo(() => outOfBounds(layout), [layout])
   const selected = selectedAsset(layout, selectedId)
 
   const open = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -323,8 +316,8 @@ function Panel({ hidden }: { hidden: boolean }) {
       </Field>
       <div className="button-row">
         <button onClick={download}>Save</button>
-        <button onClick={api.undo} disabled={!canUndo}>Undo</button>
-        <button onClick={api.redo} disabled={!canRedo}>Redo</button>
+        <button onClick={api.undo} disabled={history.past.length === 0}>Undo</button>
+        <button onClick={api.redo} disabled={history.future.length === 0}>Redo</button>
       </div>
       {loadIssues.map((issue) => (
         <div key={issue} className="problem">{issue}</div>
@@ -555,18 +548,24 @@ function ComfyPanel() {
   const job = jobs.at(-1)
   const now = useClock(job !== undefined && !isFinished(job))
   const seconds = job ? elapsedSeconds(job, now) : 0
+  const [filledImport, setFilledImport] = useState<ImportedProduct | null>(null)
+  if (pendingImport !== filledImport) {
+    setFilledImport(pendingImport)
+    if (pendingImport) {
+      setName(pendingImport.name)
+      setSize(sizeInputOf(pendingImport.dimensions))
+      setLink(pendingImport.url)
+      setBrand(pendingImport.brand ?? '')
+      setStore(pendingImport.store)
+      setImportNote(importNoteOf(pendingImport))
+      setPhoto(null)
+      setPhotoProblem(null)
+    }
+  }
 
   useEffect(() => {
     if (!pendingImport) return
     let current = true
-    setName(pendingImport.name)
-    setSize(sizeInputOf(pendingImport.dimensions))
-    setLink(pendingImport.url)
-    setBrand(pendingImport.brand ?? '')
-    setStore(pendingImport.store)
-    setImportNote(importNoteOf(pendingImport))
-    setPhoto(null)
-    setPhotoProblem(null)
     void (pendingImport.image ? photoAt(pendingImport.image) : Promise.resolve(null)).then((file) => {
       if (!current) return
       setPhoto(file)

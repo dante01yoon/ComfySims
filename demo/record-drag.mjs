@@ -75,7 +75,7 @@ const drag = async (start, end, steps = 45) => {
   return end
 }
 let grab = from
-let p0 = await positionOf()
+const p0 = await positionOf()
 grab = await drag(grab, { x: grab.x + 110, y: grab.y }, 25)
 const p1 = await positionOf()
 grab = await drag(grab, { x: grab.x, y: grab.y + 90 }, 25)

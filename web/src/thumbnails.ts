@@ -1,4 +1,5 @@
-import { AmbientLight, Box3, DirectionalLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer, type Object3D } from 'three'
+import { AmbientLight, Box3, DirectionalLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three'
+import type { Object3D } from 'three'
 
 const THUMBNAIL_PX = 64
 const FIELD_OF_VIEW_DEG = 35

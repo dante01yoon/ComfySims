@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useLoader } from '@react-three/fiber'
-import { Suspense, useEffect, useRef, useSyncExternalStore, type PointerEvent, type WheelEvent } from 'react'
+import { Suspense, useEffect, useRef, useSyncExternalStore } from 'react'
+import type { PointerEvent, WheelEvent } from 'react'
 import { BackSide, PerspectiveCamera, SRGBColorSpace, TextureLoader } from 'three'
 
 import type { Viewer360 } from '../../spec/contracts/editor-api.ts'
@@ -13,11 +14,10 @@ const IMAGE_CENTRE_AT_PLUS_Z = -Math.PI / 2
 
 function Panorama({ image }: { image: string }) {
   const texture = useLoader(TextureLoader, image)
-  texture.colorSpace = SRGBColorSpace
   return (
     <mesh>
       <sphereGeometry args={[SPHERE_RADIUS, 96, 48, IMAGE_CENTRE_AT_PLUS_Z]} />
-      <meshBasicMaterial map={texture} side={BackSide} />
+      <meshBasicMaterial map={texture} map-colorSpace={SRGBColorSpace} side={BackSide} />
     </mesh>
   )
 }

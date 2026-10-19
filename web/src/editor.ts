@@ -1,36 +1,18 @@
 import type { OrbitControls } from '@react-three/drei'
 import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
-import { Box3, type Object3D, type PerspectiveCamera, type Scene } from 'three'
+import { Box3 } from 'three'
+import type { Object3D, PerspectiveCamera, Scene } from 'three'
 
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
-import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, type RenderStyle, scenePrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, scenePrompt } from '../../packages/comfy/src/index.ts'
+import type { RenderStyle } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
-import {
-  ApiGraph,
-  AssetLabels,
-  AssetProduct,
-  Dimensions,
-  MAX_CONCURRENT_JOBS,
-  parseLayout,
-  type Asset,
-  type BackendKind,
-  type Blueprint,
-  type FitReport,
-  type GenerationChoice,
-  type Job,
-  type JobKind,
-  type JobStep,
-  type Photo3dSource,
-  type PlacedItem,
-  type PlanRoom,
-  type RoomLayout,
-  type Site,
-  type Zone
-} from '../../packages/schema/src/index.ts'
+import { ApiGraph, AssetLabels, AssetProduct, Dimensions, MAX_CONCURRENT_JOBS, parseLayout } from '../../packages/schema/src/index.ts'
+import type { Asset, BackendKind, Blueprint, FitReport, GenerationChoice, Job, JobKind, JobStep, Photo3dSource, PlacedItem, PlanRoom, RoomLayout, Site, Zone } from '../../packages/schema/src/index.ts'
 import type {
   BackendState,
   ComfyFailure,
@@ -53,14 +35,17 @@ import type {
   Viewer360,
   WorkflowChoice
 } from '../../spec/contracts/editor-api.ts'
-import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyInput, type ComfyRun } from './comfy.ts'
+import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed } from './comfy.ts'
+import type { ComfyInput, ComfyRun } from './comfy.ts'
 import { bookmarkletFor } from './bookmarklet.ts'
 import * as edits from './edits.ts'
-import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
+import { amend, commit, fresh, labels, redo, undo } from './history.ts'
+import type { History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
 import { aerialCamera, boundsCenter, boxCorners, exteriorDepthRange, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
 import { exportDepthPanorama, exportPasses } from './passes.ts'
-import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unavailableJobs, workflowChoiceOf, workflowKindOf, type Catalog } from './workflows.ts'
+import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unavailableJobs, workflowChoiceOf, workflowKindOf } from './workflows.ts'
+import type { Catalog } from './workflows.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>

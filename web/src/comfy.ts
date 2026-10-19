@@ -1,4 +1,5 @@
-import { createComfyClient, savedFiles, type ComfyClient, type Failure, type PromptOutcome, type SavedFile } from '../../packages/comfy/src/index.ts'
+import { createComfyClient, savedFiles } from '../../packages/comfy/src/index.ts'
+import type { ComfyClient, Failure, PromptOutcome, SavedFile } from '../../packages/comfy/src/index.ts'
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
 import type { BackendKind, JobStep } from '../../packages/schema/src/index.ts'
 

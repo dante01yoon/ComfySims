@@ -1,6 +1,8 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type WheelEvent } from 'react'
-import { Box3, DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Vector3, type Object3D } from 'three'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { PointerEvent, WheelEvent } from 'react'
+import { Box3, DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Vector3 } from 'three'
+import type { Object3D } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import { api, captionOf, snapshot, subscribe, turnPhoto } from './editor.ts'
@@ -86,7 +88,11 @@ export function PhotoViewer() {
   const framing = useMemo(() => (model ? framingOf(model) : null), [model])
   const [dolly, setDolly] = useState(0)
   const dragFrom = useRef<{ x: number; y: number } | null>(null)
-  useEffect(() => setDolly(0), [glb])
+  const [dollyGlb, setDollyGlb] = useState(glb)
+  if (dollyGlb !== glb) {
+    setDollyGlb(glb)
+    setDolly(0)
+  }
   if (!photoViewer) return null
 
   const startDrag = (event: PointerEvent<HTMLDivElement>) => {

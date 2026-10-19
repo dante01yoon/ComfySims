@@ -1,4 +1,5 @@
-import { WebIO, getBounds, type Document, type Scene, type vec4 } from '@gltf-transform/core'
+import { WebIO, getBounds } from '@gltf-transform/core'
+import type { Document, Scene, vec4 } from '@gltf-transform/core'
 
 import type { Dimensions, FitMode } from '../../schema/src/index.ts'
 

@@ -2,7 +2,8 @@ import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../../harness/tools/lint-workflow.ts'
 import { inPolygon } from '../../placement/src/index.ts'
-import { type BackendKind, DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type FloorMaterial, type Job, type JobKind, type RoomLayout, type Zone } from '../../schema/src/index.ts'
+import { DEFAULT_EXPECTED_SECONDS } from '../../schema/src/index.ts'
+import type { BackendKind, Dimensions, FitMode, FloorMaterial, Job, JobKind, RoomLayout, Zone } from '../../schema/src/index.ts'
 
 export type PromptOutcome = { ok: true; prompt: ApiWorkflow } | { ok: false; missing: string[] }
 

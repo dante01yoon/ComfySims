@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test'
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 
 const OUT = process.env.DEMO_OUT ?? 'demo/out/cloud'
 const PHOTO = process.env.DEMO_PHOTO ?? 'demo/out/sofa-photo.png'
