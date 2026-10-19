@@ -1,6 +1,6 @@
-# Contributing to roomfit
+# Contributing to ComfySims
 
-Thanks for helping. roomfit is built **spec-first**: a feature is a written spec with acceptance criteria (ACs), tests that encode those ACs, and code that makes them pass. Humans and agents follow the same loop, and `pnpm verify` is the judge.
+Thanks for helping. ComfySims is built **spec-first**: a feature is a written spec with acceptance criteria (ACs), tests that encode those ACs, and code that makes them pass. Humans and agents follow the same loop, and `pnpm verify` is the judge.
 
 ## Set up
 
@@ -42,7 +42,7 @@ The repo is set up for Claude Code (`.claude/settings.json`, `AGENTS.md`, `docs/
 - TypeScript strict, no `any`. Centimeters everywhere except inside GLB files (meters). Outcomes as data at boundaries instead of throws.
 - No code comments; one-line JSDoc on exported APIs only. Rationale belongs in the commit message, the PR or an ADR (`docs/adr/`).
 - Every user-visible label is the one the spec names; e2e tests find controls by role and name.
-- ComfyUI workflows are API-format JSON in `workflows/`, with roomfit's inputs tagged by `_meta.title` (`roomfit:depth`, `roomfit:positive`, …). They must lint against the pinned catalog for their backend (`spec/contracts/*object-info.json`); `workflows/sets.json` maps backend and job kind to a file.
+- ComfyUI workflows are API-format JSON in `workflows/`, with ComfySims's inputs tagged by `_meta.title` (`roomfit:depth`, `roomfit:positive`, …). They must lint against the pinned catalog for their backend (`spec/contracts/*object-info.json`); `workflows/sets.json` maps backend and job kind to a file.
 - Tests never call real third-party sites or Comfy Cloud. Use the fakes, the reserved `.example` domains, and fixtures captured from real responses.
 
 ## Commits and PRs

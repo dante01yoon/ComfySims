@@ -1,4 +1,4 @@
-# roomfit — agent rules
+# ComfySims — agent rules
 
 Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-size GLB → placed in a room → render passes back into ComfyUI.
 
@@ -25,7 +25,7 @@ Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-si
 - `packages/schema` — room layout contract (zod). `pnpm schema:export` regenerates `spec/contracts/room-layout.schema.json`.
 - `packages/` — fit, placement, ComfyUI client (`packages/comfy`).
 - `web/` — the editor and home studio (React + react-three-fiber); its API is `window.roomfit` (`spec/contracts/editor-api.ts`).
-- `mcp/` — the roomfit MCP server (`pnpm mcp`), bridged to the open editor.
+- `mcp/` — the ComfySims MCP server (`pnpm mcp`), bridged to the open editor.
 - `nodes/roomfit` — the ComfyUI node pack (Python).
 - `workflows/` — ComfyUI workflows; `workflows/sets.json` picks one per backend and job kind.
 - `acceptance/` — one file per area; test names start with the AC id.

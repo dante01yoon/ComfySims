@@ -33,7 +33,7 @@ const join = (parts, name) => {
 }
 
 join([
-  await still('Does this sofa fit?', 'roomfit: product photo + listed size → exact-size 3D → your house → photoreal render. Built on ComfyUI / Comfy Cloud.', 3, 'h-open'),
+  await still('Does this sofa fit?', 'ComfySims: product photo + listed size → exact-size 3D → your house → photoreal render. Built on ComfyUI / Comfy Cloud.', 3, 'h-open'),
   cut('roomfit-place.mp4', 22, 40, 'h-place', 1.25),
   cut('roomfit-place.mp4', 51, 56, 'h-place-render'),
   cut('roomfit-products.mp4', 24, 40, 'h-products', 1.2),
@@ -44,7 +44,7 @@ join([
   cut('roomfit-blueprint.mp4', 0, 5, 'h-blueprint-plan'),
   cut('roomfit-blueprint.mp4', 57, 62.5, 'h-blueprint-renders'),
   cut('roomfit-studio.mp4', 0, 8, 'h-studio'),
-  await still('github.com/dante01yoon/roomfit', 'open source (GPL-3.0) · ComfyUI node pack + editor + MCP server for agents', 4, 'h-close')
+  await still('github.com/dante01yoon/ComfySims', 'open source (GPL-3.0) · ComfyUI node pack + editor + MCP server for agents', 4, 'h-close')
 ], 'x-00-roomfit-highlights')
 
 const clips = [

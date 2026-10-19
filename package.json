@@ -1,5 +1,5 @@
 {
-  "name": "roomfit",
+  "name": "comfysims",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.13.1",
@@ -45,5 +45,5 @@
   },
   "license": "GPL-3.0-only",
   "description": "Real-scale furniture for ComfyUI: product photo + listed size → exact-size 3D → your room → render",
-  "repository": "github:dante01yoon/roomfit"
+  "repository": "github:dante01yoon/ComfySims"
 }
