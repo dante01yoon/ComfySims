@@ -1,0 +1,1 @@
+spec/M8-polish-and-library-adds.md (Approved) 의 빨간 AC들(AC-56, AC-90~AC-93, 타입 검사 포함)을 초록으로 만들어줘. 백엔드 메뉴 닫힘(선택 후, Esc, 바깥 클릭)과 작업 카드를 가리지 않기, Workflow 대화상자를 창 안에 맞추기(제목·버튼 고정, 가운데 스크롤), "Place in the house" 체크박스와 place:false(라이브러리에만 추가, itemId null, assetId 반환, MCP add_product place), 선택한 가구를 향하는 눈높이 렌더 카메라야. 화면은 `pnpm see`로 확인할 수 있어. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.
