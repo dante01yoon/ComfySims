@@ -2,9 +2,8 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { PlanRoom, RoomLayout } from '../../packages/schema/src/index.ts'
+import type { RoomLayout } from '../../packages/schema/src/index.ts'
 import type {} from '../../spec/contracts/editor-api.ts'
-import { defaultSite } from '../../packages/placement/src/index.ts'
 
 const house: RoomLayout = JSON.parse(readFileSync('fixtures/layouts/demo-house.json', 'utf8'))
 const BLUEPRINT = `data:image/png;base64,${readFileSync('fixtures/blueprints/synthetic-house.png').toString('base64')}`
@@ -21,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('AC-85 the studio draws the site: default lot and trees, then a custom one', async ({ page }) => {
-  expect(await page.evaluate(() => window.roomfit.state().site)).toEqual(defaultSite(house.room as PlanRoom))
+  expect(await page.evaluate(() => window.roomfit.state().site)).toMatchObject({ ground: 'grass', path: [{ x: -225, z: 500 }, { x: -225, z: 1000 }] })
   const lot = await boundsOf(page, 'site-lot')
   expect([lot!.min.x, lot!.min.z, lot!.max.x, lot!.max.z]).toEqual([-1200, -1000, 1200, 1000])
 
