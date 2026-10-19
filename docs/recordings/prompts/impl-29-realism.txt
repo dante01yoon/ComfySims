@@ -1,0 +1,1 @@
+spec/M13-renders-like-a-real-home.md (Approved) 의 빨간 AC들(AC-100~AC-102, 타입 검사 포함)을 초록으로 만들어줘. packages/comfy의 scenePrompt(레이아웃 기반 프롬프트: 방 이름, 바닥재, 그 방 가구 이름, 조명 프리셋, 방별 생활 디테일, 하얀 벽 방지 네거티브), 방 렌더와 360° 뷰에 적용, 스튜디오의 "Render style" 선택(Lived-in / As built, 레이아웃에 저장)이야. 스파이크 결과는 스펙 §1. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.
