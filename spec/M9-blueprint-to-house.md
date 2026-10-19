@@ -58,7 +58,7 @@ Non-goals (M9)
 - The studio draws the lot (scene item `site-lot`, bounds = lot bounds), the ground material, and one tree per site tree (`site-tree-<index>`).
 - Exterior shots (`exteriorShot(view)`), revised 2026-10-19 after the AC-89 run (below):
   - a flat roof slab over the walls' bounding box with its top at wall height + 20 cm;
-  - aerial: pitch 40–50° from the south-east, looking at the house centre, at the distance where the house's bounding box (floor to roof) fills 50–80 % of the frame's width or height;
+  - aerial: pitch 25–35° from the south-east (revised from 40–50° after the real-Cloud check below), looking at the house centre, at the distance where the house's bounding box (floor to roof) fills 50–80 % of the frame's width or height;
   - street: eye 160 cm, standing on the lot at the corner diagonal to the front door's wall (outside both the house's x and z extents), looking at the house centre, so two façades show;
   - depth range: near = nearest house point, far = the farthest lot corner from the camera; anything beyond (sky, ground past the lot) is black;
   - trees are left out of exterior depth passes (`trees: false`); the prompt asks for them instead.
@@ -92,6 +92,8 @@ Both: the studio's low-poly trees come out as black polyhedra. Hence two rules i
 
 The agent read a new blueprint exactly (plan-diff 0 cm after aligning its origin), but all three exterior renders failed: a three-storey façade with a floating rhombus (aerial), a gabled two-storey house with glass bubbles (aerial, with trees), one wall with the door drawn as a window (street). The depth passes sent (captured with `demo/capture-exterior-depth.mjs`, `docs/spikes/m9/agent-run-depth.png`) were geometrically right but: the house filled a small part of the aerial frame and its depth was barely darker than the lawn (range ran to the horizon); the canopies' trunks were too thin, so the spheres read as floating balls; the street camera stood 5.5 m square-on to one wall because the lot leaves 5 m. Hence the revised rules above.
 
+After those rules (impl-25), a real Comfy Cloud check of the AC-89 house (`docs/spikes/m9/exterior-after-impl25.png`): the street view became a convincing single-storey flat-roofed house with two façades; the aerial view at 45° still drew the roof slab as a floating board — from that pitch the featureless roof covers most of the house's outline. Aerial pitch lowered to 25–35° so the façades carry the shape.
+
 ## 8. Acceptance criteria
 
 | AC | Status | Criterion |
@@ -100,7 +102,7 @@ The agent read a new blueprint exactly (plan-diff 0 cm after aligning its origin
 | AC-84 | active | `set_house_plan` applies a valid plan undoably, rejects an invalid one with its issues, keeps items inside new rooms and reports the rest as moved to the library |
 | AC-85 | active | The studio draws the lot and trees from the site (default when none): `site-lot` and `site-tree-<i>` in the scene at their positions; an invalid site is rejected and changes nothing |
 | AC-86 | active | The blueprint underlay draws aligned under the plan (a known pixel lands on its cm position) with adjustable opacity, and survives save/load |
-| AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm; the aerial camera (40–50° pitch) frames the house at 50–80 %; the street camera (160 cm, on the lot) stands diagonal to the house so two façades show; the depth range ends at the farthest lot corner; trees are left out; "Render exterior" queues both renders with exterior prompts |
+| AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm; the aerial camera (25–35° pitch) frames the house at 50–80 %; the street camera (160 cm, on the lot) stands diagonal to the house so two façades show; the depth range ends at the farthest lot corner; trees are left out; "Render exterior" queues both renders with exterior prompts |
 | AC-88 | active | `pnpm plan-diff` reports 0 for identical plans and the right per-element errors for shifted walls and openings |
 | AC-89 | manual | Recording: Claude Code gets a floor-plan image, builds the house through the roomfit MCP, sets the site, and renders aerial and street views on Comfy Cloud |
 
@@ -129,5 +131,6 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 
 - 2026-10-18 Draft, from Dante's request (blueprint → house, land and design renders); spike on a synthetic blueprint: exact extraction.
 - 2026-10-18 Approved on the recommended answers.
+- 2026-10-19 Real-Cloud check after impl-25: street fixed, aerial still a floating board → aerial pitch 25–35°.
 - 2026-10-19 AC-89 agent run: plan exact, exterior renders failed → exterior rules revised (framing, depth range, no trees, diagonal street view).
 - 2026-10-18 Exterior spike (roofless aerial, polyhedral trees → roof slab and smooth canopies); spec session: schema (`Site`, `Blueprint`), contracts, `plan-diff`, blueprint fixture, AC-83~88 tests; ACs active.

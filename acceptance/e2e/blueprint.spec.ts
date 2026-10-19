@@ -86,8 +86,8 @@ test('AC-87 exterior shots frame the house, read as a house from the street, end
   const dx = aerial.camera.target.x - aerial.camera.position.x
   const dz = aerial.camera.target.z - aerial.camera.position.z
   const pitch = (Math.atan2(aerial.camera.position.y - aerial.camera.target.y, Math.hypot(dx, dz)) * 180) / Math.PI
-  expect(pitch).toBeGreaterThanOrEqual(40)
-  expect(pitch).toBeLessThanOrEqual(50)
+  expect(pitch).toBeGreaterThanOrEqual(25)
+  expect(pitch).toBeLessThanOrEqual(35)
   const aerialPoints = houseCorners(290).map((corner) => project(aerial, corner))
   const spanX = (Math.max(...aerialPoints.map((p) => p.x)) - Math.min(...aerialPoints.map((p) => p.x))) / 2
   const spanY = (Math.max(...aerialPoints.map((p) => p.y)) - Math.min(...aerialPoints.map((p) => p.y))) / 2
