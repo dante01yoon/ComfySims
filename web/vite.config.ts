@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 import { bridge, isLocal } from './bridge.ts'
+import { fetchImage } from './fetch-image.ts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const fixturesDir = fileURLToPath(new URL('../fixtures', import.meta.url))
@@ -97,6 +98,14 @@ function comfyBackends({ cloudUrl, localUrl, startUrl, apiKey }: Backends): Plug
           if (choice.kind === 'local' && choice.url) local = choice.url
         }
         sendJson(response, 200, view())
+      })
+
+      server.middlewares.use('/__roomfit/fetch-image', async (request, response) => {
+        if (!isLocal(request)) return sendJson(response, 403, { error: 'photos can only be fetched for the roomfit editor' })
+        const fetched = await fetchImage(new URL(request.url ?? '/', 'http://editor').searchParams.get('url') ?? '')
+        if (!fetched.ok) return sendJson(response, fetched.status, { error: fetched.message })
+        response.setHeader('Content-Type', fetched.contentType)
+        response.end(fetched.bytes)
       })
 
       server.middlewares.use('/comfy', async (request, response) => {

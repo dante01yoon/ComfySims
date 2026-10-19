@@ -39,6 +39,7 @@ import type {
   EditorView,
   ExteriorShot,
   ExteriorView,
+  ImportedProduct,
   Issues,
   JobWorkflow,
   Lighting,
@@ -53,6 +54,7 @@ import type {
   WorkflowChoice
 } from '../../spec/contracts/editor-api.ts'
 import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyInput, type ComfyRun } from './comfy.ts'
+import { bookmarkletFor } from './bookmarklet.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
@@ -112,6 +114,7 @@ export type Editor = {
   blueprintOpacity: number
   blueprintHidden: boolean
   exterior: ExteriorShot | null
+  pendingImport: ImportedProduct | null
   revision: number
 }
 
@@ -155,6 +158,7 @@ let editor: Editor = {
   blueprintOpacity: 50,
   blueprintHidden: false,
   exterior: null,
+  pendingImport: null,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -333,7 +337,8 @@ function state(): EditorState {
     libraryFilter: editor.libraryFilter,
     renderStyle: renderStyleOf(history.present),
     site: siteOf(history.present),
-    blueprintOpacity: editor.blueprintOpacity
+    blueprintOpacity: editor.blueprintOpacity,
+    pendingImport: editor.pendingImport
   }
 }
 
@@ -1228,5 +1233,39 @@ export const api: RoomfitEditorApi = {
   selectItem: (itemId) => select(editor.history.present.items.some(({ id }) => id === itemId) ? itemId : null),
   setActionLabel: (label) => {
     actionLabel = label
+  },
+  bookmarklet: () => bookmarkletFor(location.origin)
+}
+
+const ImportedSize = z.number().positive().nullable()
+const Imported = z.object({
+  url: z.string().url(),
+  store: z.string().min(1),
+  name: z.string(),
+  brand: z.string().nullable(),
+  image: z.string().url().nullable(),
+  dimensions: z.object({ width: ImportedSize, depth: ImportedSize, height: ImportedSize }),
+  model3d: z.string().nullable()
+})
+
+function pageLoaded(): Promise<void> {
+  if (document.readyState === 'complete') return Promise.resolve()
+  return new Promise((resolve) => window.addEventListener('load', () => setTimeout(resolve), { once: true }))
+}
+
+/** Takes a product sent by the bookmarklet in `#import=` into the add-product form, once, and clears the hash. */
+export function takeImport(): void {
+  const match = /^#import=(.*)$/s.exec(location.hash)
+  if (!match?.[1]) return
+  void Promise.all([threeReady, pageLoaded()]).then(() => window.history.replaceState(null, '', location.pathname + location.search))
+  try {
+    const parsed = Imported.safeParse(JSON.parse(decodeURIComponent(match[1])))
+    if (parsed.success) update({ pendingImport: parsed.data, view: 'editor' })
+  } catch {
+    return
   }
+}
+
+export function clearImport(): void {
+  if (editor.pendingImport) update({ pendingImport: null })
 }

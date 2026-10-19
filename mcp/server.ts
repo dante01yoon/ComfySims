@@ -10,6 +10,7 @@ import { scenePrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
 import { FitMode, PlanRoom, Site, type AssetProduct, type JobKind, type RoomLayout } from '../packages/schema/src/index.ts'
 import type { EditorState, EditorView, ExteriorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
+import { fetchImage } from '../web/fetch-image.ts'
 import { editorBridge, type BridgedApi } from './editor.ts'
 
 const SCENE_PRESETS = ['reading', 'work', 'movie', 'evening'] as const satisfies readonly ScenePreset[]
@@ -78,11 +79,16 @@ function itemOf(state: EditorState, itemId: string) {
   return item
 }
 
-type ProductImage = { comfyInputName: string } | { path: string } | { base64: string }
+type ProductImage = { comfyInputName: string } | { path: string } | { url: string } | { base64: string }
 
 async function imageOf(image: ProductImage, name: string): Promise<Pick<ProductRequest, 'fileName' | 'imageBase64' | 'imageName'>> {
   if ('comfyInputName' in image) return { fileName: image.comfyInputName, imageName: image.comfyInputName }
   if ('path' in image) return { fileName: basename(image.path), imageBase64: (await readFile(image.path)).toString('base64') }
+  if ('url' in image) {
+    const fetched = await fetchImage(image.url)
+    if (!fetched.ok) throw new Error(`The photo at ${image.url} could not be used: ${fetched.message}`)
+    return { fileName: basename(new URL(image.url).pathname) || 'product.png', imageBase64: fetched.bytes.toString('base64') }
+  }
   return { fileName: `${name.replace(/[^a-z0-9]+/gi, '-') || 'product'}.png`, imageBase64: image.base64 }
 }
 
@@ -186,9 +192,9 @@ server.registerTool(
   'add_product',
   {
     description:
-      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room, or with place false only add it to the library (itemId null; place it later with place_asset and the returned assetId). image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file) or { base64 }. productUrl (http/https), brand, store and labels are kept on the asset. Waits for the job (about a minute).',
+      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room, or with place false only add it to the library (itemId null; place it later with place_asset and the returned assetId). image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file), { url } (an http(s) image, at most 15 MB) or { base64 }. productUrl (http/https), brand, store and labels are kept on the asset. Waits for the job (about a minute).',
     inputSchema: {
-      image: z.union([z.object({ comfyInputName: z.string().min(1) }), z.object({ path: z.string().min(1) }), z.object({ base64: z.string().min(1) })]),
+      image: z.union([z.object({ comfyInputName: z.string().min(1) }), z.object({ path: z.string().min(1) }), z.object({ url: z.string().url() }), z.object({ base64: z.string().min(1) })]),
       name: z.string().min(1),
       width: z.number().positive(),
       depth: z.number().positive(),

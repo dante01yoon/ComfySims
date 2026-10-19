@@ -427,6 +427,10 @@ function AssetRow({ asset, targets }: { asset: Asset; targets: Target[] }) {
   )
 }
 
+function withBookmarkletHref(link: HTMLAnchorElement | null): void {
+  link?.setAttribute('href', api.bookmarklet())
+}
+
 function LibrarySection() {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const { assets, room } = editor.history.present
@@ -464,6 +468,8 @@ function LibrarySection() {
         <input type="file" accept="image/*" aria-label="Room photo" onChange={uploadPhoto} disabled={noPhoto3d !== undefined} title={noPhoto3d} />
       </label>
       <div className="muted">The photo is sent to your ComfyUI to build the 3D photo.</div>
+      <a ref={withBookmarkletHref} href="#">Send to ComfySims</a>
+      <div className="muted">Drag it to your bookmarks bar, then click it on a store's product page to fill in the product here.</div>
     </section>
   )
 }

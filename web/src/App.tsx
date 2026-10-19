@@ -19,7 +19,7 @@ import {
   type Zone
 } from '../../packages/schema/src/index.ts'
 import type { Job, JobKind, JobStep } from '../../packages/schema/src/index.ts'
-import type { RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
+import type { ImportedProduct, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
 import {
   api,
   attachControls,
@@ -27,6 +27,7 @@ import {
   beginDrag,
   blueprintImage,
   cannotRun,
+  clearImport,
   closeRender,
   dataUrlOf,
   endDrag,
@@ -517,8 +518,24 @@ function RenderOverlay({ image, prompt, studio, onClose, onViewAs3d }: RenderOve
   )
 }
 
+function sizeInputOf({ width, depth, height }: ImportedProduct['dimensions']): SizeInput {
+  return { width: width?.toString() ?? '', depth: depth?.toString() ?? '', height: height?.toString() ?? '' }
+}
+
+function importNoteOf({ store, dimensions }: ImportedProduct): string {
+  const hasSize = Object.values(dimensions).some((cm) => cm !== null)
+  return hasSize ? `Imported from ${store} — check the size` : `Imported from ${store} — the page has no size; enter it from the listing`
+}
+
+async function photoAt(url: string): Promise<File | null> {
+  const response = await fetch(`/__roomfit/fetch-image?url=${encodeURIComponent(url)}`).catch(() => null)
+  if (!response?.ok) return null
+  const blob = await response.blob()
+  return new File([blob], new URL(url).pathname.split('/').pop() || 'product.png', { type: blob.type })
+}
+
 function ComfyPanel() {
-  const { jobs, backend } = useSyncExternalStore(subscribe, snapshot)
+  const { jobs, backend, pendingImport } = useSyncExternalStore(subscribe, snapshot)
   const noProduct = cannotRun(backend, 'product')
   const noRender = cannotRun(backend, 'render')
   const [photo, setPhoto] = useState<File | null>(null)
@@ -531,16 +548,41 @@ function ComfyPanel() {
   const [labels, setLabels] = useState<string[]>([])
   const [place, setPlace] = useState(true)
   const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
+  const [importNote, setImportNote] = useState<string | null>(null)
+  const [photoProblem, setPhotoProblem] = useState<string | null>(null)
   const linkProblem = link.trim() ? ProductUrl.safeParse(link.trim()).error?.issues[0]?.message : undefined
   const [prompt, setPrompt] = useState('')
   const job = jobs.at(-1)
   const now = useClock(job !== undefined && !isFinished(job))
   const seconds = job ? elapsedSeconds(job, now) : 0
 
+  useEffect(() => {
+    if (!pendingImport) return
+    let current = true
+    setName(pendingImport.name)
+    setSize(sizeInputOf(pendingImport.dimensions))
+    setLink(pendingImport.url)
+    setBrand(pendingImport.brand ?? '')
+    setStore(pendingImport.store)
+    setImportNote(importNoteOf(pendingImport))
+    setPhoto(null)
+    setPhotoProblem(null)
+    void (pendingImport.image ? photoAt(pendingImport.image) : Promise.resolve(null)).then((file) => {
+      if (!current) return
+      setPhoto(file)
+      if (!file) setPhotoProblem('Could not fetch the photo — add it by hand')
+    })
+    return () => {
+      current = false
+    }
+  }, [pendingImport])
+
   const render = () => api.renderInComfy({ prompt })
 
   const generate3d = async () => {
     if (!photo) return
+    clearImport()
+    setImportNote(null)
     const dimensions = { width: Number(size.width), depth: Number(size.depth), height: Number(size.height) }
     setPlacedFit(null)
     const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode, productUrl: link, brand, store, labels, place })
@@ -556,9 +598,12 @@ function ComfyPanel() {
   return (
     <>
       <h2>Product from photo</h2>
+      {importNote && <div className="status">{importNote}</div>}
       <Field label="Product photo">
         <input type="file" accept="image/*" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
       </Field>
+      {pendingImport && photo && <div className="muted">Photo: {photo.name}</div>}
+      {photoProblem && <div className="problem">{photoProblem}</div>}
       <Field label="Product name">
         <input value={name} onChange={(event) => setName(event.target.value)} />
       </Field>
