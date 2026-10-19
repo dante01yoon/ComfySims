@@ -10,7 +10,9 @@ const chapters = [
   ['roomfit-agent.mp4', 'An agent furnishes a room', 'Claude Code + Comfy Cloud MCP + roomfit MCP, one sentence'],
   ['roomfit-360.mp4', '360° view of your layout', 'depth panorama → Qwen-Image 360 on Comfy Cloud'],
   ['roomfit-local-cloud.mp4', 'Local or Cloud, per job', 'render on Cloud, 3D photo on this Mac'],
-  ['roomfit-products.mp4', 'Shop from real listings', 'three Amazon sofas, real sizes, store links']
+  ['roomfit-place.mp4', 'Make it, put it anywhere', 'photo → exact-size 3D → drag into place → render'],
+  ['roomfit-products.mp4', 'Shop from real listings', 'three Amazon sofas, real sizes, store links'],
+  ['roomfit-blueprint.mp4', 'From a floor plan to a house on its land', 'an agent reads the plan, builds the house, renders it from the air and the street']
 ]
 const page = await (await chromium.launch()).newPage({ viewport: { width: 1600, height: 900 } })
 const card = async (title, subtitle, out) => {

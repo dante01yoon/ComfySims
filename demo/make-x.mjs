@@ -41,6 +41,8 @@ join([
   cut('roomfit-agent.mp4', 83, 91, 'h-agent-render'),
   cut('roomfit-360.mp4', 20, 24, 'h-360-pair'),
   cut('roomfit-360.mp4', 26, 36, 'h-360-look', 1.2),
+  cut('roomfit-blueprint.mp4', 0, 5, 'h-blueprint-plan'),
+  cut('roomfit-blueprint.mp4', 57, 62.5, 'h-blueprint-renders'),
   cut('roomfit-studio.mp4', 0, 8, 'h-studio'),
   await still('github.com/dante01yoon/roomfit', 'open source (GPL-3.0) · ComfyUI node pack + editor + MCP server for agents', 4, 'h-close')
 ], 'x-00-roomfit-highlights')
@@ -51,7 +53,8 @@ const clips = [
   ['roomfit-agent.mp4', 'x-03-agent-furnishes'],
   ['roomfit-360.mp4', 'x-04-360-view'],
   ['roomfit-local-cloud.mp4', 'x-05-local-or-cloud'],
-  ['roomfit-studio.mp4', 'x-06-home-studio']
+  ['roomfit-studio.mp4', 'x-06-home-studio'],
+  ['roomfit-blueprint.mp4', 'x-07-floor-plan-to-house']
 ]
 for (const [file, name] of clips) {
   run(['-i', `${media}/${file}`, '-vf', normal, ...encode, `${work}/${name}-video.mp4`])
