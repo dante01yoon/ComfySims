@@ -73,7 +73,7 @@ None.
 | AC-79 | active | The library row and the selected item's panel show the product photo, brand · store and an "Open product page" link that opens the URL in a new tab with noopener |
 | AC-80 | active | Labels can be added and removed (undoably) from the library and the selection panel; the library filter shows only assets with the chosen label |
 | AC-81 | active | MCP: `add_product` accepts the product fields, `set_asset_labels` changes labels with an `mcp:` undo label, `list_assets` returns product and labels |
-| AC-82 | manual | Recording: three real sofas from store links, labelled and filtered, one placed, then opened from the house |
+| AC-82 | manual | Recording: three real sofas from store links, labelled and filtered, one placed, then opened from the house (evidence 2026-10-18: `docs/recordings/demo-ac82-store-products.md`) |
 
 ## 9. Test plan
 
@@ -101,4 +101,4 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 - 2026-10-18 Draft, from Dante's request for product photos, links, sources and labels on assets.
 - 2026-10-18 Approved on the recommended answers.
 - 2026-10-18 Spec session: schema, contracts (incl. `selectItem`), demo fixture marked AI-generated, AC-77~81 tests; ACs active.
-- 2026-10-18 Implemented (impl-22); AC-77~81 pass. Screen check: `docs/recordings/media/m7-library-and-selected.jpg`. AC-82 waits for three real products (photo + store link) from Dante.
+- 2026-10-18 Implemented (impl-22); AC-77~81 pass. Screen check: `docs/recordings/media/m7-library-and-selected.jpg`. AC-82 recorded with three Amazon sofas Claude picked at Dante's request; video published as an example (Dante: "비디오는 예시로 넣어줘").
