@@ -1,0 +1,1 @@
+Make a reading corner in the bedroom: one armchair and one floor lamp, Scandinavian style. Make the product photos on Comfy Cloud (open-model templates only, no paid API nodes), put them in the bedroom at real size with roomfit, check it on screen, then render the bedroom and show me.

@@ -1,0 +1,1 @@
+Build a house in roomfit from the floor plan demo/out/blueprint-run/floor-plan.png. Lay the plan under the open editor (set_blueprint) and check with screenshots that the walls, doors, windows and rooms match it. Make the lot 5 m around the house with a lawn, and finally render the outside from the air and from the street and show me. Don't use paid API nodes.

@@ -5,7 +5,7 @@ import { chromium } from '@playwright/test'
 const dir = 'demo/out/agent'
 const work = `${dir}/edit`
 mkdirSync(work, { recursive: true })
-const prompt = readFileSync('docs/recordings/prompts/agent-01-reading-corner.txt', 'utf8').trim()
+const prompt = readFileSync('docs/recordings/prompts/agent-01-reading-corner.en.txt', 'utf8').trim()
 const image = (name) => `data:image/png;base64,${readFileSync(`${dir}/${name}`).toString('base64')}`
 
 const recordingSecondsPerTimelineSecond = 1.1308
@@ -26,7 +26,7 @@ const shot = async (html, out, omitBackground = false) => {
 }
 const card = (body) => `<div style="height:900px;display:grid;place-items:center;color:#fff;font:500 30px/1.5 system-ui,sans-serif"><div style="max-width:1300px">${body}</div></div>`
 
-await shot(card(`<div style="opacity:.6;font-size:24px">One sentence to Claude Code, with two MCP servers: Comfy Cloud + roomfit</div>
+await shot(card(`<div style="opacity:.6;font-size:24px">One sentence to Claude Code, with two MCP servers: Comfy Cloud + roomfit (prompt translated from Korean)</div>
   <div style="margin-top:24px;padding:28px 32px;border-radius:14px;background:#24272b;border:1px solid #3a3e44">“${prompt}”</div>`), `${work}/intro.png`)
 await shot(card(`<div style="opacity:.6;font-size:24px;margin-bottom:20px">The two product photos the agent generated on Comfy Cloud</div>
   <div style="display:flex;gap:28px;justify-content:center"><img src="${image('armchair.png')}" style="height:560px;border-radius:12px"><img src="${image('floor-lamp.png')}" style="height:560px;border-radius:12px"></div>`), `${work}/photos.png`)
