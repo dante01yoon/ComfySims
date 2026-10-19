@@ -82,3 +82,7 @@ export type M13Checks = [
   Assert<Equal<ReturnType<typeof scenePrompt>, { positive: string; negative: string }>>,
   Assert<Equal<EditorState['renderStyle'], 'lived-in' | 'as-built'>>
 ]
+
+import type { ImportedProduct } from '../spec/contracts/editor-api.ts'
+
+export type M11Checks = [Assert<Equal<EditorState['pendingImport'], ImportedProduct | null>>]

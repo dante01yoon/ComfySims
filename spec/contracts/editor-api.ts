@@ -26,6 +26,7 @@ export type EditorState = {
   backend: BackendState
   libraryFilter: string | null
   renderStyle: 'lived-in' | 'as-built'
+  pendingImport: ImportedProduct | null
   site: Site
   blueprintOpacity: number
   undoLabels: string[]
@@ -63,6 +64,9 @@ export type WorkflowOption = { id: string; label: string; source: 'builtin' | 'c
 export type ModelSlot = { key: string; label: string; value: string; options: string[] }
 /** The workflow a job kind will use, the alternatives, and the model files it loads. */
 export type WorkflowChoice = { kind: JobKind; current: string; options: WorkflowOption[]; models: ModelSlot[] }
+
+/** A product read from a store page by the bookmarklet; sizes in cm, null when the page had none. */
+export type ImportedProduct = { url: string; store: string; name: string; brand: string | null; image: string | null; dimensions: { width: number | null; depth: number | null; height: number | null }; model3d: string | null }
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
@@ -152,6 +156,7 @@ export type RoomfitEditorApi = {
   setModel(kind: JobKind, key: string, value: string): { ok: true } | { ok: false; reason: 'unknown-slot' }
   addCustomWorkflow(kind: JobKind, name: string, graph: unknown): { ok: true; id: string } | { ok: false; missingTags: string[]; message: string }
   setRenderStyle(style: 'lived-in' | 'as-built'): void
+  bookmarklet(): string
 }
 
 declare global {

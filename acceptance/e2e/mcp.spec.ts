@@ -177,6 +177,13 @@ test('AC-99 list_workflows and set_workflow read and change the workflow and mod
   expect((await call('set_workflow', { kind: 'render', workflow: 'nope.json' })).isError).toBe(true)
 })
 
+test('AC-108 add_product accepts an image URL', async ({ page }) => {
+  const added = await call('add_product', { image: { url: 'http://127.0.0.1:8197/signed/url-lamp.png' }, name: 'URL lamp', width: 30, depth: 30, height: 150, room: 'garage' })
+  expect(added.isError).toBe(false)
+  const { itemId } = json(added.content)
+  expect((await page.evaluate(() => window.roomfit.state())).layout.items.some((item) => item.id === itemId)).toBe(true)
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })
