@@ -65,7 +65,7 @@ Studio bottom bar: a select **"Render style"** with **"Lived-in"** (default) and
 | AC-100 | active | `scenePrompt` names the room, its floor, only its own furniture, the preset light and the room's lived-in details, with the anti-white negative; "as built" gives the plain prompt |
 | AC-101 | active | "Render this view" and the 360° view send the layout-aware positive and negative prompts to ComfyUI |
 | AC-102 | active | The studio's "Render style" select switches lived-in / as built, is saved with the layout, and changes the next prompt |
-| AC-103 | manual | Recording on real Comfy Cloud: the same room and the same 360° view, as built and lived-in |
+| AC-103 | manual | Recording on real Comfy Cloud: the same room and the same 360° view, as built and lived-in (evidence 2026-10-19: `docs/recordings/demo-ac103-realism.md`) |
 
 ## 9. Test plan
 
