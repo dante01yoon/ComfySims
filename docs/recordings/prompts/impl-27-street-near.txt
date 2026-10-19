@@ -1,0 +1,1 @@
+spec/M9-blueprint-to-house.md 의 거리 뷰 깊이 범위 규칙이 바뀌었어: 가까운 끝을 집이 아니라 카메라 앞 1 m 바닥으로(§5, §7 storeys spike 참고). 빨간 AC-87을 초록으로 만들어줘. 항공 뷰는 그대로야. AGENTS.md 규칙을 따르고 끝나면 짧게 알려줘.

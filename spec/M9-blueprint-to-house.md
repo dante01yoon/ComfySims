@@ -60,7 +60,7 @@ Non-goals (M9)
   - a flat roof slab over the walls' bounding box with its top at wall height + 20 cm;
   - aerial: pitch 25–35° from the south-east (revised from 40–50° after the real-Cloud check below), looking at the house centre, at the distance where the house's bounding box (floor to roof) fills 50–80 % of the frame's width or height;
   - street: eye 160 cm, standing on the lot at the corner diagonal to the front door's wall (outside both the house's x and z extents), looking at the house centre, so two façades show;
-  - depth range: near = nearest house point, far = the farthest lot corner from the camera; anything beyond (sky, ground past the lot) is black;
+  - depth range: far = the farthest lot corner from the camera, anything beyond (sky, ground past the lot) black; near = the nearest house point for the aerial view, and for the street view the ground 1 m in front of the camera (revised: with near at the house, the lawn in front clipped to flat white and the model lost the scale — see the storeys spike below);
   - trees are left out of exterior depth passes (`trees: false`); the prompt asks for them instead.
   - the shot reports its camera's `fovDeg` and `aspect` so the framing can be checked.
 - "Render exterior" queues two render jobs, "Exterior render · Aerial" and "Exterior render · Street", through `render-from-depth` with a prompt that starts with "Exterior architectural photograph".
@@ -93,6 +93,8 @@ Both: the studio's low-poly trees come out as black polyhedra. Hence two rules i
 The agent read a new blueprint exactly (plan-diff 0 cm after aligning its origin), but all three exterior renders failed: a three-storey façade with a floating rhombus (aerial), a gabled two-storey house with glass bubbles (aerial, with trees), one wall with the door drawn as a window (street). The depth passes sent (captured with `demo/capture-exterior-depth.mjs`, `docs/spikes/m9/agent-run-depth.png`) were geometrically right but: the house filled a small part of the aerial frame and its depth was barely darker than the lawn (range ran to the horizon); the canopies' trunks were too thin, so the spheres read as floating balls; the street camera stood 5.5 m square-on to one wall because the lot leaves 5 m. Hence the revised rules above.
 
 After those rules (impl-25), a real Comfy Cloud check of the AC-89 house (`docs/spikes/m9/exterior-after-impl25.png`): the street view became a convincing single-storey flat-roofed house with two façades; the aerial view at 45° still drew the roof slab as a floating board — from that pitch the featureless roof covers most of the house's outline. Aerial pitch lowered to 25–35° so the façades carry the shape.
+
+Clean AC-89 re-run (take 2, 2 min 22 s, $1.05): plan exact again (plan-diff 0); aerial now a single-storey flat-roofed house; the street view drew two storeys. Storeys spike on that street depth (`demo/spike-storeys.ts`, `docs/spikes/m9/street-storeys-spike.png`, Cloud jobs 8485a5a0, 1ce80fdb, 637553c5): a "single-storey bungalow" prompt with a "second floor" negative still drew two storeys at two seeds. The depth showed why: the lawn between camera and house was clipped to flat white (near = nearest house point), so nothing told the model how far away, and so how tall, the house is. Street near plane moved to the ground in front of the camera.
 
 ## 8. Acceptance criteria
 
@@ -131,6 +133,7 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 
 - 2026-10-18 Draft, from Dante's request (blueprint → house, land and design renders); spike on a synthetic blueprint: exact extraction.
 - 2026-10-18 Approved on the recommended answers.
+- 2026-10-19 AC-89 take 2: street view two storeys; prompt spike did not help; street depth now starts at the ground in front of the camera.
 - 2026-10-19 Real-Cloud check after impl-25: street fixed, aerial still a floating board → aerial pitch 25–35°.
 - 2026-10-19 AC-89 agent run: plan exact, exterior renders failed → exterior rules revised (framing, depth range, no trees, diagonal street view).
 - 2026-10-18 Exterior spike (roofless aerial, polyhedral trees → roof slab and smooth canopies); spec session: schema (`Site`, `Blueprint`), contracts, `plan-diff`, blueprint fixture, AC-83~88 tests; ACs active.

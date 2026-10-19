@@ -105,6 +105,8 @@ test('AC-87 exterior shots frame the house, read as a house from the street, end
   expect((x < -700 || x > 700) && (z < -500 || z > 500), 'street camera diagonal to the house: two façades').toBe(true)
   expect(x >= -1200 && x <= 1200 && z >= -1000 && z <= 1000, 'street camera on the lot').toBe(true)
   expect(street.trees).toBe(false)
+  const nearestHouse = Math.min(...houseCorners(290).map((corner) => Math.hypot(corner.x - x, corner.y - 160, corner.z - z)))
+  expect(street.depthRange.nearCm, 'street depth starts at the ground in front of the camera, not at the house').toBeLessThanOrEqual(nearestHouse / 2)
 
   await page.getByRole('button', { name: 'Render exterior' }).click()
   await expect(jobs(page).getByRole('article', { name: 'Exterior render · Aerial' })).toContainText('done', { timeout: 15_000 })
