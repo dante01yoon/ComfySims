@@ -1,0 +1,42 @@
+{
+  "kind": "plan",
+  "wallHeight": 270,
+  "wallThickness": 15,
+  "walls": [
+    { "id": "north", "from": { "x": -700, "z": -500 }, "to": { "x": 700, "z": -500 } },
+    { "id": "east", "from": { "x": 700, "z": -500 }, "to": { "x": 700, "z": 500 } },
+    { "id": "south", "from": { "x": -700, "z": 500 }, "to": { "x": 700, "z": 500 } },
+    { "id": "west", "from": { "x": -700, "z": -500 }, "to": { "x": -700, "z": 500 } },
+    { "id": "bedroom-office", "from": { "x": -200, "z": -500 }, "to": { "x": -200, "z": 0 } },
+    { "id": "office-bath", "from": { "x": 150, "z": -500 }, "to": { "x": 150, "z": 0 } },
+    { "id": "garage", "from": { "x": 400, "z": -500 }, "to": { "x": 400, "z": 500 } },
+    { "id": "middle", "from": { "x": -700, "z": 0 }, "to": { "x": 400, "z": 0 } },
+    { "id": "living-kitchen", "from": { "x": 0, "z": 0 }, "to": { "x": 0, "z": 500 } }
+  ],
+  "openings": [
+    { "wallId": "north", "kind": "window", "offset": 200, "width": 200, "height": 130, "sill": 90 },
+    { "wallId": "north", "kind": "window", "offset": 680, "width": 200, "height": 130, "sill": 90 },
+    { "wallId": "north", "kind": "window", "offset": 1140, "width": 180, "height": 130, "sill": 90 },
+    { "wallId": "west", "kind": "window", "offset": 150, "width": 200, "height": 130, "sill": 90 },
+    { "wallId": "west", "kind": "window", "offset": 650, "width": 220, "height": 130, "sill": 90 },
+    { "wallId": "east", "kind": "window", "offset": 460, "width": 160, "height": 130, "sill": 90 },
+    { "wallId": "south", "kind": "window", "offset": 120, "width": 220, "height": 130, "sill": 90 },
+    { "wallId": "south", "kind": "door", "offset": 420, "width": 110, "height": 210, "sill": 0 },
+    { "wallId": "south", "kind": "window", "offset": 820, "width": 180, "height": 130, "sill": 90 },
+    { "wallId": "south", "kind": "door", "offset": 1120, "width": 240, "height": 210, "sill": 0 },
+    { "wallId": "bedroom-office", "kind": "door", "offset": 300, "width": 90, "height": 210, "sill": 0 },
+    { "wallId": "middle", "kind": "door", "offset": 420, "width": 90, "height": 210, "sill": 0 },
+    { "wallId": "middle", "kind": "door", "offset": 760, "width": 90, "height": 210, "sill": 0 },
+    { "wallId": "middle", "kind": "door", "offset": 980, "width": 90, "height": 210, "sill": 0 },
+    { "wallId": "living-kitchen", "kind": "door", "offset": 180, "width": 160, "height": 210, "sill": 0 },
+    { "wallId": "garage", "kind": "door", "offset": 700, "width": 90, "height": 210, "sill": 0 }
+  ],
+  "zones": [
+    { "id": "bedroom", "name": "Bedroom", "floor": "carpet", "polygon": [{ "x": -700, "z": -500 }, { "x": -200, "z": -500 }, { "x": -200, "z": 0 }, { "x": -700, "z": 0 }] },
+    { "id": "office", "name": "Office", "floor": "oak", "polygon": [{ "x": -200, "z": -500 }, { "x": 150, "z": -500 }, { "x": 150, "z": 0 }, { "x": -200, "z": 0 }] },
+    { "id": "bath", "name": "Bath", "floor": "tile", "polygon": [{ "x": 150, "z": -500 }, { "x": 400, "z": -500 }, { "x": 400, "z": 0 }, { "x": 150, "z": 0 }] },
+    { "id": "garage", "name": "Garage", "floor": "concrete", "polygon": [{ "x": 400, "z": -500 }, { "x": 700, "z": -500 }, { "x": 700, "z": 500 }, { "x": 400, "z": 500 }] },
+    { "id": "living", "name": "Living", "floor": "walnut", "polygon": [{ "x": -700, "z": 0 }, { "x": 0, "z": 0 }, { "x": 0, "z": 500 }, { "x": -700, "z": 500 }] },
+    { "id": "kitchen", "name": "Kitchen & Dining", "floor": "tile", "polygon": [{ "x": 0, "z": 0 }, { "x": 400, "z": 0 }, { "x": 400, "z": 500 }, { "x": 0, "z": 500 }] }
+  ]
+}
