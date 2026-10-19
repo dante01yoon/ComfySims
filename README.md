@@ -1,8 +1,19 @@
+<p align="center"><img src="docs/brand/banner.png" alt="ComfySims — real-size furniture, houses and floor plans, built and rendered with ComfyUI" width="100%"></p>
+
 # ComfySims
 
 *ComfyUI + a Sims-style home builder. Formerly **roomfit** — code identifiers (`window.roomfit`, the `roomfit` MCP server, `roomfit:` workflow tags, `RoomfitFitMesh`) keep the old name for now ([ADR-0011](docs/adr/0011-rename-to-comfysims.md)).*
 
-**Does this sofa fit my living room?** Drop in a product photo and its listed size. ComfySims turns it into a 3D model on ComfyUI or Comfy Cloud, fits it to the exact listed size, places it in your room or a whole house, checks it against walls and other furniture, and renders the room back to a photo.
+**Design your home on ComfyUI.** Drop in the blueprint of the house you want, and ComfySims models it — walls, doors, windows, rooms and the land around it — using your local ComfyUI or Comfy Cloud. Bring the products you are considering, and furnish it with them at their real listed sizes. Then render it: eye-level photos of each room, a 360° look-around, or the house from the air and the street — or plug in your own ComfyUI workflows.
+
+| You bring | ComfySims does | Status |
+| --- | --- | --- |
+| A floor plan or blueprint image | an agent builds the house from it over MCP, checked against the plan drawn underneath, and lays out the lot | ✅ |
+| Product photo + listed size (+ store link) | exact-size 3D on ComfyUI, placed in a room, with its store link one click away | ✅ |
+| Only a product link | read the photo and size from the store page | 🧪 planned (spike) |
+| Your ComfyUI: local, Comfy Cloud or both | picks a workflow per backend and job, shows what each backend can run | ✅ |
+| A render | room photos, 360° view, aerial and street exteriors from the layout's depth | ✅ |
+| Your own workflows (e.g. VideoHelperSuite walkthrough videos) | swap any job's workflow in `workflows/sets.json`; a video walkthrough job | ✅ swap · 🧪 video planned |
 
 <p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a chair from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
 
@@ -66,9 +77,17 @@ ComfySims is built spec-first by coding agents inside a harness, and the whole p
 - `docs/recordings/` — each implementation session (prompt, time, cost, what the agent reported) and the demos.
 - `docs/journal/` — the build diary (Korean).
 
+## Architecture
+
+How the editor, the MCP server, the Comfy proxy, the packages and the workflows fit together, with diagrams: [docs/architecture.md](docs/architecture.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md): spec-first, `pnpm verify` as the judge, and how agent sessions fit in. The harness is described in [docs/harness.md](docs/harness.md).
+
+## Brand
+
+Icon, wordmarks, colours and the not-affiliated note: [docs/brand](docs/brand/README.md).
 
 ## License
 
