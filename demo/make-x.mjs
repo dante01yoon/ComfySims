@@ -37,6 +37,7 @@ join([
   cut('roomfit-place.mp4', 22, 40, 'h-place', 1.25),
   cut('roomfit-place.mp4', 51, 56, 'h-place-render'),
   cut('roomfit-products.mp4', 24, 40, 'h-products', 1.2),
+  cut('roomfit-import.mp4', 3.5, 16, 'h-import', 1.2),
   cut('roomfit-agent.mp4', 58, 70, 'h-agent', 1.2),
   cut('roomfit-agent.mp4', 83, 91, 'h-agent-render'),
   cut('roomfit-360.mp4', 20, 24, 'h-360-pair'),
@@ -54,7 +55,8 @@ const clips = [
   ['roomfit-360.mp4', 'x-04-360-view'],
   ['roomfit-local-cloud.mp4', 'x-05-local-or-cloud'],
   ['roomfit-studio.mp4', 'x-06-home-studio'],
-  ['roomfit-blueprint.mp4', 'x-07-floor-plan-to-house']
+  ['roomfit-blueprint.mp4', 'x-07-floor-plan-to-house'],
+  ['roomfit-import.mp4', 'x-08-link-to-room']
 ]
 for (const [file, name] of clips) {
   run(['-i', `${media}/${file}`, '-vf', normal, ...encode, `${work}/${name}-video.mp4`])

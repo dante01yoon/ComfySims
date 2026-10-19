@@ -34,6 +34,9 @@
 </tr>
 <tr>
 <td width="50%" valign="top"><a href="docs/recordings/media/roomfit-studio.mp4"><img src="docs/recordings/media/gif/studio.gif" alt="Home studio" width="100%"></a><br><b>Home studio</b><br>A cut-away house with real materials, landscape and light presets; all 15 pieces generated from product photos on Comfy Cloud.</td>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-import.mp4"><img src="docs/recordings/media/gif/import.gif" alt="Send a store page to your house" width="100%"></a><br><b>Send a store page to your house</b><br>On a real IKEA page, the Send to ComfySims bookmarklet fills in the name, size, brand, link and photo; Comfy Cloud makes the exact-size 3D and a lived-in render. Pick the workflow and model per job.</td>
+</tr>
+<tr>
 <td width="50%" valign="top"><b>More</b><br>• <a href="docs/recordings/media/roomfit-reel.mp4">Full demo reel (7 min)</a><br>• <a href="docs/recordings/media/roomfit-cloud-live.mp4">Live Comfy Cloud run, 90 s</a><br>• <a href="docs/recordings/">Every implementation session, recorded</a><br>• <a href="docs/lecture/README.md">How it was built (lecture notes, Korean)</a></td>
 </tr>
 </table>

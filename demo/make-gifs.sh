@@ -20,3 +20,4 @@ gif 360 360:20:23:1 360:26:36:1.4
 gif products products:24:40:1.8
 gif local-cloud local-cloud:30:44:1.6
 gif studio studio:0:8:1
+gif import import:4:16:1.6 import:39:43:1
