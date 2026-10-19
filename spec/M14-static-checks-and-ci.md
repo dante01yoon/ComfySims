@@ -81,7 +81,7 @@ No changes.
 | AC-112 | active | `check:static` passes on the repo, and each of its checks (json, secrets, action-pins, spec-ids, adrs, suppressions) reports a planted violation without printing secret values |
 | AC-113 | active | `.github/workflows/ci.yaml` has the static, unit, e2e and python jobs with read-only permissions and SHA-pinned actions, and every `pnpm` script it runs exists |
 | AC-114 | active | `pnpm verify` runs the lint, knip, deps and static gates |
-| AC-115 | manual | The CI workflow runs green on GitHub for main (evidence: the run link) |
+| AC-115 | manual | The CI workflow runs green on GitHub for main (evidence 2026-10-19: https://github.com/dante01yoon/ComfySims/actions/runs/39340481962) |
 
 ## 9. Test plan
 
