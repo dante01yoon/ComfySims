@@ -4,18 +4,28 @@
 
 **Does this sofa fit my living room?** Drop in a product photo and its listed size. ComfySims turns it into a 3D model on ComfyUI or Comfy Cloud, fits it to the exact listed size, places it in your room or a whole house, checks it against walls and other furniture, and renders the room back to a photo.
 
-![home studio](docs/recordings/media/studio-grid.jpg)
+<p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a sofa from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
 
-**Full demo (7 min):** [roomfit-reel.mp4](docs/recordings/media/roomfit-reel.mp4)
+## See it
 
-- **Make it, put it anywhere** — a product photo and its listed size become an exact-size 3D piece; drag it where you want, turn it, and render the room. [video](docs/recordings/media/roomfit-place.mp4)
-- **Home studio** — a cut-away 3D house with real materials, landscape and Reading / Work / Movie / Evening light presets. All 15 pieces in the demo were generated from product photos on Comfy Cloud. [video](docs/recordings/media/roomfit-studio.mp4)
-- **Live Comfy Cloud run** — photo → 3D → fitted → placed → rendered, from the editor, in 90 seconds. [video](docs/recordings/media/roomfit-cloud-live.mp4)
-- **Local or Cloud, per job** — switch between your own ComfyUI and Comfy Cloud from the workspace rail, no restart. ComfySims checks what each one can run (node classes, and installed model files on Local) and greys out the rest with the missing files named. Here the render runs on Cloud and the 3D photo on a Mac's local ComfyUI with only MoGe installed. [video](docs/recordings/media/roomfit-local-cloud.mp4)
-- **An agent furnishes a room** — one sentence to Claude Code with the Comfy Cloud MCP and the ComfySims MCP: product photos, 3D, placement, a self-check screenshot, a render. [video](docs/recordings/media/roomfit-agent.mp4)
-- **Shop from real listings** — every piece keeps its product photo, store link, brand and labels; compare candidates at their listed sizes, filter by label, and jump from the sofa in your house straight to its product page. Example with three Amazon sofas (product photos belong to their sellers). [video](docs/recordings/media/roomfit-products.mp4)
-- **From a floor plan to a house on its land** — give an agent a floor-plan image: it builds the walls, doors, windows and rooms through the ComfySims MCP (checked against the plan drawn underneath), lays out the lot, and renders the house from the air and the street on Comfy Cloud. [video](docs/recordings/media/roomfit-blueprint.mp4)
-- **360° view** — a photoreal look-around of a room, generated from a depth panorama of your layout so the furniture stays where you put it. Opt-in, one click. [video](docs/recordings/media/roomfit-360.mp4)
+<table>
+<tr>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-place.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make it, put it anywhere" width="100%"></a><br><b>Make it, put it anywhere</b><br>A product photo and its listed size become an exact-size 3D piece; drag it into place, turn it, render the room.</td>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-blueprint.mp4"><img src="docs/recordings/media/gif/blueprint.gif" alt="From a floor plan to a house on its land" width="100%"></a><br><b>From a floor plan to a house on its land</b><br>An agent reads a floor-plan image, builds walls, doors, windows and rooms (0 cm off the drawing), lays out the lot and renders it from the air and the street.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-agent.mp4"><img src="docs/recordings/media/gif/agent.gif" alt="An agent furnishes a room" width="100%"></a><br><b>An agent furnishes a room</b><br>One sentence to Claude Code with the Comfy Cloud MCP and the ComfySims MCP: product photos, 3D, placement, a self-check screenshot, a render.</td>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-products.mp4"><img src="docs/recordings/media/gif/products.gif" alt="Shop from real listings" width="100%"></a><br><b>Shop from real listings</b><br>Every piece keeps its photo, store link, brand and labels: compare candidates at their listed sizes, place one, jump to its product page. (Amazon example; photos belong to their sellers.)</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-360.mp4"><img src="docs/recordings/media/gif/360.gif" alt="360° view of your layout" width="100%"></a><br><b>360° view of your layout</b><br>A photoreal look-around generated from a depth panorama of your layout, so the furniture stays where you put it. Opt-in, one click.</td>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-local-cloud.mp4"><img src="docs/recordings/media/gif/local-cloud.gif" alt="Local or Cloud, per job" width="100%"></a><br><b>Local or Cloud, per job</b><br>Render on Comfy Cloud, 3D photo on the ComfyUI on your Mac. ComfySims checks what each backend can run and names the missing model files.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="docs/recordings/media/roomfit-studio.mp4"><img src="docs/recordings/media/gif/studio.gif" alt="Home studio" width="100%"></a><br><b>Home studio</b><br>A cut-away house with real materials, landscape and light presets; all 15 pieces generated from product photos on Comfy Cloud.</td>
+<td width="50%" valign="top"><b>More</b><br>• <a href="docs/recordings/media/roomfit-reel.mp4">Full demo reel (7 min)</a><br>• <a href="docs/recordings/media/roomfit-cloud-live.mp4">Live Comfy Cloud run, 90 s</a><br>• <a href="docs/recordings/">Every implementation session, recorded</a><br>• <a href="docs/lecture/README.md">How it was built (lecture notes, Korean)</a></td>
+</tr>
+</table>
 
 ## What it does
 
