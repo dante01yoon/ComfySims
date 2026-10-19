@@ -106,7 +106,7 @@ Clean AC-89 re-run (take 2, 2 min 22 s, $1.05): plan exact again (plan-diff 0); 
 | AC-86 | active | The blueprint underlay draws aligned under the plan (a known pixel lands on its cm position) with adjustable opacity, and survives save/load |
 | AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm; the aerial camera (25–35° pitch) frames the house at 50–80 %; the street camera (160 cm, on the lot) stands diagonal to the house so two façades show; the depth range ends at the farthest lot corner; trees are left out; "Render exterior" queues both renders with exterior prompts |
 | AC-88 | active | `pnpm plan-diff` reports 0 for identical plans and the right per-element errors for shifted walls and openings |
-| AC-89 | manual | Recording: Claude Code gets a floor-plan image, builds the house through the roomfit MCP, sets the site, and renders aerial and street views on Comfy Cloud |
+| AC-89 | manual | Recording: Claude Code gets a floor-plan image, builds the house through the roomfit MCP, sets the site, and renders aerial and street views on Comfy Cloud (evidence 2026-10-19: `docs/recordings/demo-ac89-blueprint-house.md`, three takes; plan exact every time) |
 
 ## 9. Test plan
 

@@ -12,6 +12,7 @@
 - **Local or Cloud, per job** — switch between your own ComfyUI and Comfy Cloud from the workspace rail, no restart. roomfit checks what each one can run (node classes, and installed model files on Local) and greys out the rest with the missing files named. Here the render runs on Cloud and the 3D photo on a Mac's local ComfyUI with only MoGe installed. [video](docs/recordings/media/roomfit-local-cloud.mp4)
 - **An agent furnishes a room** — one sentence to Claude Code with the Comfy Cloud MCP and the roomfit MCP: product photos, 3D, placement, a self-check screenshot, a render. [video](docs/recordings/media/roomfit-agent.mp4)
 - **Shop from real listings** — every piece keeps its product photo, store link, brand and labels; compare candidates at their listed sizes, filter by label, and jump from the sofa in your house straight to its product page. Example with three Amazon sofas (product photos belong to their sellers). [video](docs/recordings/media/roomfit-products.mp4)
+- **From a floor plan to a house on its land** — give an agent a floor-plan image: it builds the walls, doors, windows and rooms through the roomfit MCP (checked against the plan drawn underneath), lays out the lot, and renders the house from the air and the street on Comfy Cloud. [video](docs/recordings/media/roomfit-blueprint.mp4)
 - **360° view** — a photoreal look-around of a room, generated from a depth panorama of your layout so the furniture stays where you put it. Opt-in, one click. [video](docs/recordings/media/roomfit-360.mp4)
 
 ## What it does
