@@ -43,6 +43,14 @@
       .asset > img, .asset-box { flex: none; width: 64px; height: 64px; border-radius: 6px; background: #2a2d31; display: grid; place-items: center; color: var(--muted); font-size: 24px; }
       .asset-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
       .asset-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .labels { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; }
+      .labels input { flex: 1; min-width: 80px; font: inherit; font-size: 12px; color: inherit; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+      .labels button { font-size: 12px; padding: 2px 8px; }
+      .label-chip { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #34383e; }
+      .label-chip button { border: 0; background: transparent; padding: 0 2px; }
+      .asset a { color: var(--accent); font-size: 12px; }
+      .selected-item { position: absolute; top: 16px; left: 16px; max-width: 340px; padding: 10px 12px; border-radius: 12px; background: rgba(24, 25, 27, .78); border: 1px solid rgba(255, 255, 255, .14); backdrop-filter: blur(14px); color: #f4efe8; }
+      .selected-item button { font: inherit; color: inherit; background: #2f3338; border: 1px solid rgba(255, 255, 255, .14); border-radius: 6px; cursor: pointer; }
       .place { position: relative; }
       .place-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; display: flex; flex-direction: column; min-width: 150px; padding: 4px; background: #2a2d31; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
       aside .place-menu button { border: 0; background: transparent; text-align: left; }

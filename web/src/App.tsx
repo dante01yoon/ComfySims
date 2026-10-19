@@ -5,7 +5,9 @@ import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, Vector2, V
 
 import { collisions, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
 import {
+  AssetLabels,
   FitMode,
+  ProductUrl,
   serializeLayout,
   type Asset,
   type BoxRoom,
@@ -38,7 +40,7 @@ import { meshKey } from './meshes.ts'
 import { PanoramaViewer } from './panorama-viewer.tsx'
 import { PhotoViewer } from './photo-viewer.tsx'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
-import { base64Of, elapsedSeconds, RoomLabels, useClock, WorkspaceRail } from './workspace.tsx'
+import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, WorkspaceRail } from './workspace.tsx'
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -273,6 +275,7 @@ function Panel({ hidden }: { hidden: boolean }) {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const [loadIssues, setLoadIssues] = useState<string[]>([])
   const { collisions: collidingPairs, outOfBounds: escapes, canUndo, canRedo, selectedId, layout } = useMemo(() => api.state(), [editor])
+  const selected = selectedAsset(layout, selectedId)
 
   const open = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -297,17 +300,26 @@ function Panel({ hidden }: { hidden: boolean }) {
       ))}
       <h2>Room</h2>
       <div>{layout.name}: {roomSummary(layout.room)}</div>
-      <h2>Selected</h2>
-      {selectedId ? (
-        <div className="button-row">
-          <div className="selected-id">{selectedId}</div>
-          <button onClick={() => rotateSelected(1)}>Rotate ⟲ (Q)</button>
-          <button onClick={() => rotateSelected(-1)}>Rotate ⟳ (E)</button>
-          <button onClick={removeSelected}>Remove (Del)</button>
-        </div>
-      ) : (
-        <div>Click an item, drag it on the floor.</div>
-      )}
+      <section aria-label="Selected">
+        <h2>Selected</h2>
+        {selectedId ? (
+          <>
+            {selected && (
+              <div className="asset">
+                <AssetCard asset={selected} />
+              </div>
+            )}
+            <div className="button-row">
+              <div className="selected-id">{selectedId}</div>
+              <button onClick={() => rotateSelected(1)}>Rotate ⟲ (Q)</button>
+              <button onClick={() => rotateSelected(-1)}>Rotate ⟳ (E)</button>
+              <button onClick={removeSelected}>Remove (Del)</button>
+            </div>
+          </>
+        ) : (
+          <div>Click an item, drag it on the floor.</div>
+        )}
+      </section>
       <h2>Problems</h2>
       {collidingPairs.map(({ a, b }) => (
         <div key={`${a}|${b}`} className="problem">{a} collides with {b}</div>
@@ -416,7 +428,12 @@ function ComfyPanel() {
   const [name, setName] = useState('')
   const [size, setSize] = useState<SizeInput>({ width: '', depth: '', height: '' })
   const [mode, setMode] = useState<FitMode>('auto')
+  const [link, setLink] = useState('')
+  const [brand, setBrand] = useState('')
+  const [store, setStore] = useState('')
+  const [labels, setLabels] = useState<string[]>([])
   const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
+  const linkProblem = link.trim() ? ProductUrl.safeParse(link.trim()).error?.issues[0]?.message : undefined
   const [prompt, setPrompt] = useState('')
   const job = jobs.at(-1)
   const now = useClock(job !== undefined && !isFinished(job))
@@ -428,8 +445,14 @@ function ComfyPanel() {
     if (!photo) return
     const dimensions = { width: Number(size.width), depth: Number(size.depth), height: Number(size.height) }
     setPlacedFit(null)
-    const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode })
+    const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode, productUrl: link, brand, store, labels })
     if (placed.ok) setPlacedFit(placed.report)
+  }
+
+  const relabel = (next: string[]) => {
+    const parsed = AssetLabels.safeParse(next)
+    if (!parsed.success) return parsed.error.issues[0]?.message ?? 'the labels are invalid'
+    setLabels(parsed.data)
   }
 
   return (
@@ -455,7 +478,21 @@ function ComfyPanel() {
           <option value="uniform">uniform</option>
         </select>
       </Field>
-      <button className="primary" onClick={generate3d} disabled={!photo || noProduct !== undefined} title={noProduct}>Generate 3D</button>
+      <Field label="Product link">
+        <input type="url" placeholder="https://" value={link} onChange={(event) => setLink(event.target.value)} />
+      </Field>
+      {linkProblem && <div className="problem">{linkProblem}</div>}
+      <Field label="Brand">
+        <input value={brand} onChange={(event) => setBrand(event.target.value)} />
+      </Field>
+      <Field label="Store">
+        <input value={store} onChange={(event) => setStore(event.target.value)} />
+      </Field>
+      <div className="field">
+        <span>Labels</span>
+        <LabelEditor labels={labels} field="Labels" onChange={relabel} />
+      </div>
+      <button className="primary" onClick={generate3d} disabled={!photo || noProduct !== undefined || linkProblem !== undefined} title={noProduct ?? linkProblem}>Generate 3D</button>
       <h2>Render</h2>
       <Field label="Render prompt">
         <textarea rows={3} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
@@ -475,6 +512,15 @@ async function parseAndLoad(text: string): Promise<string[]> {
   } catch {
     return ['The file is not valid JSON.']
   }
+}
+
+function SelectedItem({ asset }: { asset: Asset | undefined }) {
+  if (!asset) return null
+  return (
+    <section aria-label="Selected item" className="selected-item asset">
+      <AssetCard asset={asset} />
+    </section>
+  )
 }
 
 function emphasisOf(id: string, problems: ReadonlySet<string>, selectedId: string | null): Emphasis {
@@ -525,6 +571,7 @@ export function App() {
         </Canvas>
         {studio && <ZoneChips room={layout.room} />}
         {studio && <PresetBar room={layout.room} />}
+        {studio && <SelectedItem asset={selectedAsset(layout, editor.selectedId)} />}
         <div className="view-toggles">
           <button aria-pressed={railOpen} onClick={() => setRailOpen(!railOpen)}>Workspace</button>
           <button onClick={() => api.setView(studio ? 'editor' : 'studio')}>{studio ? 'Editor' : 'Studio'}</button>

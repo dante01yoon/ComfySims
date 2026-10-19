@@ -62,7 +62,7 @@ export async function generate(
   run: ComfyRun,
   input: ComfyInput,
   build: (uploadedName: string) => PromptOutcome
-): Promise<{ ok: true; bytes: Uint8Array; file: SavedFile } | Failure> {
+): Promise<{ ok: true; bytes: Uint8Array; file: SavedFile; inputName: string } | Failure> {
   const { comfy, step } = run
   const uploaded = await inputName(run, input)
   if (!uploaded.ok) return uploaded
@@ -82,5 +82,5 @@ export async function generate(
   if (!file) return { ok: false, reason: 'failed', message: 'the workflow saved no file' }
   step('downloading')
   const downloaded = await comfy.download(file)
-  return downloaded.ok ? { ok: true, bytes: downloaded.bytes, file } : downloaded
+  return downloaded.ok ? { ok: true, bytes: downloaded.bytes, file, inputName: uploaded.name } : downloaded
 }

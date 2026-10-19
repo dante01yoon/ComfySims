@@ -10,7 +10,7 @@ const withAsset = (change: Record<string, unknown>) => {
   Object.assign(copy.assets[0], change)
   return copy
 }
-const product = { photo: { thumbnail: THUMBNAIL, comfyInputName: 'upload-1.png' }, url: 'https://www.ikea.com/kr/ko/p/example-sofa-12345678/', brand: 'IKEA', store: 'IKEA Korea' }
+const product = { photo: { thumbnail: THUMBNAIL, comfyInputName: 'upload-1.png' }, url: 'https://store.example/p/grey-sofa-200/', brand: 'IKEA', store: 'IKEA Korea' }
 
 describe('AC-77 assets carry their product and labels', () => {
   it('AC-77 accepts product fields and labels and keeps them', () => {

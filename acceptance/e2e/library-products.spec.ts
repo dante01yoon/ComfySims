@@ -6,7 +6,7 @@ import type { RoomLayout } from '../../packages/schema/src/index.ts'
 import type {} from '../../spec/contracts/editor-api.ts'
 
 const house: RoomLayout = JSON.parse(readFileSync('fixtures/layouts/demo-house.json', 'utf8'))
-const SOFA_URL = 'https://www.ikea.com/kr/ko/p/example-sofa-12345678/'
+const SOFA_URL = 'https://store.example/p/grey-sofa-200/'
 const library = (page: Page) => page.getByRole('region', { name: 'Library' })
 const row = (page: Page, name: string) => library(page).getByRole('listitem').filter({ has: page.getByText(name, { exact: true }) })
 
@@ -35,6 +35,7 @@ async function addSofa(page: Page, overrides: Record<string, unknown> = {}) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.context().route('https://store.example/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Grey sofa</title>' }))
   await page.goto('/')
   await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')
   await page.evaluate(() => window.roomfit.ready())

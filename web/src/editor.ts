@@ -10,6 +10,8 @@ import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomP
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, findSpot, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
+  AssetLabels,
+  AssetProduct,
   Dimensions,
   MAX_CONCURRENT_JOBS,
   parseLayout,
@@ -84,6 +86,9 @@ const EYE_HEIGHT_CM = 160
 const PANORAMA_PREFIX = 'equirectangular 360 image'
 const VIEWER_PITCH_LIMIT_DEG = 80
 const VIEWER_FOV_DEG = { min: 40, max: 100, start: 75 }
+const PHOTO_THUMBNAIL_PX = 256
+const PHOTO_THUMBNAIL_MAX_CHARS = 56_000
+const PHOTO_THUMBNAIL_QUALITIES = [0.85, 0.7, 0.5, 0.3, 0.15]
 
 export type Editor = {
   history: History<RoomLayout>
@@ -103,6 +108,7 @@ export type Editor = {
   agentConnected: boolean
   backend: BackendState
   localUrl: string
+  libraryFilter: string | null
   revision: number
 }
 
@@ -141,6 +147,7 @@ let editor: Editor = {
   agentConnected: false,
   backend: { kind: 'local', url: DEFAULT_LOCAL_URL, status: 'checking', unavailable: [], cloudConfigured: false },
   localUrl: DEFAULT_LOCAL_URL,
+  libraryFilter: null,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -165,7 +172,26 @@ function update(change: Partial<Omit<Editor, 'revision'>>): void {
 
 function setHistory(history: History<RoomLayout>, gesture: Gesture = editor.gesture): void {
   const selectionExists = history.present.items.some((item) => item.id === editor.selectedId)
-  update({ history, gesture, selectedId: selectionExists ? editor.selectedId : null })
+  update({ history, gesture, selectedId: selectionExists ? editor.selectedId : null, libraryFilter: labelInUse(history.present, editor.libraryFilter) })
+}
+
+/** Whether an asset carries the label, ignoring case. */
+export function hasLabel(asset: Asset, label: string): boolean {
+  return (asset.labels ?? []).some((entry) => entry.toLowerCase() === label.toLowerCase())
+}
+
+/** Every label on the library's assets, ignoring case, with how many assets carry it, in first-use order. */
+export function labelsInUse(layout: RoomLayout): { label: string; count: number }[] {
+  const counts = new Map<string, { label: string; count: number }>()
+  for (const label of layout.assets.flatMap((asset) => asset.labels ?? [])) {
+    const seen = counts.get(label.toLowerCase())
+    counts.set(label.toLowerCase(), { label: seen?.label ?? label, count: (seen?.count ?? 0) + 1 })
+  }
+  return [...counts.values()]
+}
+
+function labelInUse(layout: RoomLayout, label: string | null): string | null {
+  return label === null ? null : (labelsInUse(layout).find((entry) => entry.label.toLowerCase() === label.toLowerCase())?.label ?? null)
 }
 
 function edit(next: RoomLayout): void {
@@ -260,7 +286,7 @@ export function endDrag(): void {
 export async function loadUnknown(input: unknown): ReturnType<RoomfitEditorApi['load']> {
   const parsed = parseLayout(input)
   if (!parsed.ok) return { ok: false, issues: parsed.issues }
-  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null })
+  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null, libraryFilter: null })
   requestMeshes(parsed.layout)
   return { ok: true }
 }
@@ -285,7 +311,8 @@ function state(): EditorState {
     lastRenderCamera: editor.lastRenderCamera,
     undoLabels: labels(history),
     agentConnected: editor.agentConnected,
-    backend: editor.backend
+    backend: editor.backend,
+    libraryFilter: editor.libraryFilter
   }
 }
 
@@ -513,6 +540,44 @@ function productInput({ imageBase64, imageName, fileName }: ProductRequest): Pro
   return blobAt(`data:application/octet-stream;base64,${imageBase64}`).then((file) => ({ file, fileName }))
 }
 
+/** A blob as a `data:` URL. */
+export function dataUrlOf(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function photoThumbnail(photo: Blob): Promise<string | undefined> {
+  const bitmap = await createImageBitmap(photo).catch(() => null)
+  if (!bitmap) return undefined
+  const scale = Math.min(1, PHOTO_THUMBNAIL_PX / Math.max(bitmap.width, bitmap.height))
+  const canvas = new OffscreenCanvas(Math.max(1, Math.round(bitmap.width * scale)), Math.max(1, Math.round(bitmap.height * scale)))
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  for (const quality of PHOTO_THUMBNAIL_QUALITIES) {
+    const thumbnail = await dataUrlOf(await canvas.convertToBlob({ type: 'image/jpeg', quality }))
+    if (thumbnail.length <= PHOTO_THUMBNAIL_MAX_CHARS) return thumbnail
+  }
+  return undefined
+}
+
+function filled(text: string | undefined): string | undefined {
+  return text?.trim() || undefined
+}
+
+type ProductDetails = { ok: true; product: AssetProduct; labels: string[] }
+
+function productDetails({ productUrl, brand, store, labels = [] }: ProductRequest): ProductDetails | ComfyFailure {
+  const product = AssetProduct.safeParse({ url: filled(productUrl), brand: filled(brand), store: filled(store) })
+  if (!product.success) return rejection(product.error.issues[0]?.message ?? 'the product link, brand or store is invalid')
+  const parsedLabels = AssetLabels.safeParse(labels)
+  if (!parsedLabels.success) return rejection(parsedLabels.error.issues[0]?.message ?? 'the labels are invalid')
+  return { ok: true, product: product.data, labels: parsedLabels.data }
+}
+
 function hasTag(workflow: ApiWorkflow, tag: string): boolean {
   return Object.values(workflow).some((node) => node._meta?.title === tag)
 }
@@ -522,6 +587,8 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   const name = request.name.trim()
   if (!name) return rejection('the product needs a name')
   if (!Dimensions.safeParse(request.dimensions).success) return rejection('width, depth and height must be positive centimeters')
+  const details = productDetails(request)
+  if (!details.ok) return details
   const zoneId = request.zoneId ?? editor.focusedZone
   const planned = placementIn(zoneId, request.dimensions)
   if (!planned.ok) return planned
@@ -529,6 +596,7 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   const pending = productInput(request)
   if (!pending) return rejection('the product needs exactly one of imageBase64 or imageName')
   const input = await pending
+  const thumbnail = 'file' in input ? photoThumbnail(input.file) : Promise.resolve(undefined)
   const seed = request.seed ?? randomSeed()
   const { workflow } = run
   const generated = await generate(run, input, (imageName) =>
@@ -545,6 +613,7 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   const distortion = roundedToFloat32Noise(fitted.report.distortion)
   const placement = placementIn(zoneId, request.dimensions)
   if (!placement.ok) return placement
+  const photo = await thumbnail
   const layout = editor.history.present
   const asset: Asset = {
     id: uniqueId(name, layout.assets),
@@ -552,7 +621,9 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
     uri: comfyOutputUri(generated.file, run.backend),
     dimensions: request.dimensions,
     source: { kind: 'generated', workflow: run.file.replace(/\.json$/, '') },
-    fit: { mode, distortion }
+    fit: { mode, distortion },
+    product: photo ? { ...details.product, photo: { thumbnail: photo, comfyInputName: generated.inputName } } : details.product,
+    labels: details.labels
   }
   const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement, label)
   return {
@@ -763,6 +834,42 @@ function renameZone(zoneId: string, name: string): ReturnType<RoomfitEditorApi['
   return { ok: true }
 }
 
+function replaceAsset(asset: Asset): void {
+  const layout = editor.history.present
+  const assets = layout.assets.map((entry) => (entry.id === asset.id ? asset : entry))
+  setHistory(commit(editor.history, { ...layout, assets }, currentLabel()), 'none')
+}
+
+function unknownAsset(assetId: string) {
+  return { ok: false, reason: 'unknown-asset', message: `there is no asset ${assetId}` } as const
+}
+
+function setAssetLabels(assetId: string, labels: string[]): ReturnType<RoomfitEditorApi['setAssetLabels']> {
+  const asset = editor.history.present.assets.find(({ id }) => id === assetId)
+  if (!asset) return unknownAsset(assetId)
+  const parsed = AssetLabels.safeParse(labels)
+  if (!parsed.success) return { ok: false, reason: 'invalid-labels', message: parsed.error.issues[0]?.message ?? 'the labels are invalid' }
+  replaceAsset({ ...asset, labels: parsed.data })
+  return { ok: true }
+}
+
+function setAssetProduct(assetId: string, fields: Parameters<RoomfitEditorApi['setAssetProduct']>[1]): ReturnType<RoomfitEditorApi['setAssetProduct']> {
+  const asset = editor.history.present.assets.find(({ id }) => id === assetId)
+  if (!asset) return unknownAsset(assetId)
+  const product: AssetProduct = { ...asset.product }
+  for (const key of ['url', 'brand', 'store'] as const) {
+    const value = fields[key]
+    if (value === undefined) continue
+    const text = filled(value ?? undefined)
+    if (text) product[key] = text
+    else delete product[key]
+  }
+  const parsed = AssetProduct.safeParse(product)
+  if (!parsed.success) return { ok: false, reason: 'invalid-url', message: parsed.error.issues[0]?.message ?? 'the product link is invalid' }
+  replaceAsset({ ...asset, product: parsed.data })
+  return { ok: true }
+}
+
 /** Why a backend cannot run a job kind (the node classes or model files its ComfyUI lacks), or undefined when it can. */
 export function cannotRun(backend: BackendState, kind: JobKind): string | undefined {
   const blocked = backend.unavailable.find((entry) => entry.kind === kind)
@@ -888,6 +995,10 @@ export const api: RoomfitEditorApi = {
   setBackend,
   checkBackend,
   jobWorkflow,
+  setAssetLabels,
+  setAssetProduct,
+  setLibraryFilter: (label) => update({ libraryFilter: labelInUse(editor.history.present, label) }),
+  selectItem: (itemId) => select(editor.history.present.items.some(({ id }) => id === itemId) ? itemId : null),
   setActionLabel: (label) => {
     actionLabel = label
   }

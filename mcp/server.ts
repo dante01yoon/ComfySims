@@ -8,7 +8,7 @@ import { z } from 'zod'
 
 import { studioPrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
-import { FitMode, type RoomLayout } from '../packages/schema/src/index.ts'
+import { FitMode, type AssetProduct, type RoomLayout } from '../packages/schema/src/index.ts'
 import type { EditorState, EditorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
 import { editorBridge, type BridgedApi } from './editor.ts'
 
@@ -61,6 +61,10 @@ function houseOf(state: EditorState) {
   }
 }
 
+function withoutThumbnail({ photo, ...product }: AssetProduct) {
+  return photo?.comfyInputName ? { ...product, photo: { comfyInputName: photo.comfyInputName } } : product
+}
+
 function itemOf(state: EditorState, itemId: string) {
   const item = state.layout.items.find(({ id }) => id === itemId)
   if (!item) throw new Error(`There is no item ${itemId}. Call get_house for the item ids.`)
@@ -89,10 +93,24 @@ server.registerTool('get_house', { description: 'Describe the house open in the 
   return json(houseOf(await editorFor('get_house')('state')))
 })
 
-server.registerTool('list_assets', { description: 'List the asset library of the open house: id, name, real size in cm, source and fit.' }, async () => {
-  const { layout } = await editorFor('list_assets')('state')
-  return json(layout.assets.map(({ id, name, dimensions, source, fit }) => ({ id, name, size: dimensions, source, fit })))
-})
+server.registerTool(
+  'list_assets',
+  { description: 'List the asset library of the open house: id, name, real size in cm, source, fit, product (link, brand, store, ComfyUI input of its photo) and labels.' },
+  async () => {
+    const { layout } = await editorFor('list_assets')('state')
+    return json(layout.assets.map(({ id, name, dimensions, source, fit, product, labels }) => ({ id, name, size: dimensions, source, fit, product: product && withoutThumbnail(product), labels })))
+  }
+)
+
+server.registerTool(
+  'set_asset_labels',
+  { description: 'Replace the labels of a library asset (every placed copy shares them): up to 12, 1–32 characters, unique ignoring case. Undoable in the editor.', inputSchema: { assetId: z.string().min(1), labels: z.array(z.string()) } },
+  async ({ assetId, labels }) => {
+    const editor = editorFor('set_asset_labels')
+    succeeded(await editor('setAssetLabels', assetId, labels))
+    return json({ assetId, labels: (await editor('state')).layout.assets.find(({ id }) => id === assetId)?.labels ?? [] })
+  }
+)
 
 server.registerTool(
   'place_asset',
@@ -161,7 +179,7 @@ server.registerTool(
   'add_product',
   {
     description:
-      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room. image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file) or { base64 }. Waits for the job (about a minute).',
+      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room. image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file) or { base64 }. productUrl (http/https), brand, store and labels are kept on the asset. Waits for the job (about a minute).',
     inputSchema: {
       image: z.union([z.object({ comfyInputName: z.string().min(1) }), z.object({ path: z.string().min(1) }), z.object({ base64: z.string().min(1) })]),
       name: z.string().min(1),
@@ -169,13 +187,17 @@ server.registerTool(
       depth: z.number().positive(),
       height: z.number().positive(),
       room: room.optional(),
-      mode: FitMode.optional()
+      mode: FitMode.optional(),
+      productUrl: z.string().optional(),
+      brand: z.string().optional(),
+      store: z.string().optional(),
+      labels: z.array(z.string()).optional()
     }
   },
-  async ({ image, name, width, depth, height, room, mode }) => {
+  async ({ image, name, width, depth, height, room, mode, productUrl, brand, store, labels }) => {
     const editor = editorFor('add_product')
     const zoneId = room === undefined ? undefined : zoneIdOf((await editor('state')).layout, room)
-    const request: ProductRequest = { ...(await imageOf(image, name)), name, dimensions: { width, depth, height }, mode, zoneId }
+    const request: ProductRequest = { ...(await imageOf(image, name)), name, dimensions: { width, depth, height }, mode, zoneId, productUrl, brand, store, labels }
     const { itemId, jobId, report } = succeeded(await editor('addProductFromPhoto', request))
     return json({ itemId, jobId, report })
   }

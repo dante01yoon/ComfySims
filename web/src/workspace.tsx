@@ -1,11 +1,25 @@
 import { Html } from '@react-three/drei'
-import { useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent, type KeyboardEvent, type SyntheticEvent } from 'react'
+import { useEffect, useId, useMemo, useState, useSyncExternalStore, type ChangeEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react'
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
-import type { Asset, BackendKind, Job, Room, Zone } from '../../packages/schema/src/index.ts'
+import type { Asset, BackendKind, Job, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
 import type { BackendState, JobWorkflow } from '../../spec/contracts/editor-api.ts'
-import { api, cannotRun, clearFinishedJobs, isFinished, isStalePanorama, openRender, ranWorkflow, select, snapshot, subscribe } from './editor.ts'
+import {
+  api,
+  cannotRun,
+  clearFinishedJobs,
+  dataUrlOf,
+  hasLabel,
+  isFinished,
+  isStalePanorama,
+  labelsInUse,
+  openRender,
+  ranWorkflow,
+  select,
+  snapshot,
+  subscribe
+} from './editor.ts'
 import { polygonCentroid } from './framing.ts'
 import { meshKey } from './meshes.ts'
 import { thumbnailOf } from './thumbnails.ts'
@@ -13,13 +27,8 @@ import { thumbnailOf } from './thumbnails.ts'
 const CLOCK_TICK_MS = 250
 const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open', pano360: 'Open' } as const
 
-export function base64Of(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
+export async function base64Of(file: Blob): Promise<string> {
+  return (await dataUrlOf(file)).split(',')[1] ?? ''
 }
 
 export function useClock(running: boolean): number {
@@ -247,13 +256,119 @@ function sourceLabel(asset: Asset): string {
   return asset.source.kind === 'generated' ? 'Cloud' : 'Upload'
 }
 
-function AssetRow({ asset, targets }: { asset: Asset; targets: Target[] }) {
+function storeLine({ product }: Asset): string | undefined {
+  if (product?.generatedPhoto) return 'AI-generated photo · no store'
+  return [product?.brand, product?.store].filter(Boolean).join(' · ') || undefined
+}
+
+function hostOf(url: string): string {
+  return new URL(url).hostname.replace(/^www\./, '')
+}
+
+type LabelEditorProps = { labels: readonly string[]; field: string; onChange: (labels: string[]) => string | undefined; onClose?: () => void }
+
+/** Label chips with a remove button each and a field that adds the typed label on Enter or comma, suggesting labels in use. */
+export function LabelEditor({ labels, field, onChange, onClose }: LabelEditorProps) {
+  const { history } = useSyncExternalStore(subscribe, snapshot)
+  const [text, setText] = useState('')
+  const [problem, setProblem] = useState('')
+  const suggestions = useId()
+
+  const change = (next: string[]) => {
+    const refused = onChange(next)
+    setProblem(refused ?? '')
+    return refused === undefined
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') onClose?.()
+    if (event.key !== 'Enter' && event.key !== ',') return
+    event.preventDefault()
+    if (text.trim() && change([...labels, text.trim()])) setText('')
+  }
+
+  return (
+    <div className="labels">
+      {labels.map((label) => (
+        <span key={label} className="label-chip">
+          {label}
+          <button aria-label={`Remove label ${label}`} onClick={() => change(labels.filter((entry) => entry !== label))}>×</button>
+        </span>
+      ))}
+      <input aria-label={field} placeholder={field} list={suggestions} value={text} autoFocus={onClose !== undefined} onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown} />
+      <datalist id={suggestions}>
+        {labelsInUse(history.present).map(({ label }) => (
+          <option key={label} value={label} />
+        ))}
+      </datalist>
+      {onClose && <button onClick={onClose}>Done</button>}
+      {problem && <span className="problem">{problem}</span>}
+    </div>
+  )
+}
+
+function AssetLabelsField({ asset }: { asset: Asset }) {
+  const [editing, setEditing] = useState(false)
+  const labels = asset.labels ?? []
+  const relabel = (next: string[]) => {
+    const outcome = api.setAssetLabels(asset.id, next)
+    return outcome.ok ? undefined : outcome.message
+  }
+  if (editing) return <LabelEditor labels={labels} field="Add label" onChange={relabel} onClose={() => setEditing(false)} />
+  return (
+    <div className="labels">
+      {labels.map((label) => (
+        <span key={label} className="label-chip">{label}</span>
+      ))}
+      <button onClick={() => setEditing(true)}>Edit labels</button>
+    </div>
+  )
+}
+
+/** The asset of the selected item, if an item is selected. */
+export function selectedAsset(layout: RoomLayout, selectedId: string | null): Asset | undefined {
+  const item = layout.items.find(({ id }) => id === selectedId)
+  return item && layout.assets.find(({ id }) => id === item.assetId)
+}
+
+/** An asset's product card: photo (or model thumbnail), name, size, brand · store, product link and labels. */
+export function AssetCard({ asset, children }: { asset: Asset; children?: ReactNode }) {
   const { meshes } = useSyncExternalStore(subscribe, snapshot)
   const mesh = meshes.get(meshKey(asset))
   const thumbnail = useMemo(() => (mesh ? thumbnailOf(mesh) : null), [mesh])
+  const photo = asset.product?.photo?.thumbnail
+  const url = asset.product?.url
+  const store = storeLine(asset)
+  const { width, depth, height } = asset.dimensions
+  return (
+    <>
+      {photo ? (
+        <img src={photo} alt={`${asset.name} product photo`} />
+      ) : thumbnail ? (
+        <img src={thumbnail} alt="" />
+      ) : (
+        <span className="asset-box" aria-hidden="true">▢</span>
+      )}
+      <div className="asset-text">
+        <strong>{asset.name}</strong>
+        <span>{`${width} × ${depth} × ${height} cm`}</span>
+        <span className="muted">{[sourceLabel(asset), asset.fit?.mode].filter(Boolean).join(' · ')}</span>
+        {store && <span className="muted">{store}</span>}
+        {url && (
+          <span>
+            <a href={url} target="_blank" rel="noopener noreferrer">Open product page</a> <span className="muted">{hostOf(url)}</span>
+          </span>
+        )}
+        <AssetLabelsField asset={asset} />
+        {children}
+      </div>
+    </>
+  )
+}
+
+function AssetRow({ asset, targets }: { asset: Asset; targets: Target[] }) {
   const [choosing, setChoosing] = useState(false)
   const [problem, setProblem] = useState('')
-  const { width, depth, height } = asset.dimensions
 
   const place = ({ id, name }: Target) => {
     setChoosing(false)
@@ -266,13 +381,7 @@ function AssetRow({ asset, targets }: { asset: Asset; targets: Target[] }) {
 
   return (
     <li className="asset">
-      {thumbnail ? <img src={thumbnail} alt="" /> : <span className="asset-box" aria-hidden="true">▢</span>}
-      <div className="asset-text">
-        <strong>{asset.name}</strong>
-        <span>{`${width} × ${depth} × ${height} cm`}</span>
-        <span className="muted">{[sourceLabel(asset), asset.fit?.mode].filter(Boolean).join(' · ')}</span>
-        {problem && <span className="problem">{problem}</span>}
-      </div>
+      <AssetCard asset={asset}>{problem && <span className="problem">{problem}</span>}</AssetCard>
       <div className="place">
         <button aria-haspopup="menu" aria-expanded={choosing} onClick={() => setChoosing(!choosing)}>Place in</button>
         {choosing && (
@@ -292,6 +401,8 @@ function LibrarySection() {
   const { assets, room } = editor.history.present
   const targets = placeTargets(room, editor.focusedZone)
   const noPhoto3d = cannotRun(editor.backend, 'photo3d')
+  const filter = editor.libraryFilter
+  const shown = filter === null ? assets : assets.filter((asset) => hasLabel(asset, filter))
 
   const uploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -303,8 +414,17 @@ function LibrarySection() {
     <section aria-label="Library" className="rail-section">
       <h2>Library ({assets.length})</h2>
       {assets.length === 0 && <div className="muted">No assets yet.</div>}
+      <label className="field">
+        <span>Filter by label</span>
+        <select value={filter ?? ''} onChange={(event) => api.setLibraryFilter(event.target.value || null)}>
+          <option value="">{`All (${assets.length})`}</option>
+          {labelsInUse(editor.history.present).map(({ label, count }) => (
+            <option key={label} value={label}>{`${label} (${count})`}</option>
+          ))}
+        </select>
+      </label>
       <ul className="assets">
-        {assets.map((asset) => (
+        {shown.map((asset) => (
           <AssetRow key={asset.id} asset={asset} targets={targets} />
         ))}
       </ul>
