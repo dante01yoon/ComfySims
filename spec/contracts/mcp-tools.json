@@ -11,7 +11,7 @@
   "focus_room": { "required": [], "properties": { "room": "string" } },
   "set_scene": { "required": ["preset"], "properties": { "preset": "string" } },
   "set_view": { "required": ["view"], "properties": { "view": "string" } },
-  "add_product": { "required": ["image", "name", "width", "depth", "height"], "properties": { "image": "object", "name": "string", "width": "number", "depth": "number", "height": "number", "room": "string", "mode": "string", "productUrl": "string", "brand": "string", "store": "string", "labels": "array" } },
+  "add_product": { "required": ["image", "name", "width", "depth", "height"], "properties": { "image": "object", "name": "string", "width": "number", "depth": "number", "height": "number", "room": "string", "mode": "string", "productUrl": "string", "brand": "string", "store": "string", "labels": "array", "place": "boolean" } },
   "render_room": { "required": [], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
   "photo3d": { "required": [], "properties": { "renderJobId": "string", "path": "string" } },
   "screenshot": { "required": [], "properties": {} },

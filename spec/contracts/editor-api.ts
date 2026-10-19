@@ -66,6 +66,7 @@ export type ProductRequest = {
   brand?: string
   store?: string
   labels?: string[]
+  place?: boolean
 }
 
 export type EditorView = 'editor' | 'studio'
@@ -98,7 +99,7 @@ export type RoomfitEditorApi = {
   redo(): void
   setCamera(camera: { position: Vec3; target: Vec3 }): void
   exportPasses(size: { width: number; height: number }): Promise<RenderPasses>
-  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; jobId: string; itemId: string; report: Omit<FitReport, 'scale'> } | ComfyFailure>
+  addProductFromPhoto(request: ProductRequest): Promise<{ ok: true; jobId: string; itemId: string | null; assetId: string; report: Omit<FitReport, 'scale'> } | ComfyFailure>
   renderInComfy(request: RenderRequest): Promise<{ ok: true; jobId: string; image: string } | ComfyFailure>
   setView(view: EditorView): void
   setScene(preset: ScenePreset): void

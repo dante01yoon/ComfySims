@@ -130,6 +130,17 @@ test('AC-81 add_product keeps product fields, set_asset_labels relabels undoably
   expect((await call('set_asset_labels', { assetId: 'nope', labels: [] })).isError).toBe(true)
 })
 
+test('AC-92 add_product with place false adds to the library only and returns the asset id', async ({ page }) => {
+  const before = (await page.evaluate(() => window.roomfit.state())).layout.items.length
+  const added = await call('add_product', { image: { comfyInputName: 'existing-input.png' }, name: 'Spare stool', width: 40, depth: 40, height: 45, place: false })
+  expect(added.isError).toBe(false)
+  const { itemId, assetId } = json(added.content)
+  expect(itemId).toBeNull()
+  const state = await page.evaluate(() => window.roomfit.state())
+  expect(state.layout.items).toHaveLength(before)
+  expect(state.layout.assets.some((asset) => asset.id === assetId)).toBe(true)
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })
