@@ -165,6 +165,18 @@ test('AC-84 set_house_plan applies a plan undoably, moves items outside its room
   expect(exterior.content.find((part) => part.type === 'image')?.mimeType).toBe('image/png')
 })
 
+test('AC-99 list_workflows and set_workflow read and change the workflow and models, undoably', async ({ page }) => {
+  const listed = json((await call('list_workflows', { kind: 'render' })).content)
+  expect(listed.current).toBe('render-from-depth.json')
+  expect(listed.models.map((slot: { key: string }) => slot.key)).toContain('1.unet_name')
+  const set = await call('set_workflow', { kind: 'render', workflow: 'render-from-depth.json', models: { '1.unet_name': 'qwen_image_2512_fp8_e4m3fn.safetensors' } })
+  expect(set.isError).toBe(false)
+  expect((await page.evaluate(() => window.roomfit.state())).undoLabels.at(-1)).toBe('mcp:set_workflow')
+  const after = json((await call('list_workflows', { kind: 'render' })).content)
+  expect(after.models.find((slot: { key: string }) => slot.key === '1.unet_name').value).toBe('qwen_image_2512_fp8_e4m3fn.safetensors')
+  expect((await call('set_workflow', { kind: 'render', workflow: 'nope.json' })).isError).toBe(true)
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })

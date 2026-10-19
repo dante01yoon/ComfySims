@@ -68,3 +68,10 @@ export type M9Checks = [
   Assert<Equal<ReturnType<typeof defaultSite>, Site>>,
   Assert<Equal<EditorState['site'], Site>>
 ]
+
+import type { WorkflowChoice } from '../spec/contracts/editor-api.ts'
+
+export type M10Checks = [
+  Assert<Equal<WorkflowChoice['kind'], JobKind>>,
+  Assert<Equal<NonNullable<RoomLayout['generation']>, Partial<Record<JobKind, { workflow: string; models?: Record<string, string> }>>>>
+]

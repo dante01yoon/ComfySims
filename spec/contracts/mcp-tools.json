@@ -22,6 +22,8 @@
   "set_house_plan": { "required": ["room"], "properties": { "room": "object" } },
   "set_site": { "required": ["site"], "properties": { "site": "object" } },
   "set_blueprint": { "required": ["path", "cmPerPixel", "originX", "originZ"], "properties": { "path": "string", "cmPerPixel": "number", "originX": "number", "originZ": "number" } },
-  "render_exterior": { "required": ["view"], "properties": { "view": "string" } }
+  "render_exterior": { "required": ["view"], "properties": { "view": "string" } },
+  "list_workflows": { "required": ["kind"], "properties": { "kind": "string" } },
+  "set_workflow": { "required": ["kind", "workflow"], "properties": { "kind": "string", "workflow": "string", "models": "object" } }
  }
 }

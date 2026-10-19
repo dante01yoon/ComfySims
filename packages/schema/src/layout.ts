@@ -118,6 +118,13 @@ export const Blueprint = z.strictObject({
   origin: Point
 })
 
+export const JobKindName = z.enum(['product', 'render', 'photo3d', 'pano360'])
+
+/** An API-format ComfyUI graph: node id → class and inputs. */
+export const ApiGraph = z.record(z.string(), z.object({ class_type: z.string().min(1), inputs: z.record(z.string(), z.unknown()), _meta: z.object({ title: z.string().optional() }).optional() }))
+
+export const GenerationChoice = z.strictObject({ workflow: z.string().min(1), models: z.record(z.string(), z.string().min(1)).optional() })
+
 export const PlacedItem = z.strictObject({
   id: z.string().min(1),
   assetId: z.string().min(1),
@@ -156,7 +163,9 @@ export const RoomLayout = z
     assets: z.array(Asset),
     items: z.array(PlacedItem),
     site: Site.optional(),
-    blueprint: Blueprint.optional()
+    blueprint: Blueprint.optional(),
+    generation: z.partialRecord(JobKindName, GenerationChoice).optional(),
+    customWorkflows: z.record(z.string().min(1), z.strictObject({ kind: JobKindName, graph: ApiGraph })).refine((map) => Object.keys(map).length <= 10, 'at most 10 custom workflows').optional()
   })
   .superRefine((layout, ctx) => {
     for (const id of duplicateIds(layout.assets)) {
@@ -221,6 +230,8 @@ export type AssetProduct = z.infer<typeof AssetProduct>
 export type PlacedItem = z.infer<typeof PlacedItem>
 export type RoomLayout = z.infer<typeof RoomLayout>
 export type Site = z.infer<typeof Site>
+export type ApiGraph = z.infer<typeof ApiGraph>
+export type GenerationChoice = z.infer<typeof GenerationChoice>
 export type Blueprint = z.infer<typeof Blueprint>
 export type GroundMaterial = z.infer<typeof GroundMaterial>
 

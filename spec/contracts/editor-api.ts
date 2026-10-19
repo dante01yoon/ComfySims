@@ -58,6 +58,11 @@ export type ExteriorShot = { camera: { position: Vec3; target: Vec3; fovDeg: num
 
 export type Issues = { path: string; message: string }[]
 
+export type WorkflowOption = { id: string; label: string; source: 'builtin' | 'custom'; available: boolean; missing: string[] }
+export type ModelSlot = { key: string; label: string; value: string; options: string[] }
+/** The workflow a job kind will use, the alternatives, and the model files it loads. */
+export type WorkflowChoice = { kind: JobKind; current: string; options: WorkflowOption[]; models: ModelSlot[] }
+
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
 export type ComfyFailure = { ok: false; jobId?: string; reason: 'unreachable' | 'http' | 'rejected' | 'failed' | 'cancelled' | 'unreadable' | 'no-space'; message: string }
@@ -141,6 +146,10 @@ export type RoomfitEditorApi = {
   setBlueprintOpacity(percent: number): void
   exteriorShot(view: ExteriorView): ExteriorShot
   renderExterior(view: ExteriorView): Promise<{ ok: true; jobId: string; image: string } | ComfyFailure>
+  workflowChoice(kind: JobKind): Promise<WorkflowChoice>
+  setWorkflow(kind: JobKind, id: string): { ok: true } | { ok: false; reason: 'unknown-workflow' | 'wrong-kind' }
+  setModel(kind: JobKind, key: string, value: string): { ok: true } | { ok: false; reason: 'unknown-slot' }
+  addCustomWorkflow(kind: JobKind, name: string, graph: unknown): { ok: true; id: string } | { ok: false; missingTags: string[]; message: string }
 }
 
 declare global {

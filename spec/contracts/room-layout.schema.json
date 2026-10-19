@@ -555,6 +555,103 @@
         "origin"
       ],
       "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "product",
+          "render",
+          "photo3d",
+          "pano360"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "type": "string",
+            "minLength": 1
+          },
+          "models": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "workflow"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "customWorkflows": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "product",
+              "render",
+              "photo3d",
+              "pano360"
+            ]
+          },
+          "graph": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "class_type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "inputs": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                },
+                "_meta": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "class_type",
+                "inputs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "graph"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
