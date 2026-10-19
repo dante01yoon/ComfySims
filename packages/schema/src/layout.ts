@@ -165,6 +165,7 @@ export const RoomLayout = z
     site: Site.optional(),
     blueprint: Blueprint.optional(),
     generation: z.partialRecord(JobKindName, GenerationChoice).optional(),
+    renderStyle: z.enum(['lived-in', 'as-built']).optional(),
     customWorkflows: z.record(z.string().min(1), z.strictObject({ kind: JobKindName, graph: ApiGraph })).refine((map) => Object.keys(map).length <= 10, 'at most 10 custom workflows').optional()
   })
   .superRefine((layout, ctx) => {

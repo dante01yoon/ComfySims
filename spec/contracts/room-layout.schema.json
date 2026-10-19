@@ -591,6 +591,13 @@
         "additionalProperties": false
       }
     },
+    "renderStyle": {
+      "type": "string",
+      "enum": [
+        "lived-in",
+        "as-built"
+      ]
+    },
     "customWorkflows": {
       "type": "object",
       "propertyNames": {

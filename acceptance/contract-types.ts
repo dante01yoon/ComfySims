@@ -75,3 +75,10 @@ export type M10Checks = [
   Assert<Equal<WorkflowChoice['kind'], JobKind>>,
   Assert<Equal<NonNullable<RoomLayout['generation']>, Partial<Record<JobKind, { workflow: string; models?: Record<string, string> }>>>>
 ]
+
+import type { scenePrompt } from '../packages/comfy/src/index.ts'
+
+export type M13Checks = [
+  Assert<Equal<ReturnType<typeof scenePrompt>, { positive: string; negative: string }>>,
+  Assert<Equal<EditorState['renderStyle'], 'lived-in' | 'as-built'>>
+]

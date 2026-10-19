@@ -25,6 +25,7 @@ export type EditorState = {
   viewer360: Viewer360 | null
   backend: BackendState
   libraryFilter: string | null
+  renderStyle: 'lived-in' | 'as-built'
   site: Site
   blueprintOpacity: number
   undoLabels: string[]
@@ -150,6 +151,7 @@ export type RoomfitEditorApi = {
   setWorkflow(kind: JobKind, id: string): { ok: true } | { ok: false; reason: 'unknown-workflow' | 'wrong-kind' }
   setModel(kind: JobKind, key: string, value: string): { ok: true } | { ok: false; reason: 'unknown-slot' }
   addCustomWorkflow(kind: JobKind, name: string, graph: unknown): { ok: true; id: string } | { ok: false; missingTags: string[]; message: string }
+  setRenderStyle(style: 'lived-in' | 'as-built'): void
 }
 
 declare global {

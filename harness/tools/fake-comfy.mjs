@@ -72,7 +72,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     }
 
     if (url.pathname === '/__requests') return json(200, requests.filter((entry) => entry.url !== '/__requests').map(({ body, ...entry }) => entry))
-    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null })))
+    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null, negative: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:negative')?.inputs.text ?? null })))
     if (url.pathname === '/__last-prompt') return json(200, lastPrompt)
     if (requireKey && request.headers['x-api-key'] !== requireKey) return json(401, { error: 'unauthorized' })
     if (request.method === 'GET' && url.pathname === '/api/object_info') return json(200, objectInfo)
