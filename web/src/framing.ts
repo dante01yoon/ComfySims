@@ -101,7 +101,7 @@ export function standingPoint(
   return free.reduce((best, point) => (distance(point) < distance(best) ? point : best), free[0] ?? centroid)
 }
 
-const AERIAL_PITCH_DEG = 45
+const AERIAL_PITCH_DEG = 30
 const AERIAL_FILL = 0.65
 const AERIAL_FITTING_STEPS = 12
 const STREET_EYE_CM = 160
@@ -150,7 +150,7 @@ function frameFill(pose: Pose, lens: Lens, points: readonly Vec3[]): number {
   return Math.max(halfSpan('x'), halfSpan('y'))
 }
 
-/** An aerial three-quarter camera from the south-east at 45° pitch, aimed at the house centre, at the distance where the house (floor to roof) fills 65 % of the frame. */
+/** An aerial three-quarter camera from the south-east at 30° pitch, aimed at the house centre, at the distance where the house (floor to roof) fills 65 % of the frame. */
 export function aerialCamera(house: Bounds, topCm: number, lens: Lens): Pose {
   const target = { ...boundsCenter(house), y: topCm / 2 }
   const direction = compassDirection(STUDIO_AZIMUTH_DEG, AERIAL_PITCH_DEG)
