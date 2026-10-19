@@ -37,7 +37,7 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
-import { PanoramaViewer } from './panorama-viewer.tsx'
+import { PanoramaViewer, useEscapeCloses } from './panorama-viewer.tsx'
 import { PhotoViewer } from './photo-viewer.tsx'
 import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
 import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, WorkspaceRail } from './workspace.tsx'
@@ -397,6 +397,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function OpenedRender({ studio }: { studio: boolean }) {
   const { openedRender, jobs, backend } = useSyncExternalStore(subscribe, snapshot)
+  useEscapeCloses(openedRender ? closeRender : null)
   if (!openedRender) return null
   const renderJob = jobs.find(({ kind, result }) => kind === 'render' && result?.image === openedRender.image)
   const viewAs3d = renderJob && !cannotRun(backend, 'photo3d') ? () => void api.photo3d({ kind: 'render', jobId: renderJob.id }) : undefined
@@ -432,6 +433,7 @@ function ComfyPanel() {
   const [brand, setBrand] = useState('')
   const [store, setStore] = useState('')
   const [labels, setLabels] = useState<string[]>([])
+  const [place, setPlace] = useState(true)
   const [placedFit, setPlacedFit] = useState<FitSummary | null>(null)
   const linkProblem = link.trim() ? ProductUrl.safeParse(link.trim()).error?.issues[0]?.message : undefined
   const [prompt, setPrompt] = useState('')
@@ -445,7 +447,7 @@ function ComfyPanel() {
     if (!photo) return
     const dimensions = { width: Number(size.width), depth: Number(size.depth), height: Number(size.height) }
     setPlacedFit(null)
-    const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode, productUrl: link, brand, store, labels })
+    const placed = await api.addProductFromPhoto({ fileName: photo.name, imageBase64: await base64Of(photo), name, dimensions, mode, productUrl: link, brand, store, labels, place })
     if (placed.ok) setPlacedFit(placed.report)
   }
 
@@ -492,6 +494,9 @@ function ComfyPanel() {
         <span>Labels</span>
         <LabelEditor labels={labels} field="Labels" onChange={relabel} />
       </div>
+      <label className="check">
+        <input type="checkbox" checked={place} onChange={(event) => setPlace(event.target.checked)} /> Place in the house
+      </label>
       <button className="primary" onClick={generate3d} disabled={!photo || noProduct !== undefined || linkProblem !== undefined} title={noProduct ?? linkProblem}>Generate 3D</button>
       <h2>Render</h2>
       <Field label="Render prompt">

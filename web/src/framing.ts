@@ -54,17 +54,22 @@ function towards(from: number, to: number, step: number): number {
   return from + Math.sign(to - from) * step
 }
 
-/** An eye-level camera standing just inside the zone corner farthest from its largest item, looking across the zone. */
-export function eyeLevelCamera(polygon: readonly { x: number; z: number }[], footprints: readonly Footprint[]): { position: Vec3; target: Vec3 } {
+/** An eye-level camera standing just inside the zone corner farthest from the subject (else the largest item), aimed between the subject and the zone centre (else at the centre). */
+export function eyeLevelCamera(
+  polygon: readonly { x: number; z: number }[],
+  footprints: readonly Footprint[],
+  subject?: { x: number; z: number }
+): { position: Vec3; target: Vec3 } {
   const center = boundsCenter(polygonBounds(polygon))
   const largest = footprints.reduce<Footprint | undefined>((best, footprint) => (best && best.area >= footprint.area ? best : footprint), undefined)
-  const anchor = largest ?? center
+  const anchor = subject ?? largest ?? center
   const corner = polygon.reduce((far, vertex) =>
     Math.hypot(vertex.x - anchor.x, vertex.z - anchor.z) > Math.hypot(far.x - anchor.x, far.z - anchor.z) ? vertex : far
   )
+  const aim = subject ? { x: (subject.x + center.x) / 2, z: (subject.z + center.z) / 2 } : center
   return {
     position: { x: towards(corner.x, center.x, EYE_INSET_CM), y: EYE_HEIGHT_CM, z: towards(corner.z, center.z, EYE_INSET_CM) },
-    target: { x: center.x, y: EYE_TARGET_HEIGHT_CM, z: center.z }
+    target: { x: aim.x, y: EYE_TARGET_HEIGHT_CM, z: aim.z }
   }
 }
 

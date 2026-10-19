@@ -35,15 +35,16 @@ function LookAround({ yawDegrees, pitchDegrees, fovDegrees }: Pick<Viewer360, 'y
   return null
 }
 
-function useEscapeCloses(open: boolean): void {
+/** Calls `close` when Escape is pressed anywhere; pass null while there is nothing to close. */
+export function useEscapeCloses(close: (() => void) | null): void {
   useEffect(() => {
-    if (!open) return
+    if (!close) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') api.close360()
+      if (event.key === 'Escape') close()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open])
+  }, [close])
 }
 
 /** The full-window 360° viewer: the panorama on the inside of a sphere; drag to look around, wheel to zoom. */
@@ -52,7 +53,7 @@ export function PanoramaViewer() {
   const viewer = api.state().viewer360
   const image = snapshot().jobs.find(({ id }) => id === viewer?.jobId)?.result?.image
   const dragFrom = useRef<{ x: number; y: number } | null>(null)
-  useEscapeCloses(viewer !== null)
+  useEscapeCloses(viewer !== null ? api.close360 : null)
   if (!viewer || !image) return null
 
   const startDrag = (event: PointerEvent<HTMLDivElement>) => {

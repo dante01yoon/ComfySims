@@ -340,12 +340,13 @@ function focusFrame(): CameraPose {
 function eyeLevelShot(zone: Zone): CameraPose {
   const { items, assets } = editor.history.present
   const { min, max } = polygonBounds(zone.polygon)
-  const footprints = items.flatMap(({ assetId, position: { x, z } }) => {
+  const inZone = ({ x, z }: { x: number; z: number }) => x >= min.x && x <= max.x && z >= min.z && z <= max.z
+  const footprints = items.flatMap(({ assetId, position }) => {
     const asset = assets.find(({ id }) => id === assetId)
-    const inZone = x >= min.x && x <= max.x && z >= min.z && z <= max.z
-    return asset && inZone ? [{ x, z, area: asset.dimensions.width * asset.dimensions.depth }] : []
+    return asset && inZone(position) ? [{ x: position.x, z: position.z, area: asset.dimensions.width * asset.dimensions.depth }] : []
   })
-  return eyeLevelCamera(zone.polygon, footprints)
+  const selected = items.find(({ id }) => id === editor.selectedId)?.position
+  return eyeLevelCamera(zone.polygon, footprints, selected && inZone(selected) ? selected : undefined)
 }
 
 async function passesFrom(shot: CameraPose, size: Size): Promise<RenderPasses> {
@@ -395,11 +396,12 @@ type JobRun = ComfyRun & { id: string; backend: BackendKind; file: string; workf
 type Work<T> = (run: JobRun) => Promise<Finished<T> | ComfyFailure>
 type Finished<T> = { ok: true; value: T; result: Job['result'] }
 type Started<T> = ({ ok: true; jobId: string } & T) | ComfyFailure
-type ProductPlaced = { itemId: string; report: Omit<FitReport, 'scale'> }
+type ProductPlaced = { itemId: string | null; assetId: string; report: Omit<FitReport, 'scale'> }
 
 const retries = new Map<string, () => Promise<Started<unknown>>>()
 const captions = new Map<string, string>()
 const workflows = new Map<string, JobWorkflow & { url: string }>()
+const libraryAdds = new Map<string, string>()
 const waitingForSlot: (() => void)[] = []
 let runningJobs = 0
 let startedJobs = 0
@@ -528,10 +530,13 @@ function placementIn(zoneId: string | null, dimensions: Dimensions): Placement |
 
 function placeItem(layout: RoomLayout, assetId: string, { position, rotationY }: Placement, label = currentLabel()): PlacedItem {
   const item: PlacedItem = { id: uniqueId(assetId, layout.items), assetId, position, rotationY }
-  const next = { ...layout, items: [...layout.items, item] }
+  commitLayout({ ...layout, items: [...layout.items, item] }, label)
+  return item
+}
+
+function commitLayout(next: RoomLayout, label: string): void {
   setHistory(commit(editor.history, next, label), 'none')
   requestMeshes(next)
-  return item
 }
 
 function productInput({ imageBase64, imageName, fileName }: ProductRequest): Promise<ComfyInput> | null {
@@ -589,7 +594,8 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   if (!Dimensions.safeParse(request.dimensions).success) return rejection('width, depth and height must be positive centimeters')
   const details = productDetails(request)
   if (!details.ok) return details
-  const zoneId = request.zoneId ?? editor.focusedZone
+  const place = request.place ?? true
+  const zoneId = place ? (request.zoneId ?? editor.focusedZone) : null
   const planned = placementIn(zoneId, request.dimensions)
   if (!planned.ok) return planned
 
@@ -625,11 +631,17 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
     product: photo ? { ...details.product, photo: { thumbnail: photo, comfyInputName: generated.inputName } } : details.product,
     labels: details.labels
   }
-  const item = placeItem({ ...layout, assets: [...layout.assets, asset] }, asset.id, placement, label)
+  const withAsset = { ...layout, assets: [...layout.assets, asset] }
+  const item = place ? placeItem(withAsset, asset.id, placement, label) : null
+  if (!item) {
+    commitLayout(withAsset, label)
+    libraryAdds.set(run.id, asset.id)
+  }
+  const added = item ? { itemId: item.id } : {}
   return {
     ok: true,
-    value: { itemId: item.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } },
-    result: 'file' in input ? { image: URL.createObjectURL(input.file), itemId: item.id } : { itemId: item.id }
+    value: { itemId: item?.id ?? null, assetId: asset.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } },
+    result: 'file' in input ? { image: URL.createObjectURL(input.file), ...added } : added
   }
 }
 
@@ -802,6 +814,11 @@ export function zoom360(fovDegrees: number): void {
 /** The caption of a job's source: the render's room and scene, or the uploaded file name. */
 export function captionOf(jobId: string): string {
   return captions.get(jobId) ?? ''
+}
+
+/** The asset a product job added to the library without placing it. */
+export function libraryAssetOf(jobId: string): string | undefined {
+  return libraryAdds.get(jobId)
 }
 
 async function retryJob(jobId: string): ReturnType<RoomfitEditorApi['retryJob']> {

@@ -179,7 +179,7 @@ server.registerTool(
   'add_product',
   {
     description:
-      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room. image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file) or { base64 }. productUrl (http/https), brand, store and labels are kept on the asset. Waits for the job (about a minute).',
+      'Turn a product photo into a 3D model fitted to its listed size (cm) and place it in a room, or with place false only add it to the library (itemId null; place it later with place_asset and the returned assetId). image is { comfyInputName } (a ComfyUI input, e.g. from the Comfy Cloud MCP), { path } (local file) or { base64 }. productUrl (http/https), brand, store and labels are kept on the asset. Waits for the job (about a minute).',
     inputSchema: {
       image: z.union([z.object({ comfyInputName: z.string().min(1) }), z.object({ path: z.string().min(1) }), z.object({ base64: z.string().min(1) })]),
       name: z.string().min(1),
@@ -191,15 +191,16 @@ server.registerTool(
       productUrl: z.string().optional(),
       brand: z.string().optional(),
       store: z.string().optional(),
-      labels: z.array(z.string()).optional()
+      labels: z.array(z.string()).optional(),
+      place: z.boolean().optional()
     }
   },
-  async ({ image, name, width, depth, height, room, mode, productUrl, brand, store, labels }) => {
+  async ({ image, name, width, depth, height, room, mode, productUrl, brand, store, labels, place }) => {
     const editor = editorFor('add_product')
     const zoneId = room === undefined ? undefined : zoneIdOf((await editor('state')).layout, room)
-    const request: ProductRequest = { ...(await imageOf(image, name)), name, dimensions: { width, depth, height }, mode, zoneId, productUrl, brand, store, labels }
-    const { itemId, jobId, report } = succeeded(await editor('addProductFromPhoto', request))
-    return json({ itemId, jobId, report })
+    const request: ProductRequest = { ...(await imageOf(image, name)), name, dimensions: { width, depth, height }, mode, zoneId, productUrl, brand, store, labels, place }
+    const { itemId, assetId, jobId, report } = succeeded(await editor('addProductFromPhoto', request))
+    return json({ itemId, assetId, jobId, report })
   }
 )
 

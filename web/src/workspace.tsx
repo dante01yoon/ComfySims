@@ -1,5 +1,5 @@
 import { Html } from '@react-three/drei'
-import { useEffect, useId, useMemo, useState, useSyncExternalStore, type ChangeEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react'
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../../packages/placement/src/index.ts'
@@ -14,6 +14,7 @@ import {
   isFinished,
   isStalePanorama,
   labelsInUse,
+  libraryAssetOf,
   openRender,
   ranWorkflow,
   select,
@@ -22,6 +23,7 @@ import {
 } from './editor.ts'
 import { polygonCentroid } from './framing.ts'
 import { meshKey } from './meshes.ts'
+import { useEscapeCloses } from './panorama-viewer.tsx'
 import { thumbnailOf } from './thumbnails.ts'
 
 const CLOCK_TICK_MS = 250
@@ -61,8 +63,19 @@ function showItem(itemId: string): void {
   select(item.id)
 }
 
+function placeFromLibrary(assetId: string): void {
+  const placed = api.placeAsset(assetId)
+  if (placed.ok) showItem(placed.itemId)
+}
+
+function actionLabel(job: Job): string {
+  return libraryAssetOf(job.id) ? 'Place in' : ACTION_LABELS[job.kind]
+}
+
 function runAction(job: Job): void {
   const { image, itemId } = job.result ?? {}
+  const assetId = libraryAssetOf(job.id)
+  if (job.kind === 'product' && assetId) return placeFromLibrary(assetId)
   if (job.kind === 'product' && itemId) return showItem(itemId)
   if (job.kind === 'render' && image) return openRender(image, job.title)
   if (job.kind === 'photo3d') api.openPhoto3d(job.id)
@@ -81,9 +94,22 @@ function BackendChip() {
   const { backend, localUrl } = useSyncExternalStore(subscribe, snapshot)
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState(localUrl)
+  const container = useRef<HTMLDivElement>(null)
   useEffect(() => setUrl(localUrl), [localUrl])
+  const close = useCallback(() => setOpen(false), [])
+  useEscapeCloses(open ? close : null)
+  useEffect(() => {
+    if (!open) return
+    const closeOutside = (event: PointerEvent) => event.target instanceof Node && !container.current?.contains(event.target) && close()
+    document.addEventListener('pointerdown', closeOutside)
+    return () => document.removeEventListener('pointerdown', closeOutside)
+  }, [open, close])
+  const use = (choice: Parameters<typeof api.setBackend>[0]) => {
+    close()
+    void api.setBackend(choice)
+  }
   return (
-    <div className="backend">
+    <div className="backend" ref={container}>
       <button className={`backend-chip ${backend.status}`} aria-expanded={open} onClick={() => setOpen(!open)}>
         {backendLabel(backend)}
       </button>
@@ -92,11 +118,11 @@ function BackendChip() {
           <button
             disabled={!backend.cloudConfigured}
             title={backend.cloudConfigured ? 'Run new jobs on Comfy Cloud' : 'No Cloud key in .env.local'}
-            onClick={() => void api.setBackend({ kind: 'cloud' })}
+            onClick={() => use({ kind: 'cloud' })}
           >
             Use Cloud
           </button>
-          <button onClick={() => void api.setBackend({ kind: 'local', url: url.trim() })}>Use Local</button>
+          <button onClick={() => use({ kind: 'local', url: url.trim() })}>Use Local</button>
           <label className="field">
             <span>Local ComfyUI URL</span>
             <input value={url} onChange={(event) => setUrl(event.target.value)} />
@@ -150,27 +176,31 @@ function WorkflowDialog({ jobId, onClose }: { jobId: string; onClose: () => void
   return (
     <div role="dialog" aria-modal="true" aria-label="Workflow" className="workflow-dialog" onKeyDown={(event) => event.key === 'Escape' && onClose()}>
       <div>
-        <h2>Workflow</h2>
-        <div>
-          <strong>{ran.file}</strong> <span className="muted">on {BACKEND_NAMES[ran.backend]}</span>
+        <header>
+          <h2>Workflow</h2>
+          <div>
+            <strong>{ran.file}</strong> <span className="muted">on {BACKEND_NAMES[ran.backend]}</span>
+          </div>
+        </header>
+        <div className="workflow-body">
+          <table aria-label="Nodes">
+            <thead>
+              <tr><th>Node</th><th>Class</th></tr>
+            </thead>
+            <tbody>
+              {Object.entries(ran.submitted).map(([id, node]) => (
+                <tr key={id}><td>{node._meta?.title ?? id}</td><td>{node.class_type}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <table aria-label="Inputs roomfit filled">
+            <tbody>
+              {filledInputs(ran.submitted).map(([name, value]) => (
+                <tr key={name}><th>{name}</th><td>{value}</td></tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <table aria-label="Nodes">
-          <thead>
-            <tr><th>Node</th><th>Class</th></tr>
-          </thead>
-          <tbody>
-            {Object.entries(ran.submitted).map(([id, node]) => (
-              <tr key={id}><td>{node._meta?.title ?? id}</td><td>{node.class_type}</td></tr>
-            ))}
-          </tbody>
-        </table>
-        <table aria-label="Inputs roomfit filled">
-          <tbody>
-            {filledInputs(ran.submitted).map(([name, value]) => (
-              <tr key={name}><th>{name}</th><td>{value}</td></tr>
-            ))}
-          </tbody>
-        </table>
         {notice && <div role="status">{notice}</div>}
         <div className="button-row">
           <button onClick={download}>Download JSON</button>
@@ -211,7 +241,7 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
           {image && <img src={image} alt={job.title} />}
           {job.kind === 'pano360' && isStalePanorama(job.id) && <div className="problem">Layout changed since this view</div>}
           <div className="button-row">
-            <button onClick={() => runAction(job)}>{ACTION_LABELS[job.kind]}</button>
+            <button onClick={() => runAction(job)}>{actionLabel(job)}</button>
             {job.kind === 'render' && (
               <button disabled={noPhoto3d !== undefined} title={noPhoto3d} onClick={() => void api.photo3d({ kind: 'render', jobId: job.id })}>
                 View as 3D photo
