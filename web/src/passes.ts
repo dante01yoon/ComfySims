@@ -99,20 +99,28 @@ function renderPass<T extends Pixels>(
   return pixels
 }
 
-function depthToGray(depth: Float32Array): Uint8ClampedArray {
+/** A fixed depth range in cm; anything farther renders black. */
+export type DepthRange = { nearCm: number; farCm: number }
+
+function coveredRange(depth: Float32Array, covered: (pixel: number) => boolean): DepthRange {
+  let nearCm = Infinity
+  let farCm = -Infinity
+  for (let pixel = 0; pixel < depth.length / 4; pixel++) {
+    if (!covered(pixel)) continue
+    nearCm = Math.min(nearCm, depth[pixel * 4]!)
+    farCm = Math.max(farCm, depth[pixel * 4]!)
+  }
+  return { nearCm, farCm }
+}
+
+function depthToGray(depth: Float32Array, fixed?: DepthRange): Uint8ClampedArray {
   const covered = (pixel: number) => depth[pixel * 4 + 3]! > 0
   const pixelCount = depth.length / 4
-  let near = Infinity
-  let far = -Infinity
-  for (let pixel = 0; pixel < pixelCount; pixel++) {
-    if (!covered(pixel)) continue
-    near = Math.min(near, depth[pixel * 4]!)
-    far = Math.max(far, depth[pixel * 4]!)
-  }
+  const { nearCm: near, farCm: far } = fixed ?? coveredRange(depth, covered)
   const range = far - near || 1
   const gray = new Uint8ClampedArray(depth.length)
   for (let pixel = 0; pixel < pixelCount; pixel++) {
-    const value = covered(pixel) ? (255 * (far - depth[pixel * 4]!)) / range : 0
+    const value = covered(pixel) && depth[pixel * 4]! <= far ? (255 * (far - depth[pixel * 4]!)) / range : 0
     gray.set([value, value, value, 255], pixel * 4)
   }
   return gray
@@ -132,8 +140,8 @@ function toPng(pixels: Uint8Array | Uint8ClampedArray, { width, height }: Size):
   return canvas.toDataURL('image/png')
 }
 
-/** Renders depth, camera-space normal and item mask PNGs from the given camera at the requested size. */
-export function exportPasses(renderer: WebGLRenderer, scene: Scene, camera: Camera, size: Size): RenderPasses {
+/** Renders depth (over the covered range, or a fixed one), camera-space normal and item mask PNGs from the given camera at the requested size. */
+export function exportPasses(renderer: WebGLRenderer, scene: Scene, camera: Camera, size: Size, depthRange?: DepthRange): RenderPasses {
   const view = passCamera(camera, size)
   const colorTarget = new WebGLRenderTarget(size.width, size.height)
   const floatTarget = new WebGLRenderTarget(size.width, size.height, { type: FloatType })
@@ -147,7 +155,7 @@ export function exportPasses(renderer: WebGLRenderer, scene: Scene, camera: Came
     const mask = renderPass(renderer, scene, view, colorTarget, new Uint8Array(pixelCount), (mesh) =>
       isItemPart(mesh) ? itemMaskMaterial : backgroundMaskMaterial
     )
-    return { depth: toPng(depthToGray(depth), size), normal: toPng(normal, size), mask: toPng(mask, size) }
+    return { depth: toPng(depthToGray(depth, depthRange), size), normal: toPng(normal, size), mask: toPng(mask, size) }
   } finally {
     renderer.setRenderTarget(previous.target)
     renderer.setClearColor(previous.clearColor, previous.clearAlpha)

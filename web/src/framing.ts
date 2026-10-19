@@ -1,4 +1,3 @@
-import { inPolygon } from '../../packages/placement/src/index.ts'
 import type { Room } from '../../packages/schema/src/index.ts'
 import type { Vec3 } from '../../spec/contracts/editor-api.ts'
 
@@ -103,26 +102,86 @@ export function standingPoint(
 }
 
 const AERIAL_PITCH_DEG = 45
-const AERIAL_DISTANCE_PER_LOT_RADIUS = 1.9
+const AERIAL_FILL = 0.65
+const AERIAL_FITTING_STEPS = 12
 const STREET_EYE_CM = 160
 const STREET_TARGET_HEIGHT_CM = 140
-const STREET_LOT_MARGIN_CM = 50
-const STREET_DISTANCES_CM = Array.from({ length: 21 }, (_, index) => 1200 - index * 50)
+const STREET_LOT_INSET_CM = 50
 
-/** An aerial three-quarter camera from the south-east at 45° pitch, aimed at the house centre and far enough back to frame the lot. */
-export function aerialCamera(house: Bounds, lot: Bounds): { position: Vec3; target: Vec3 } {
-  const target = boundsCenter(house)
-  const distance = (Math.hypot(lot.max.x - lot.min.x, lot.max.z - lot.min.z) / 2) * AERIAL_DISTANCE_PER_LOT_RADIUS
-  const direction = compassDirection(STUDIO_AZIMUTH_DEG, AERIAL_PITCH_DEG)
-  return { position: { x: target.x + direction.x * distance, y: direction.y * distance, z: target.z + direction.z * distance }, target }
+export type Lens = { fovDeg: number; aspect: number }
+type Pose = { position: Vec3; target: Vec3 }
+type Point = { x: number; z: number }
+
+function unit({ x, y, z }: Vec3): Vec3 {
+  const length = Math.hypot(x, y, z)
+  return { x: x / length, y: y / length, z: z / length }
 }
 
-/** A street camera at 160 cm in front of the front door, as far back as the lot allows (up to 12 m), aimed at the house. */
-export function streetCamera(door: { point: { x: number; z: number }; outward: { x: number; z: number } }, lot: readonly { x: number; z: number }[], house: Vec3): { position: Vec3; target: Vec3 } {
-  const along = (distance: number) => ({ x: door.point.x + door.outward.x * distance, z: door.point.z + door.outward.z * distance })
-  const back = STREET_DISTANCES_CM.find((distance) => inPolygon(along(distance + STREET_LOT_MARGIN_CM), lot)) ?? STREET_DISTANCES_CM.at(-1)!
-  const { x, z } = along(back)
-  return { position: { x, y: STREET_EYE_CM, z }, target: { x: house.x, y: STREET_TARGET_HEIGHT_CM, z: house.z } }
+function dot(a: Vec3, b: Vec3): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z
+}
+
+function between(from: Vec3, to: Vec3): Vec3 {
+  return { x: to.x - from.x, y: to.y - from.y, z: to.z - from.z }
+}
+
+function viewDepth({ position, target }: Pose, point: Vec3): number {
+  return dot(between(position, point), unit(between(position, target)))
+}
+
+function projected({ position, target }: Pose, { fovDeg, aspect }: Lens, point: Vec3): { x: number; y: number } {
+  const forward = unit(between(position, target))
+  const right = unit({ x: -forward.z, y: 0, z: forward.x })
+  const up = { x: right.y * forward.z - right.z * forward.y, y: right.z * forward.x - right.x * forward.z, z: right.x * forward.y - right.y * forward.x }
+  const toPoint = between(position, point)
+  const tan = Math.tan((fovDeg * Math.PI) / 360)
+  const depth = dot(toPoint, forward)
+  return { x: dot(toPoint, right) / (depth * tan * aspect), y: dot(toPoint, up) / (depth * tan) }
+}
+
+/** The eight corners of a floor-plan extent from the floor up to a height in cm. */
+export function boxCorners({ min, max }: Bounds, topCm: number): Vec3[] {
+  return [min.x, max.x].flatMap((x) => [min.z, max.z].flatMap((z) => [0, topCm].map((y) => ({ x, y, z }))))
+}
+
+function frameFill(pose: Pose, lens: Lens, points: readonly Vec3[]): number {
+  const projections = points.map((point) => projected(pose, lens, point))
+  const halfSpan = (axis: 'x' | 'y') => (Math.max(...projections.map((point) => point[axis])) - Math.min(...projections.map((point) => point[axis]))) / 2
+  return Math.max(halfSpan('x'), halfSpan('y'))
+}
+
+/** An aerial three-quarter camera from the south-east at 45° pitch, aimed at the house centre, at the distance where the house (floor to roof) fills 65 % of the frame. */
+export function aerialCamera(house: Bounds, topCm: number, lens: Lens): Pose {
+  const target = { ...boundsCenter(house), y: topCm / 2 }
+  const direction = compassDirection(STUDIO_AZIMUTH_DEG, AERIAL_PITCH_DEG)
+  const at = (distance: number): Pose => ({ position: { x: target.x + direction.x * distance, y: target.y + direction.y * distance, z: target.z + direction.z * distance }, target })
+  const corners = boxCorners(house, topCm)
+  const distance = Array.from({ length: AERIAL_FITTING_STEPS }).reduce<number>(
+    (current) => (current * frameFill(at(current), lens, corners)) / AERIAL_FILL,
+    4 * Math.hypot(house.max.x - house.min.x, house.max.z - house.min.z, topCm)
+  )
+  return at(distance)
+}
+
+/** A street camera at 160 cm on the lot corner in front of the door that is diagonal to the house (outside its x and z extents), nearest the door, aimed at the house. */
+export function streetCamera(door: { point: Point; outward: Point }, lot: readonly Point[], house: Bounds): Pose {
+  const center = boundsCenter(house)
+  const diagonal = ({ x, z }: Point) => (x < house.min.x || x > house.max.x) && (z < house.min.z || z > house.max.z)
+  const inFront = ({ x, z }: Point) => (x - door.point.x) * door.outward.x + (z - door.point.z) * door.outward.z > 0
+  const fromDoor = ({ x, z }: Point) => Math.hypot(x - door.point.x, z - door.point.z)
+  const rank = (corner: Point) => (inFront(corner) ? 0 : 2) + (diagonal(corner) ? 0 : 1)
+  const corner = lot.reduce((best, vertex) => (rank(vertex) < rank(best) || (rank(vertex) === rank(best) && fromDoor(vertex) < fromDoor(best)) ? vertex : best))
+  const inset = { x: towards(corner.x, center.x, STREET_LOT_INSET_CM), z: towards(corner.z, center.z, STREET_LOT_INSET_CM) }
+  const { x, z } = diagonal(inset) ? inset : corner
+  return { position: { x, y: STREET_EYE_CM, z }, target: { x: center.x, y: STREET_TARGET_HEIGHT_CM, z: center.z } }
+}
+
+/** Depth range of an exterior shot along the view axis: from the nearest house corner to the farthest lot corner. */
+export function exteriorDepthRange(pose: Pose, houseCorners: readonly Vec3[], lot: readonly Point[]): { nearCm: number; farCm: number } {
+  return {
+    nearCm: Math.min(...houseCorners.map((corner) => viewDepth(pose, corner))),
+    farCm: Math.max(...lot.map(({ x, z }) => viewDepth(pose, { x, y: 0, z })))
+  }
 }
 
 /** The studio camera framing a floor-plan extent from the south-east, steeper for a single room so its walls do not hide it. */

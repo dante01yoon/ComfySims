@@ -60,7 +60,7 @@ import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyIn
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { aerialCamera, boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
+import { aerialCamera, boundsCenter, boxCorners, exteriorDepthRange, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
 import { exportDepthPanorama, exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -97,6 +97,7 @@ const PHOTO_THUMBNAIL_MAX_CHARS = 56_000
 const PHOTO_THUMBNAIL_QUALITIES = [0.85, 0.7, 0.5, 0.3, 0.15]
 const ROOF_ABOVE_WALLS_CM = 20
 const EXTERIOR_SIZE: Size = { width: 1024, height: 576 }
+const EXTERIOR_FOV_DEG = 50
 const EXTERIOR_TITLES: Record<ExteriorView, string> = { aerial: 'Exterior render · Aerial', street: 'Exterior render · Street' }
 const GROUND_WORDS: Record<Site['ground'], string> = { grass: 'green lawn', gravel: 'gravel yard', paving: 'paved courtyard', soil: 'bare soil garden' }
 
@@ -409,8 +410,15 @@ function exteriorShot(view: ExteriorView): ExteriorShot {
   const house = houseExtent(layout.room)
   const site = siteOf(layout)
   const wallHeight = layout.room.kind === 'plan' ? layout.room.wallHeight : layout.room.height
-  const camera = view === 'aerial' ? aerialCamera(house, polygonBounds(site.lot)) : streetCamera(frontDoor(layout.room), site.lot, boundsCenter(house))
-  return { camera, roof: { topCm: wallHeight + ROOF_ABOVE_WALLS_CM, min: house.min, max: house.max } }
+  const topCm = wallHeight + ROOF_ABOVE_WALLS_CM
+  const lens = { fovDeg: EXTERIOR_FOV_DEG, aspect: EXTERIOR_SIZE.width / EXTERIOR_SIZE.height }
+  const pose = view === 'aerial' ? aerialCamera(house, topCm, lens) : streetCamera(frontDoor(layout.room), site.lot, house)
+  return {
+    camera: { ...pose, ...lens },
+    roof: { topCm, min: house.min, max: house.max },
+    depthRange: exteriorDepthRange(pose, boxCorners(house, topCm), site.lot),
+    trees: false
+  }
 }
 
 async function exteriorPasses(shot: ExteriorShot, size: Size): Promise<RenderPasses> {
@@ -419,11 +427,12 @@ async function exteriorPasses(shot: ExteriorShot, size: Size): Promise<RenderPas
   try {
     const { gl, scene, camera } = await rendered()
     const view = camera.clone() as PerspectiveCamera
-    const { position, target } = shot.camera
+    const { position, target, fovDeg } = shot.camera
+    view.fov = fovDeg
     view.position.set(position.x, position.y, position.z)
     view.lookAt(target.x, target.y, target.z)
     view.updateMatrixWorld()
-    return exportPasses(gl, scene, view, size)
+    return exportPasses(gl, scene, view, size, shot.depthRange)
   } finally {
     update({ view: previousView, exterior: null, shootingEyeLevel: false })
   }

@@ -249,7 +249,7 @@ function Landscape({ layout, bounds }: { layout: RoomLayout; bounds: Bounds }) {
           <meshStandardMaterial color="#cbc3b5" roughness={0.95} />
         </mesh>
       ))}
-      {trees.map((plant, index) => (
+      {(exterior?.trees ?? true) && trees.map((plant, index) => (
         <Tree key={`${plant.x}|${plant.z}|${index}`} plant={plant} index={index} smooth={exterior !== null} />
       ))}
       {exterior === null && shrubs.map((plant) => <Shrub key={`${plant.x}|${plant.z}`} {...plant} />)}
