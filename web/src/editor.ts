@@ -1,14 +1,14 @@
 import type { OrbitControls } from '@react-three/drei'
 import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
-import { Box3, type Object3D, type Scene } from 'three'
+import { Box3, type Object3D, type PerspectiveCamera, type Scene } from 'three'
 
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
 import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, missingFromCatalog, studioPrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
-import { collisions, findSpot, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
+import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
   AssetLabels,
   AssetProduct,
@@ -17,13 +17,16 @@ import {
   parseLayout,
   type Asset,
   type BackendKind,
+  type Blueprint,
   type FitReport,
   type Job,
   type JobKind,
   type JobStep,
   type Photo3dSource,
   type PlacedItem,
+  type PlanRoom,
   type RoomLayout,
+  type Site,
   type Zone
 } from '../../packages/schema/src/index.ts'
 import type {
@@ -32,6 +35,9 @@ import type {
   DepthPanorama,
   EditorState,
   EditorView,
+  ExteriorShot,
+  ExteriorView,
+  Issues,
   JobWorkflow,
   Lighting,
   ProductRequest,
@@ -54,7 +60,7 @@ import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed, type ComfyIn
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo, type History } from './history.ts'
 import { loadMesh, meshKey } from './meshes.ts'
-import { boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, studioCamera } from './framing.ts'
+import { aerialCamera, boundsCenter, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
 import { exportDepthPanorama, exportPasses } from './passes.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
@@ -89,6 +95,10 @@ const VIEWER_FOV_DEG = { min: 40, max: 100, start: 75 }
 const PHOTO_THUMBNAIL_PX = 256
 const PHOTO_THUMBNAIL_MAX_CHARS = 56_000
 const PHOTO_THUMBNAIL_QUALITIES = [0.85, 0.7, 0.5, 0.3, 0.15]
+const ROOF_ABOVE_WALLS_CM = 20
+const EXTERIOR_SIZE: Size = { width: 1024, height: 576 }
+const EXTERIOR_TITLES: Record<ExteriorView, string> = { aerial: 'Exterior render · Aerial', street: 'Exterior render · Street' }
+const GROUND_WORDS: Record<Site['ground'], string> = { grass: 'green lawn', gravel: 'gravel yard', paving: 'paved courtyard', soil: 'bare soil garden' }
 
 export type Editor = {
   history: History<RoomLayout>
@@ -109,6 +119,9 @@ export type Editor = {
   backend: BackendState
   localUrl: string
   libraryFilter: string | null
+  blueprintOpacity: number
+  blueprintHidden: boolean
+  exterior: ExteriorShot | null
   revision: number
 }
 
@@ -148,6 +161,9 @@ let editor: Editor = {
   backend: { kind: 'local', url: DEFAULT_LOCAL_URL, status: 'checking', unavailable: [], cloudConfigured: false },
   localUrl: DEFAULT_LOCAL_URL,
   libraryFilter: null,
+  blueprintOpacity: 50,
+  blueprintHidden: false,
+  exterior: null,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -216,6 +232,8 @@ function nextFrame(): Promise<number> {
 async function rendered(): Promise<RootState> {
   await threeReady
   await Promise.all(editor.history.present.assets.map(loadMesh))
+  const { blueprint } = editor.history.present
+  if (blueprint) await requestBlueprint(blueprint.image)
   while (committedRevision < editor.revision) await nextFrame()
   return getThree!()
 }
@@ -227,15 +245,19 @@ function isPassSize({ width, height }: Size): boolean {
 function itemObjects(scene: Scene): Object3D[] {
   const found: Object3D[] = []
   scene.traverse((object) => {
-    if (typeof object.userData.itemId === 'string') found.push(object)
+    if (typeof sceneIdOf(object) === 'string') found.push(object)
   })
   return found
+}
+
+function sceneIdOf(object: Object3D): unknown {
+  return object.userData.itemId ?? object.userData.sceneId
 }
 
 function sceneItem(object: Object3D): SceneItem {
   const { min, max } = new Box3().setFromObject(object)
   return {
-    id: object.userData.itemId,
+    id: String(sceneIdOf(object)),
     worldBoundsCm: { min: { x: min.x, y: min.y, z: min.z }, max: { x: max.x, y: max.y, z: max.z } },
     highlighted: object.userData.highlighted === true,
     meshLoaded: object.userData.meshLoaded === true
@@ -312,8 +334,114 @@ function state(): EditorState {
     undoLabels: labels(history),
     agentConnected: editor.agentConnected,
     backend: editor.backend,
-    libraryFilter: editor.libraryFilter
+    libraryFilter: editor.libraryFilter,
+    site: siteOf(history.present),
+    blueprintOpacity: editor.blueprintOpacity
   }
+}
+
+/** The layout's site, or the default one around its house. */
+export function siteOf(layout: RoomLayout): Site {
+  return layout.site ?? defaultSite(layout.room)
+}
+
+const blueprintLoads = new Map<string, Promise<HTMLImageElement | null>>()
+const blueprintImages = new Map<string, HTMLImageElement>()
+
+function requestBlueprint(url: string): Promise<HTMLImageElement | null> {
+  const known = blueprintLoads.get(url)
+  if (known) return known
+  const loading = new Promise<HTMLImageElement | null>((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => resolve(null)
+    image.src = url
+  }).then((image) => {
+    if (image) blueprintImages.set(url, image)
+    update({})
+    return image
+  })
+  blueprintLoads.set(url, loading)
+  return loading
+}
+
+/** The decoded blueprint image once it has loaded; starts loading it otherwise. */
+export function blueprintImage(url: string): HTMLImageElement | undefined {
+  void requestBlueprint(url)
+  return blueprintImages.get(url)
+}
+
+/** Shows or hides the blueprint underlay in the plan view. */
+export function setBlueprintHidden(blueprintHidden: boolean): void {
+  update({ blueprintHidden })
+}
+
+function committedIfValid(next: unknown): { ok: true } | { ok: false; issues: Issues } {
+  const parsed = parseLayout(next)
+  if (!parsed.ok) return { ok: false, issues: parsed.issues }
+  commitLayout(parsed.layout, currentLabel())
+  return { ok: true }
+}
+
+function setHousePlan(room: PlanRoom): ReturnType<RoomfitEditorApi['setHousePlan']> {
+  const layout = editor.history.present
+  const planned = parseLayout({ ...layout, room })
+  if (!planned.ok) return { ok: false, issues: planned.issues }
+  const movedToLibrary = layout.items.filter(({ position }) => zoneAt(planned.layout, position) === null).map(({ id }) => id)
+  const outcome = committedIfValid({ ...planned.layout, items: planned.layout.items.filter(({ id }) => !movedToLibrary.includes(id)) })
+  if (!outcome.ok) return outcome
+  if (!zoneById(editor.focusedZone)) update({ focusedZone: null })
+  return { ok: true, movedToLibrary }
+}
+
+function setSite(site: Site | null): ReturnType<RoomfitEditorApi['setSite']> {
+  const { site: _, ...layout } = editor.history.present
+  return committedIfValid(site === null ? layout : { ...layout, site })
+}
+
+function setBlueprint(blueprint: Blueprint | null): ReturnType<RoomfitEditorApi['setBlueprint']> {
+  const { blueprint: _, ...layout } = editor.history.present
+  return committedIfValid(blueprint === null ? layout : { ...layout, blueprint })
+}
+
+function exteriorShot(view: ExteriorView): ExteriorShot {
+  const layout = editor.history.present
+  const house = houseExtent(layout.room)
+  const site = siteOf(layout)
+  const wallHeight = layout.room.kind === 'plan' ? layout.room.wallHeight : layout.room.height
+  const camera = view === 'aerial' ? aerialCamera(house, polygonBounds(site.lot)) : streetCamera(frontDoor(layout.room), site.lot, boundsCenter(house))
+  return { camera, roof: { topCm: wallHeight + ROOF_ABOVE_WALLS_CM, min: house.min, max: house.max } }
+}
+
+async function exteriorPasses(shot: ExteriorShot, size: Size): Promise<RenderPasses> {
+  const previousView = editor.view
+  update({ view: 'studio', exterior: shot, shootingEyeLevel: true })
+  try {
+    const { gl, scene, camera } = await rendered()
+    const view = camera.clone() as PerspectiveCamera
+    const { position, target } = shot.camera
+    view.position.set(position.x, position.y, position.z)
+    view.lookAt(target.x, target.y, target.z)
+    view.updateMatrixWorld()
+    return exportPasses(gl, scene, view, size)
+  } finally {
+    update({ view: previousView, exterior: null, shootingEyeLevel: false })
+  }
+}
+
+function exteriorPrompt(site: Site): string {
+  return `Exterior architectural photograph of a modern single-storey house, flat roof, white render walls, large windows, ${GROUND_WORDS[site.ground]}, trees, clear sky, photorealistic`
+}
+
+function renderExterior(view: ExteriorView): Promise<Started<{ image: string }>> {
+  const title = EXTERIOR_TITLES[view]
+  const render: Work<{ image: string }> = (run) => {
+    captions.set(run.id, title)
+    const shot = exteriorShot(view)
+    const request = { prompt: exteriorPrompt(siteOf(editor.history.present)), size: EXTERIOR_SIZE }
+    return renderDepth(request, run, shot.camera, (size) => exteriorPasses(shot, size))
+  }
+  return runJob('render', title, render, () => renderExterior(view))
 }
 
 /** Height above which walls are not drawn: a dollhouse cutaway while a room is focused, except during its eye-level shot. */
@@ -650,13 +778,17 @@ function addProductFromPhoto(request: ProductRequest): Promise<Started<ProductPl
   return runJob('product', `3D model · ${request.name.trim() || 'product'}`, (run) => generateProduct(request, run, label), () => addProductFromPhoto(request))
 }
 
-async function renderShot(request: RenderRequest, zone: Zone | undefined, run: JobRun): Promise<Finished<{ image: string }> | ComfyFailure> {
+function renderShot(request: RenderRequest, zone: Zone | undefined, run: JobRun): Promise<Finished<{ image: string }> | ComfyFailure> {
+  const shot = zone ? eyeLevelShot(zone) : api.camera()
+  return renderDepth(request, run, shot, (size) => (zone ? passesFrom(shot, size) : api.exportPasses(size)))
+}
+
+async function renderDepth(request: RenderRequest, run: JobRun, shot: CameraPose, passesAt: (size: Size) => Promise<RenderPasses>): Promise<Finished<{ image: string }> | ComfyFailure> {
   const size = request.size ?? DEFAULT_RENDER_SIZE
   if (!isPassSize(size)) return rejection(`the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
   const seed = request.seed ?? randomSeed()
-  const shot = zone ? eyeLevelShot(zone) : api.camera()
   update({ lastRenderCamera: shot })
-  const passes = await oneAtATime(() => (zone ? passesFrom(shot, size) : api.exportPasses(size)))
+  const passes = await oneAtATime(() => passesAt(size))
   const depth = await blobAt(passes.depth)
   const generated = await generate(run, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
     buildRenderPrompt(run.workflow, { depthImageName, prompt: request.prompt, negativePrompt: request.negativePrompt ?? '', seed })
@@ -1015,6 +1147,12 @@ export const api: RoomfitEditorApi = {
   setAssetLabels,
   setAssetProduct,
   setLibraryFilter: (label) => update({ libraryFilter: labelInUse(editor.history.present, label) }),
+  setHousePlan,
+  setSite,
+  setBlueprint,
+  setBlueprintOpacity: (percent) => update({ blueprintOpacity: Math.min(100, Math.max(0, Math.round(percent))) }),
+  exteriorShot,
+  renderExterior,
   selectItem: (itemId) => select(editor.history.present.items.some(({ id }) => id === itemId) ? itemId : null),
   setActionLabel: (label) => {
     actionLabel = label

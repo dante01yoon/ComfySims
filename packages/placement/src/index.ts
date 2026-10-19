@@ -1,4 +1,4 @@
-import type { BoxRoom, Dimensions, FindSpotOutcome, Opening, PlacedItem, PlanRoom, Room, RoomLayout, Wall } from '../../schema/src/index.ts'
+import type { BoxRoom, Dimensions, FindSpotOutcome, Opening, PlacedItem, PlanRoom, Room, RoomLayout, Site, Wall } from '../../schema/src/index.ts'
 
 type Point = { x: number; z: number }
 type Footprint = { id: string; corners: Point[]; top: number }
@@ -89,7 +89,8 @@ function distanceToSegment(point: Point, a: Point, b: Point): number {
   return Math.hypot(point.x - (a.x + t * dx), point.z - (a.z + t * dz))
 }
 
-function inPolygon(point: Point, polygon: readonly Point[]): boolean {
+/** Whether a floor-plan point lies inside the polygon or on its edge. */
+export function inPolygon(point: Point, polygon: readonly Point[]): boolean {
   const edges = polygon.map((corner, index) => [corner, polygon[(index + 1) % polygon.length]!] as const)
   if (edges.some(([a, b]) => distanceToSegment(point, a, b) <= TOUCH_TOLERANCE_CM)) return true
   const crossings = edges.filter(([a, b]) => a.z > point.z !== b.z > point.z && point.x < a.x + ((point.z - a.z) * (b.x - a.x)) / (b.z - a.z))
@@ -274,4 +275,65 @@ export function snapPosition(position: Vec3, stepCm = 5): Vec3 {
 /** Snaps a rotation to the step and normalizes it to [0, 360). */
 export function snapRotation(degrees: number, stepDegrees = 15): number {
   return (((snap(degrees, stepDegrees) % 360) + 360) % 360) + 0
+}
+
+type Extent = { min: Point; max: Point }
+
+const SITE_MARGIN_CM = 500
+const TREE_CLEARANCE_CM = 250
+
+/** Floor-plan extent of the walls (or the box) in cm. */
+export function houseExtent(room: Room): Extent {
+  if (room.kind === 'box') return { min: { x: -room.width / 2, z: -room.depth / 2 }, max: { x: room.width / 2, z: room.depth / 2 } }
+  const xs = room.walls.flatMap((wall) => [wall.from.x, wall.to.x])
+  const zs = room.walls.flatMap((wall) => [wall.from.z, wall.to.z])
+  return { min: { x: Math.min(...xs), z: Math.min(...zs) }, max: { x: Math.max(...xs), z: Math.max(...zs) } }
+}
+
+/** The front door's centre and outward direction: the first door on the outer wall with the largest z, else the middle of the south edge. */
+export function frontDoor(room: Room): { point: Point; outward: Point } {
+  const extent = houseExtent(room)
+  const south = { point: { x: (extent.min.x + extent.max.x) / 2, z: extent.max.z }, outward: { x: 0, z: 1 } }
+  if (room.kind !== 'plan') return south
+  const onEdge = (wall: Wall) =>
+    (wall.from.x === wall.to.x && (wall.from.x === extent.min.x || wall.from.x === extent.max.x)) ||
+    (wall.from.z === wall.to.z && (wall.from.z === extent.min.z || wall.from.z === extent.max.z))
+  const middleZ = (wall: Wall) => (wall.from.z + wall.to.z) / 2
+  const doors = room.openings.flatMap((opening) => {
+    const wall = room.walls.find(({ id }) => id === opening.wallId)
+    return opening.kind === 'door' && wall && onEdge(wall) ? [{ opening, wall }] : []
+  })
+  const front = doors.reduce<(typeof doors)[number] | undefined>((best, door) => (best && middleZ(best.wall) >= middleZ(door.wall) ? best : door), undefined)
+  if (!front) return south
+  const { along, length } = wallAxis(front.wall)
+  const distance = Math.min(length, front.opening.offset + front.opening.width / 2)
+  const point = { x: front.wall.from.x + along.x * distance, z: front.wall.from.z + along.z * distance }
+  const normal = { x: -along.z + 0, z: along.x + 0 }
+  const center = { x: (extent.min.x + extent.max.x) / 2, z: (extent.min.z + extent.max.z) / 2 }
+  const outwards = (point.x - center.x) * normal.x + (point.z - center.z) * normal.z >= 0
+  return { point, outward: outwards ? normal : { x: -normal.x + 0, z: -normal.z + 0 } }
+}
+
+function pathToLotEdge({ point, outward }: { point: Point; outward: Point }, lot: Extent): Point[] {
+  const reach = (from: number, direction: number, low: number, high: number) =>
+    direction > 0 ? (high - from) / direction : direction < 0 ? (low - from) / direction : Infinity
+  const distance = Math.min(reach(point.x, outward.x, lot.min.x, lot.max.x), reach(point.z, outward.z, lot.min.z, lot.max.z))
+  return [point, { x: point.x + outward.x * distance + 0, z: point.z + outward.z * distance + 0 }]
+}
+
+function nearPath(tree: Point, path: readonly Point[]): boolean {
+  return path.slice(1).some((to, index) => distanceToSegment(tree, path[index]!, to) < TREE_CLEARANCE_CM)
+}
+
+/** The site a house gets when it has none: its bounds plus 5 m of grass, a path from the front door to the lot edge, and trees around the house. */
+export function defaultSite(room: Room): Site {
+  const house = houseExtent(room)
+  const grown = (by: number): Extent => ({ min: { x: house.min.x - by, z: house.min.z - by }, max: { x: house.max.x + by, z: house.max.z + by } })
+  const lot = grown(SITE_MARGIN_CM)
+  const ring = grown(TREE_CLEARANCE_CM)
+  const path = pathToLotEdge(frontDoor(room), lot)
+  const xs = [ring.min.x, (ring.min.x + ring.max.x) / 2, ring.max.x]
+  const zs = [ring.min.z, (ring.min.z + ring.max.z) / 2, ring.max.z]
+  const trees = xs.flatMap((x, column) => zs.flatMap((z, row) => (column === 1 && row === 1 ? [] : [{ x, z }]))).filter((tree) => !nearPath(tree, path))
+  return { lot: [lot.min, { x: lot.max.x, z: lot.min.z }, lot.max, { x: lot.min.x, z: lot.max.z }], ground: 'grass', trees, path }
 }

@@ -1,15 +1,16 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
-import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, Vector2, Vector3, type Material, type Object3D } from 'three'
+import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, SRGBColorSpace, Texture, Vector2, Vector3, type Material, type Object3D } from 'three'
 
-import { collisions, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
+import { collisions, houseExtent, outOfBounds, solidStretches } from '../../packages/placement/src/index.ts'
 import {
   AssetLabels,
   FitMode,
   ProductUrl,
   serializeLayout,
   type Asset,
+  type Blueprint,
   type BoxRoom,
   type PlacedItem,
   type PlanRoom,
@@ -24,13 +25,16 @@ import {
   attachControls,
   attachThree,
   beginDrag,
+  blueprintImage,
   cannotRun,
   closeRender,
+  dataUrlOf,
   endDrag,
   isFinished,
   loadUnknown,
   markCommitted,
   select,
+  setBlueprintHidden,
   snapshot,
   subscribe,
   wallCutCm
@@ -48,6 +52,7 @@ const floorPlane = new Plane(new Vector3(0, 1, 0), 0)
 const emphasisColors = { none: new Color(0x000000), selected: new Color(0x1f4f8f), problem: new Color(0xb3261e) }
 
 const WALL_PLASTER = '#efe4d1'
+const BLUEPRINT_ABOVE_FLOOR_CM = 1
 
 type Emphasis = keyof typeof emphasisColors
 
@@ -128,6 +133,31 @@ function PlanRoomView({ room, cut }: { room: PlanRoom; cut: number }) {
         </mesh>
       ))}
     </group>
+  )
+}
+
+function BlueprintUnderlay({ blueprint, visible, opacity }: { blueprint: Blueprint; visible: boolean; opacity: number }) {
+  const image = blueprintImage(blueprint.image)
+  const texture = useMemo(() => {
+    if (!image) return null
+    const loaded = new Texture(image)
+    loaded.colorSpace = SRGBColorSpace
+    loaded.needsUpdate = true
+    return loaded
+  }, [image])
+  if (!image || !texture) return null
+  const width = image.naturalWidth * blueprint.cmPerPixel
+  const depth = image.naturalHeight * blueprint.cmPerPixel
+  return (
+    <mesh
+      rotation-x={-Math.PI / 2}
+      position={[blueprint.origin.x + width / 2, BLUEPRINT_ABOVE_FLOOR_CM, blueprint.origin.z + depth / 2]}
+      visible={visible}
+      userData={{ sceneId: 'blueprint' }}
+    >
+      <planeGeometry args={[width, depth]} />
+      <meshBasicMaterial map={texture} transparent opacity={opacity / 100} depthWrite={false} />
+    </mesh>
   )
 }
 
@@ -300,6 +330,7 @@ function Panel({ hidden }: { hidden: boolean }) {
       ))}
       <h2>Room</h2>
       <div>{layout.name}: {roomSummary(layout.room)}</div>
+      <BlueprintPanel />
       <section aria-label="Selected">
         <h2>Selected</h2>
         {selectedId ? (
@@ -392,6 +423,71 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span>{label}</span>
       {children}
     </label>
+  )
+}
+
+function BlueprintNumber({ label, value, onCommit }: { label: string; value: number; onCommit: (value: number) => void }) {
+  const commitText = (text: string) => {
+    const parsed = Number(text)
+    if (text.trim() && Number.isFinite(parsed) && parsed !== value) onCommit(parsed)
+  }
+  return (
+    <Field label={label}>
+      <input
+        key={value}
+        type="number"
+        step="any"
+        defaultValue={value}
+        onBlur={(event) => commitText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commitText(event.currentTarget.value)
+        }}
+      />
+    </Field>
+  )
+}
+
+function BlueprintPanel() {
+  const { history, blueprintOpacity, blueprintHidden } = useSyncExternalStore(subscribe, snapshot)
+  const { blueprint, room } = history.present
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const apply = (next: Blueprint | null) => {
+    const outcome = api.setBlueprint(next)
+    setProblem(outcome.ok ? null : outcome.issues.map(({ message }) => message).join('; '))
+  }
+
+  const upload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    apply({ image: await dataUrlOf(file), cmPerPixel: blueprint?.cmPerPixel ?? 1, origin: blueprint?.origin ?? houseExtent(room).min })
+  }
+
+  return (
+    <section aria-label="Blueprint">
+      <h2>Blueprint</h2>
+      <Field label="Upload blueprint">
+        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} />
+      </Field>
+      {blueprint && (
+        <>
+          <Field label="Opacity">
+            <input type="range" min="0" max="100" value={blueprintOpacity} onChange={(event) => api.setBlueprintOpacity(Number(event.target.value))} />
+          </Field>
+          <BlueprintNumber label="Scale (cm per pixel)" value={blueprint.cmPerPixel} onCommit={(cmPerPixel) => apply({ ...blueprint, cmPerPixel })} />
+          <div className="size-row">
+            <BlueprintNumber label="Origin x (cm)" value={blueprint.origin.x} onCommit={(x) => apply({ ...blueprint, origin: { ...blueprint.origin, x } })} />
+            <BlueprintNumber label="Origin z (cm)" value={blueprint.origin.z} onCommit={(z) => apply({ ...blueprint, origin: { ...blueprint.origin, z } })} />
+          </div>
+          <div className="button-row">
+            <button aria-pressed={blueprintHidden} onClick={() => setBlueprintHidden(!blueprintHidden)}>Hide</button>
+            <button onClick={() => apply(null)}>Remove blueprint</button>
+          </div>
+        </>
+      )}
+      {problem && <div className="problem">{problem}</div>}
+    </section>
   )
 }
 
@@ -550,8 +646,9 @@ export function App() {
       <main className={studio ? 'viewport studio' : 'viewport'}>
         <Canvas shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
           <Bridge revision={editor.revision} />
+          {layout.blueprint && <BlueprintUnderlay blueprint={layout.blueprint} visible={!studio && !editor.blueprintHidden} opacity={editor.blueprintOpacity} />}
           {studio ? (
-            <StudioScene room={layout.room} />
+            <StudioScene layout={layout} />
           ) : (
             <>
               <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />

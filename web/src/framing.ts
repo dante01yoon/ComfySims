@@ -1,3 +1,4 @@
+import { inPolygon } from '../../packages/placement/src/index.ts'
 import type { Room } from '../../packages/schema/src/index.ts'
 import type { Vec3 } from '../../spec/contracts/editor-api.ts'
 
@@ -99,6 +100,29 @@ export function standingPoint(
     .filter((point) => inside(point) && clearOf(point, clearances))
   const distance = (point: { x: number; z: number }) => Math.hypot(point.x - centroid.x, point.z - centroid.z)
   return free.reduce((best, point) => (distance(point) < distance(best) ? point : best), free[0] ?? centroid)
+}
+
+const AERIAL_PITCH_DEG = 45
+const AERIAL_DISTANCE_PER_LOT_RADIUS = 1.9
+const STREET_EYE_CM = 160
+const STREET_TARGET_HEIGHT_CM = 140
+const STREET_LOT_MARGIN_CM = 50
+const STREET_DISTANCES_CM = Array.from({ length: 21 }, (_, index) => 1200 - index * 50)
+
+/** An aerial three-quarter camera from the south-east at 45° pitch, aimed at the house centre and far enough back to frame the lot. */
+export function aerialCamera(house: Bounds, lot: Bounds): { position: Vec3; target: Vec3 } {
+  const target = boundsCenter(house)
+  const distance = (Math.hypot(lot.max.x - lot.min.x, lot.max.z - lot.min.z) / 2) * AERIAL_DISTANCE_PER_LOT_RADIUS
+  const direction = compassDirection(STUDIO_AZIMUTH_DEG, AERIAL_PITCH_DEG)
+  return { position: { x: target.x + direction.x * distance, y: direction.y * distance, z: target.z + direction.z * distance }, target }
+}
+
+/** A street camera at 160 cm in front of the front door, as far back as the lot allows (up to 12 m), aimed at the house. */
+export function streetCamera(door: { point: { x: number; z: number }; outward: { x: number; z: number } }, lot: readonly { x: number; z: number }[], house: Vec3): { position: Vec3; target: Vec3 } {
+  const along = (distance: number) => ({ x: door.point.x + door.outward.x * distance, z: door.point.z + door.outward.z * distance })
+  const back = STREET_DISTANCES_CM.find((distance) => inPolygon(along(distance + STREET_LOT_MARGIN_CM), lot)) ?? STREET_DISTANCES_CM.at(-1)!
+  const { x, z } = along(back)
+  return { position: { x, y: STREET_EYE_CM, z }, target: { x: house.x, y: STREET_TARGET_HEIGHT_CM, z: house.z } }
 }
 
 /** The studio camera framing a floor-plan extent from the south-east, steeper for a single room so its walls do not hide it. */

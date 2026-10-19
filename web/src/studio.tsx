@@ -2,14 +2,14 @@ import { useFrame } from '@react-three/fiber'
 import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useSyncExternalStore } from 'react'
-import { Color, SRGBColorSpace, type DirectionalLight, type HemisphereLight, type PointLight } from 'three'
+import { Color, Shape, SRGBColorSpace, Vector2, type DirectionalLight, type HemisphereLight, type PointLight } from 'three'
 
 import { expectedSeconds, studioPrompt } from '../../packages/comfy/src/index.ts'
-import type { PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
-import type { Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
-import { api, cannotRun, snapshot, subscribe } from './editor.ts'
+import type { GroundMaterial, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
+import type { ExteriorShot, Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
+import { api, cannotRun, siteOf, snapshot, subscribe } from './editor.ts'
 import { seededRandom } from './floors.ts'
-import { boundsCenter, compassDirection, roomBounds, type Bounds } from './framing.ts'
+import { boundsCenter, compassDirection, polygonBounds, roomBounds, type Bounds } from './framing.ts'
 
 type Levels = Omit<Lighting, 'preset'>
 
@@ -21,9 +21,11 @@ const INTERIOR_INTENSITY_SCALE = 0.7
 const NIGHT_SKY = new Color('#7d8fb3')
 const SKY = new Color('#dfe6ee')
 const GROUND_BOUNCE = new Color('#6f6250')
-const GRASS = '#2d4a27'
-const LOT_MARGIN_CM = 820
-const WIDE_DOOR_CM = 200
+const GROUND_COLORS: Record<GroundMaterial, string> = { grass: '#2d4a27', gravel: '#9d968a', paving: '#b4afa6', soil: '#6b5440' }
+const SURROUNDINGS = '#5a5f4c'
+const SURROUNDINGS_MARGIN_CM = 2500
+const PATH_WIDTH_CM = 120
+const ROOF_THICKNESS_CM = 20
 
 const PRESET_BUTTONS: { preset: ScenePreset; label: string; dot: string }[] = [
   { preset: 'reading', label: 'Reading', dot: '#f3b562' },
@@ -133,47 +135,15 @@ function Lights({ room, bounds }: { room: Room; bounds: Bounds }) {
   )
 }
 
-type Path = { center: Vec3; normal: { x: number; z: number }; halfWidth: number; halfLength: number; wide: boolean }
+type Path = { center: Vec3; normal: { x: number; z: number }; halfWidth: number; halfLength: number }
 
-function onPerimeter(room: PlanRoom, bounds: Bounds, wallId: string): boolean {
-  const wall = room.walls.find(({ id }) => id === wallId)
-  if (!wall) return false
-  const sameEdge = (a: number, b: number, edge: number) => a === edge && b === edge
-  return (
-    sameEdge(wall.from.x, wall.to.x, bounds.min.x) ||
-    sameEdge(wall.from.x, wall.to.x, bounds.max.x) ||
-    sameEdge(wall.from.z, wall.to.z, bounds.min.z) ||
-    sameEdge(wall.from.z, wall.to.z, bounds.max.z)
-  )
-}
-
-function entrancePaths(room: Room, bounds: Bounds): Path[] {
-  if (room.kind !== 'plan') return []
-  const middle = boundsCenter(bounds)
-  return room.openings
-    .filter((opening) => opening.kind === 'door' && onPerimeter(room, bounds, opening.wallId))
-    .flatMap((opening): Path[] => {
-      const wall = room.walls.find(({ id }) => id === opening.wallId)
-      if (!wall) return []
-      const length = Math.hypot(wall.to.x - wall.from.x, wall.to.z - wall.from.z)
-      const along = (opening.offset + opening.width / 2) / length
-      const door = { x: wall.from.x + (wall.to.x - wall.from.x) * along, z: wall.from.z + (wall.to.z - wall.from.z) * along }
-      const perpendicular = { x: -(wall.to.z - wall.from.z) / length, z: (wall.to.x - wall.from.x) / length }
-      const outward = (door.x - middle.x) * perpendicular.x + (door.z - middle.z) * perpendicular.z
-      const normal = outward >= 0 ? perpendicular : { x: -perpendicular.x, z: -perpendicular.z }
-      const wide = opening.width >= WIDE_DOOR_CM
-      const halfLength = wide ? 380 : 260
-      const offset = room.wallThickness / 2 + halfLength
-      return [
-        {
-          center: { x: door.x + normal.x * offset, y: 0, z: door.z + normal.z * offset },
-          normal,
-          halfWidth: opening.width / 2 + (wide ? 40 : 25),
-          halfLength,
-          wide
-        }
-      ]
-    })
+function pathSegments(path: readonly { x: number; z: number }[]): Path[] {
+  return path.slice(1).flatMap((to, index) => {
+    const from = path[index]!
+    const length = Math.hypot(to.x - from.x, to.z - from.z)
+    if (length === 0) return []
+    return [{ center: { x: (from.x + to.x) / 2, y: 0, z: (from.z + to.z) / 2 }, normal: { x: (to.x - from.x) / length, z: (to.z - from.z) / length }, halfWidth: PATH_WIDTH_CM / 2, halfLength: length / 2 }]
+  })
 }
 
 function clearOfPaths(point: { x: number; z: number }, paths: readonly Path[], padding: number): boolean {
@@ -210,20 +180,25 @@ function scatter(bounds: Bounds, paths: readonly Path[], count: number, margin: 
   }).filter((plant) => clearOfPaths(plant, paths, 120))
 }
 
+function sitePlants(trees: readonly { x: number; z: number }[]): Plant[] {
+  const random = seededRandom(11)
+  return trees.map(({ x, z }) => ({ x, z, size: 0.75 + random() * 0.5, tone: random() }))
+}
+
 const LEAVES = ['#2f5a29', '#3a6a30', '#2a4f26']
 
-function Tree({ x, z, size, tone }: Plant) {
+function Tree({ plant: { x, z, size, tone }, index, smooth }: { plant: Plant; index: number; smooth: boolean }) {
   const trunk = 150 * size
   const crown = 150 * size
   return (
-    <group position={[x, 0, z]}>
+    <group position={[x, 0, z]} userData={{ sceneId: `site-tree-${index}` }}>
       <mesh position-y={trunk / 2} castShadow>
-        <cylinderGeometry args={[10 * size, 16 * size, trunk, 6]} />
+        <cylinderGeometry args={smooth ? [10 * size, 16 * size, trunk, 24] : [10 * size, 16 * size, trunk, 6]} />
         <meshStandardMaterial color="#5e4330" roughness={1} />
       </mesh>
       <mesh position-y={trunk + crown * 0.55} scale={[1, 1.15, 1]} castShadow>
-        <icosahedronGeometry args={[crown, 0]} />
-        <meshStandardMaterial color={LEAVES[Math.floor(tone * LEAVES.length)]} roughness={0.9} flatShading />
+        {smooth ? <sphereGeometry args={[crown, 48, 32]} /> : <icosahedronGeometry args={[crown, 0]} />}
+        <meshStandardMaterial color={LEAVES[Math.floor(tone * LEAVES.length)]} roughness={0.9} flatShading={!smooth} />
       </mesh>
     </group>
   )
@@ -239,40 +214,58 @@ function Shrub({ x, z, size, tone }: Plant) {
   )
 }
 
-function Landscape({ room, bounds }: { room: Room; bounds: Bounds }) {
-  const paths = useMemo(() => entrancePaths(room, bounds), [room, bounds])
-  const trees = useMemo(() => scatter(bounds, paths, 9, [380, 650], 11), [bounds, paths])
+function RoofSlab({ roof }: { roof: ExteriorShot['roof'] }) {
+  const { min, max, topCm } = roof
+  return (
+    <mesh position={[(min.x + max.x) / 2, topCm - ROOF_THICKNESS_CM / 2, (min.z + max.z) / 2]} castShadow>
+      <boxGeometry args={[max.x - min.x, ROOF_THICKNESS_CM, max.z - min.z]} />
+      <meshStandardMaterial color="#d9d6cf" roughness={0.9} />
+    </mesh>
+  )
+}
+
+function Landscape({ layout, bounds }: { layout: RoomLayout; bounds: Bounds }) {
+  const { exterior } = useSyncExternalStore(subscribe, snapshot)
+  const site = useMemo(() => siteOf(layout), [layout])
+  const lot = useMemo(() => new Shape(site.lot.map(({ x, z }) => new Vector2(x, -z))), [site.lot])
+  const lotBounds = polygonBounds(site.lot)
+  const paths = useMemo(() => pathSegments(site.path ?? []), [site.path])
+  const trees = useMemo(() => sitePlants(site.trees ?? []), [site.trees])
   const shrubs = useMemo(() => scatter(bounds, paths, 26, [80, 130], 23), [bounds, paths])
-  const center = boundsCenter(bounds)
+  const center = boundsCenter(lotBounds)
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} position={[center.x, -1, center.z]} receiveShadow>
-        <planeGeometry args={[bounds.max.x - bounds.min.x + 2 * LOT_MARGIN_CM, bounds.max.z - bounds.min.z + 2 * LOT_MARGIN_CM]} />
-        <meshStandardMaterial color={GRASS} roughness={1} />
+      <mesh rotation-x={-Math.PI / 2} position={[center.x, -2, center.z]} receiveShadow>
+        <planeGeometry args={[lotBounds.max.x - lotBounds.min.x + 2 * SURROUNDINGS_MARGIN_CM, lotBounds.max.z - lotBounds.min.z + 2 * SURROUNDINGS_MARGIN_CM]} />
+        <meshStandardMaterial color={SURROUNDINGS} roughness={1} />
       </mesh>
-      {paths.map(({ center: path, normal, halfWidth, halfLength, wide }) => (
+      <mesh rotation-x={-Math.PI / 2} position-y={-1} receiveShadow userData={{ sceneId: 'site-lot' }}>
+        <shapeGeometry args={[lot]} />
+        <meshStandardMaterial color={GROUND_COLORS[site.ground]} roughness={1} />
+      </mesh>
+      {paths.map(({ center: path, normal, halfWidth, halfLength }) => (
         <mesh key={`${path.x}|${path.z}`} position={[path.x, 0.5, path.z]} rotation-y={Math.atan2(normal.x, normal.z)} receiveShadow>
           <boxGeometry args={[halfWidth * 2, 2, halfLength * 2]} />
-          <meshStandardMaterial color={wide ? '#b4afa6' : '#cbc3b5'} roughness={0.95} />
+          <meshStandardMaterial color="#cbc3b5" roughness={0.95} />
         </mesh>
       ))}
-      {trees.map((plant) => (
-        <Tree key={`${plant.x}|${plant.z}`} {...plant} />
+      {trees.map((plant, index) => (
+        <Tree key={`${plant.x}|${plant.z}|${index}`} plant={plant} index={index} smooth={exterior !== null} />
       ))}
-      {shrubs.map((plant) => (
-        <Shrub key={`${plant.x}|${plant.z}`} {...plant} />
-      ))}
+      {exterior === null && shrubs.map((plant) => <Shrub key={`${plant.x}|${plant.z}`} {...plant} />)}
+      {exterior && <RoofSlab roof={exterior.roof} />}
     </group>
   )
 }
 
-/** Sun, warm interior lights, landscape, AO and filmic tone mapping around the room. */
-export function StudioScene({ room }: { room: Room }) {
+/** Sun, warm interior lights, the site (lot, ground, path, trees), AO and filmic tone mapping around the house. */
+export function StudioScene({ layout }: { layout: RoomLayout }) {
+  const { room } = layout
   const bounds = useMemo(() => roomBounds(room), [room])
   return (
     <>
       <Lights room={room} bounds={bounds} />
-      <Landscape room={room} bounds={bounds} />
+      <Landscape layout={layout} bounds={bounds} />
       <EffectComposer multisampling={4}>
         <N8AO aoRadius={60} distanceFalloff={1.2} intensity={2.2} quality="performance" halfRes />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
@@ -312,6 +305,16 @@ export function PresetBar({ room }: { room: Room }) {
       ))}
       <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: studioPrompt(zoneName, scene) })}>
         Render this view
+      </button>
+      <button
+        disabled={noRender !== undefined}
+        title={noRender ?? 'Photoreal exterior renders of the house on its site, from the air and from the street'}
+        onClick={() => {
+          void api.renderExterior('aerial')
+          void api.renderExterior('street')
+        }}
+      >
+        Render exterior
       </button>
       <button
         disabled={noPanorama !== undefined}

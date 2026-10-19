@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -8,12 +8,14 @@ import { z } from 'zod'
 
 import { studioPrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
-import { FitMode, type AssetProduct, type RoomLayout } from '../packages/schema/src/index.ts'
-import type { EditorState, EditorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
+import { FitMode, PlanRoom, Site, type AssetProduct, type RoomLayout } from '../packages/schema/src/index.ts'
+import type { EditorState, EditorView, ExteriorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
 import { editorBridge, type BridgedApi } from './editor.ts'
 
 const SCENE_PRESETS = ['reading', 'work', 'movie', 'evening'] as const satisfies readonly ScenePreset[]
 const VIEWS = ['editor', 'studio'] as const satisfies readonly EditorView[]
+const EXTERIOR_VIEWS = ['aerial', 'street'] as const satisfies readonly ExteriorView[]
+const BLUEPRINT_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
 const RENDERS_DIR = fileURLToPath(new URL('../.harness/renders/', import.meta.url))
 
 const call = editorBridge({
@@ -30,6 +32,10 @@ function editorFor(tool: string) {
 function succeeded<T extends Outcome>(outcome: T): Extract<T, { ok: true }> {
   if (!outcome.ok) throw new Error(outcome.message ?? outcome.reason ?? 'the editor refused')
   return outcome as Extract<T, { ok: true }>
+}
+
+function issuesText(issues: readonly { path: string; message: string }[]): string {
+  return issues.map(({ path, message }) => `${path || '(root)'}: ${message}`).join('\n')
 }
 
 function json(value: unknown): CallToolResult {
@@ -247,6 +253,69 @@ server.registerTool(
     if ((renderJobId === undefined) === (path === undefined)) throw new Error('Give exactly one of renderJobId or path.')
     const source = path === undefined ? { kind: 'render' as const, jobId: renderJobId! } : { kind: 'upload' as const, fileName: basename(path), imageBase64: (await readFile(path)).toString('base64') }
     return json({ jobId: succeeded(await editorFor('photo3d')('photo3d', source)).jobId })
+  }
+)
+
+server.registerTool(
+  'set_house_plan',
+  {
+    description:
+      'Replace the house plan (walls, openings, rooms) with a PlanRoom: { kind: "plan", wallHeight, wallThickness, walls: [{ id, from: { x, z }, to }], openings: [{ wallId, kind: "door" | "window", offset, width, height, sill }], zones: [{ id, name, polygon, floor }] }, all in cm. An invalid plan is rejected with its issues and nothing changes. Items whose centre is outside every new room go back to the library and are listed in movedToLibrary. Undoable in the editor.',
+    inputSchema: { room: z.record(z.string(), z.unknown()) }
+  },
+  async ({ room }) => {
+    const plan = PlanRoom.safeParse(room)
+    if (!plan.success) throw new Error(issuesText(plan.error.issues.map(({ path, message }) => ({ path: path.join('.'), message }))))
+    const outcome = await editorFor('set_house_plan')('setHousePlan', plan.data)
+    if (!outcome.ok) throw new Error(issuesText(outcome.issues))
+    return json({ movedToLibrary: outcome.movedToLibrary })
+  }
+)
+
+server.registerTool(
+  'set_site',
+  {
+    description:
+      'Set the plot of land around the house, in the house\'s coordinates (cm): { lot: [{ x, z }, …] (every wall end must be inside), ground: "grass" | "gravel" | "paving" | "soil", trees?: [{ x, z }], path?: [{ x, z }, …], houseRotationDeg?, northDeg? }. The studio draws it and exterior renders stand on it. Undoable in the editor.',
+    inputSchema: { site: z.record(z.string(), z.unknown()) }
+  },
+  async ({ site }) => {
+    const parsed = Site.safeParse(site)
+    if (!parsed.success) throw new Error(issuesText(parsed.error.issues.map(({ path, message }) => ({ path: path.join('.'), message }))))
+    const outcome = await editorFor('set_site')('setSite', parsed.data)
+    if (!outcome.ok) throw new Error(issuesText(outcome.issues))
+    return json({ site: parsed.data })
+  }
+)
+
+server.registerTool(
+  'set_blueprint',
+  {
+    description:
+      'Show a floor-plan image (PNG, JPEG or WebP file at path, at most 2 MB) under the plan so mismatches are visible: its pixel (0, 0) sits at (originX, originZ) cm and each pixel is cmPerPixel wide. Saved with the layout.',
+    inputSchema: { path: z.string().min(1), cmPerPixel: z.number().positive(), originX: z.number(), originZ: z.number() }
+  },
+  async ({ path, cmPerPixel, originX, originZ }) => {
+    const mime = BLUEPRINT_TYPES[extname(path).toLowerCase()]
+    if (!mime) throw new Error(`The blueprint must be a PNG, JPEG or WebP file, not ${basename(path)}.`)
+    const image = `data:${mime};base64,${(await readFile(path)).toString('base64')}`
+    const outcome = await editorFor('set_blueprint')('setBlueprint', { image, cmPerPixel, origin: { x: originX, z: originZ } })
+    if (!outcome.ok) throw new Error(issuesText(outcome.issues))
+    return json({ path, cmPerPixel, origin: { x: originX, z: originZ } })
+  }
+)
+
+server.registerTool(
+  'render_exterior',
+  {
+    description: 'Render the house on its site from outside through ComfyUI: "aerial" (three-quarter view from the south-east) or "street" (eye level in front of the front door). Waits for the job; returns the image and the path of the saved PNG.',
+    inputSchema: { view: z.enum(EXTERIOR_VIEWS) }
+  },
+  async ({ view }) => {
+    const editor = editorFor('render_exterior')
+    const { jobId, image } = succeeded(await editor('renderExterior', view))
+    const data = await editor('base64At', image)
+    return { content: [...json({ jobId, path: await saveRender(jobId, data) }).content, { type: 'image', data, mimeType: 'image/png' }] }
   }
 )
 
