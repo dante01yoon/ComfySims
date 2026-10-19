@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 
 const OUT = process.env.DEMO_OUT ?? 'demo/out/agent'
 const DONE = `${OUT}/agent-done`
-const layout = JSON.parse(readFileSync('demo/out/house/furnished-layout.json', 'utf8'))
+const layout = JSON.parse(readFileSync(process.env.DEMO_LAYOUT ?? 'demo/out/house/furnished-layout.json', 'utf8'))
 mkdirSync(`${OUT}/video`, { recursive: true })
 rmSync(DONE, { force: true })
 const started = Date.now()
@@ -15,7 +15,7 @@ await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')
 await page.evaluate(() => window.roomfit.ready())
 await page.evaluate((l) => window.roomfit.load(l), layout)
 await page.waitForFunction(async () => (await window.roomfit.scene()).every((item) => item.meshLoaded), null, { timeout: 300_000 })
-await page.evaluate(() => { window.roomfit.setView('studio'); window.roomfit.setScene('reading') })
+await page.evaluate((view) => { window.roomfit.setView(view); window.roomfit.setScene('reading') }, process.env.DEMO_VIEW ?? 'studio')
 writeFileSync(`${OUT}/editor-ready`, String(Date.now()))
 console.log('editor ready; waiting for the agent')
 const timeline = []
@@ -23,7 +23,7 @@ let last = ''
 while (!existsSync(DONE)) {
   const snapshot = await page.evaluate(() => {
     const s = window.roomfit.state()
-    return JSON.stringify({ agent: s.agentConnected, focused: s.focusedZone, items: s.layout.items.length, jobs: s.jobs.map((job) => `${job.title}:${job.steps.at(-1)?.status}`), undo: s.undoLabels.slice(-3) })
+    return JSON.stringify({ agent: s.agentConnected, view: s.view, room: s.layout.room.kind === 'plan' ? s.layout.room.walls.length : 0, blueprint: Boolean(s.layout.blueprint), site: Boolean(s.layout.site), focused: s.focusedZone, items: s.layout.items.length, jobs: s.jobs.map((job) => `${job.title}:${job.steps.at(-1)?.status}`), undo: s.undoLabels.slice(-3) })
   })
   if (snapshot !== last) { timeline.push({ t: (Date.now() - started) / 1000, ...JSON.parse(snapshot) }); last = snapshot }
   await page.waitForTimeout(500)
