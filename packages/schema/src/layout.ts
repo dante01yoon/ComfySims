@@ -99,12 +99,43 @@ export const Asset = z.strictObject({
   labels: AssetLabels.optional()
 })
 
+export const GroundMaterial = z.enum(['grass', 'gravel', 'paving', 'soil'])
+
+/** The plot of land around the house, in the house's coordinates (cm). */
+export const Site = z.strictObject({
+  lot: z.array(Point).min(3),
+  ground: GroundMaterial,
+  houseRotationDeg: z.number().finite().min(0).lt(360).optional(),
+  northDeg: z.number().finite().min(0).lt(360).optional(),
+  trees: z.array(Point).max(60).optional(),
+  path: z.array(Point).min(2).optional()
+})
+
+/** A floor-plan image drawn under the plan: pixel (0, 0) sits at `origin`, each pixel is `cmPerPixel` wide. */
+export const Blueprint = z.strictObject({
+  image: z.string().regex(/^data:image\/(png|jpeg|webp);base64,/).max(2_800_000),
+  cmPerPixel: z.number().finite().positive(),
+  origin: Point
+})
+
 export const PlacedItem = z.strictObject({
   id: z.string().min(1),
   assetId: z.string().min(1),
   position: z.strictObject({ x: centimeters, y: centimeters, z: centimeters }),
   rotationY: z.number().finite().min(0).lt(360)
 })
+
+function insidePolygon(point: { x: number; z: number }, polygon: readonly { x: number; z: number }[]): boolean {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i]!
+    const b = polygon[j]!
+    const onEdge = Math.abs((b.x - a.x) * (point.z - a.z) - (b.z - a.z) * (point.x - a.x)) < 1e-6 && point.x >= Math.min(a.x, b.x) - 1e-6 && point.x <= Math.max(a.x, b.x) + 1e-6 && point.z >= Math.min(a.z, b.z) - 1e-6 && point.z <= Math.max(a.z, b.z) + 1e-6
+    if (onEdge) return true
+    if (a.z > point.z !== b.z > point.z && point.x < ((b.x - a.x) * (point.z - a.z)) / (b.z - a.z) + a.x) inside = !inside
+  }
+  return inside
+}
 
 function duplicateIds(entries: readonly { id: string }[]): string[] {
   const seen = new Set<string>()
@@ -123,7 +154,9 @@ export const RoomLayout = z
     units: z.literal('cm'),
     room: Room,
     assets: z.array(Asset),
-    items: z.array(PlacedItem)
+    items: z.array(PlacedItem),
+    site: Site.optional(),
+    blueprint: Blueprint.optional()
   })
   .superRefine((layout, ctx) => {
     for (const id of duplicateIds(layout.assets)) {
@@ -154,6 +187,13 @@ export const RoomLayout = z
         }
       })
     }
+    if (layout.site && layout.room.kind === 'plan') {
+      const lot = layout.site.lot
+      const corners = layout.room.walls.flatMap((wall) => [wall.from, wall.to])
+      if (corners.some((corner) => !insidePolygon(corner, lot))) {
+        ctx.addIssue({ code: 'custom', path: ['site', 'lot'], message: 'the house does not fit inside its lot' })
+      }
+    }
     const assetIds = new Set(layout.assets.map((asset) => asset.id))
     layout.items.forEach((item, index) => {
       if (!assetIds.has(item.assetId)) {
@@ -180,6 +220,9 @@ export type Asset = z.infer<typeof Asset>
 export type AssetProduct = z.infer<typeof AssetProduct>
 export type PlacedItem = z.infer<typeof PlacedItem>
 export type RoomLayout = z.infer<typeof RoomLayout>
+export type Site = z.infer<typeof Site>
+export type Blueprint = z.infer<typeof Blueprint>
+export type GroundMaterial = z.infer<typeof GroundMaterial>
 
 export type ParseOutcome =
   | { ok: true; layout: RoomLayout }

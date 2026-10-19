@@ -15,7 +15,8 @@
     "web:build:nodepack": "vite build web --base /roomfit/ --outDir ../nodes/roomfit/editor --emptyOutDir",
     "comfy:snapshot": "node harness/tools/snapshot-object-info.mjs",
     "see": "node harness/tools/see.mjs",
-    "mcp": "tsx mcp/server.ts"
+    "mcp": "tsx mcp/server.ts",
+    "plan-diff": "tsx harness/tools/plan-diff.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.2.1",

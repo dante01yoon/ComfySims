@@ -430,6 +430,131 @@
         ],
         "additionalProperties": false
       }
+    },
+    "site": {
+      "type": "object",
+      "properties": {
+        "lot": {
+          "minItems": 3,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "ground": {
+          "type": "string",
+          "enum": [
+            "grass",
+            "gravel",
+            "paving",
+            "soil"
+          ]
+        },
+        "houseRotationDeg": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 360
+        },
+        "northDeg": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 360
+        },
+        "trees": {
+          "maxItems": 60,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "path": {
+          "minItems": 2,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "lot",
+        "ground"
+      ],
+      "additionalProperties": false
+    },
+    "blueprint": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string",
+          "maxLength": 2800000,
+          "pattern": "^data:image\\/(png|jpeg|webp);base64,"
+        },
+        "cmPerPixel": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "z"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "image",
+        "cmPerPixel",
+        "origin"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

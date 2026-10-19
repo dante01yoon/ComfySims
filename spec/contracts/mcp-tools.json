@@ -18,6 +18,10 @@
   "get_jobs": { "required": [], "properties": {} },
   "view_360": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
   "get_backend": { "required": [], "properties": {} },
-  "set_asset_labels": { "required": ["assetId", "labels"], "properties": { "assetId": "string", "labels": "array" } }
+  "set_asset_labels": { "required": ["assetId", "labels"], "properties": { "assetId": "string", "labels": "array" } },
+  "set_house_plan": { "required": ["room"], "properties": { "room": "object" } },
+  "set_site": { "required": ["site"], "properties": { "site": "object" } },
+  "set_blueprint": { "required": ["path", "cmPerPixel", "originX", "originZ"], "properties": { "path": "string", "cmPerPixel": "number", "originX": "number", "originZ": "number" } },
+  "render_exterior": { "required": ["view"], "properties": { "view": "string" } }
  }
 }

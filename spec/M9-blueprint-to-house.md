@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Draft |
+| Status | Approved (2026-10-18) |
 | Date | 2026-10-18 |
 | Owner | Dante |
 | Decisions | — |
@@ -53,31 +53,45 @@ Non-goals (M9)
 
 - `set_house_plan(room)` accepts the `PlanRoom` schema; invalid plans are rejected with the schema issues (nothing changes). Applying is one undo step labelled `mcp:set_house_plan`.
 - After a plan change, an item stays when its footprint centre is inside a zone of the new plan; otherwise it is removed from the house (its asset stays in the library) and listed in the result as `movedToLibrary`.
-- Site: lot polygon in cm in the same coordinates as the house, ground `grass | gravel | paving | soil`, `houseRotationDeg`, optional `trees` (positions) and `path` (polyline), `northDeg`. The house footprint must lie inside the lot. Default site when none is set: house bounds + 5 m on each side, grass, a path from the front door to the lot edge, deterministic trees.
-- Exterior views: aerial = 45° pitch from the south-east at a distance that frames the lot; street = eye height 160 cm from the lot edge facing the front door. Depth passes include the ground and trees.
+- Site: lot polygon in cm in the same coordinates as the house, ground `grass | gravel | paving | soil`, `houseRotationDeg`, optional `trees` (positions) and `path` (polyline), `northDeg`. Every wall end must lie inside (or on) the lot.
+- Default site (`defaultSite(room)` in `packages/placement`, used when the layout has none, and shown as `state().site`): the walls' bounding box + 500 cm on each side, `grass`, a path from the centre of the front door — the first door in the openings list on the outer wall with the largest z — straight to the lot edge, and trees placed deterministically inside the lot and at least 100 cm outside the house's bounding box.
+- The studio draws the lot (scene item `site-lot`, bounds = lot bounds), the ground material, and one tree per site tree (`site-tree-<index>`).
+- Exterior shots (`exteriorShot(view)`): a flat roof slab over the walls' bounding box with its top at wall height + 20 cm; aerial = pitch 40–50° from the south-east, looking at the house centre, framing the lot; street = eye 160 cm, on the lot outside the house, in front of the front door, looking at the house. In exterior depth passes trees are smooth canopies (sphere on a trunk), not the studio's low-poly shapes.
+- "Render exterior" queues two render jobs, "Exterior render · Aerial" and "Exterior render · Street", through `render-from-depth` with a prompt that starts with "Exterior architectural photograph".
 - Blueprint underlay: stored in the layout as `blueprint: { image (data URL ≤ 2 MB), cmPerPixel, origin: { x, z } }` so a reload keeps it.
 
 ## 6. Contract and data changes
 
 - `packages/schema`: `Site`, `Blueprint`; `RoomLayout.site?`, `RoomLayout.blueprint?`.
-- Editor API: `setHousePlan(room)`, `setSite(site)`, `setBlueprint(blueprint | null)`, `renderExterior(view)`; `state().blueprintOpacity`.
-- MCP: `set_house_plan`, `set_site`, `set_blueprint({ path, cmPerPixel, origin })`, `render_exterior({ view })`.
+- Editor API: `setHousePlan(room)`, `setSite(site | null)`, `setBlueprint(blueprint | null)`, `setBlueprintOpacity(percent)`, `exteriorShot(view)`, `renderExterior(view)`; `state().site` (effective), `state().blueprintOpacity` (default 50). The underlay is the scene item `blueprint`.
+- MCP: `set_house_plan({ room })` → `{ movedToLibrary }`, `set_site({ site })`, `set_blueprint({ path, cmPerPixel, originX, originZ })`, `render_exterior({ view })` → image + saved path.
 - Harness: `pnpm plan-diff <a.json> <b.json>` — wall endpoint, opening (kind, centre, width) and zone errors in cm.
 
 ## 7. ComfyUI workflows
 
-Exterior renders reuse `render-from-depth` with an exterior prompt (house, materials, ground, sky). Spike needed before approval: one aerial and one street render of the demo house on the default site to confirm the depth-conditioned look (≈ 2 Cloud renders).
+Exterior renders reuse `render-from-depth` with an exterior prompt (house, materials, ground, sky).
+
+### Spike result (2026-10-18)
+
+Demo house, no site yet, studio camera set by hand; Comfy Cloud, seed 7, 1024 × 576 (`demo/spike-exterior.mjs`, `docs/spikes/m9/exterior-spike.png`).
+
+| View | Time | Result |
+| --- | --- | --- |
+| aerial | 16.7 s | the house renders open-topped — the depth has no roof, so interior walls show from above |
+| street | 11.4 s | convincing: the model invents a roof and cladding over the walls |
+
+Both: the studio's low-poly trees come out as black polyhedra. Hence two rules in §5: a flat roof slab in exterior shots, and smooth tree canopies in exterior depth passes.
 
 ## 8. Acceptance criteria
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-83 | planned | The layout schema accepts a site and a blueprint, rejects a house outside its lot, and defaults a site from the house bounds |
-| AC-84 | planned | `set_house_plan` applies a valid plan undoably, rejects an invalid one with its issues, keeps items inside new rooms and reports the rest as moved to the library |
-| AC-85 | planned | The studio draws the lot, ground and trees from the site; depth passes include the ground |
-| AC-86 | planned | The blueprint underlay draws aligned under the plan (a known pixel lands on its cm position) with adjustable opacity, and survives save/load |
-| AC-87 | planned | "Render exterior" queues aerial and street renders with exterior prompts and the site in the depth pass |
-| AC-88 | planned | `pnpm plan-diff` reports 0 for identical plans and the right per-element errors for shifted walls and openings |
+| AC-83 | active | The layout schema accepts a site and a blueprint, rejects a house outside its lot, and defaults a site from the house bounds |
+| AC-84 | active | `set_house_plan` applies a valid plan undoably, rejects an invalid one with its issues, keeps items inside new rooms and reports the rest as moved to the library |
+| AC-85 | active | The studio draws the lot and trees from the site (default when none): `site-lot` and `site-tree-<i>` in the scene at their positions; an invalid site is rejected and changes nothing |
+| AC-86 | active | The blueprint underlay draws aligned under the plan (a known pixel lands on its cm position) with adjustable opacity, and survives save/load |
+| AC-87 | active | Exterior shots carry a roof slab at wall height + 20 cm, an aerial camera at 40–50° pitch and a street camera at 160 cm on the lot; "Render exterior" queues both renders with exterior prompts |
+| AC-88 | active | `pnpm plan-diff` reports 0 for identical plans and the right per-element errors for shifted walls and openings |
 | AC-89 | manual | Recording: Claude Code gets a floor-plan image, builds the house through the roomfit MCP, sets the site, and renders aerial and street views on Comfy Cloud |
 
 ## 9. Test plan
@@ -95,12 +109,14 @@ Risks
 - Real blueprints are messier than the spike's; the underlay and `plan-diff` make errors visible and measurable, and the agent can correct with another call.
 - Exterior renders of a cut-away low-poly house may look like a model; the spike decides whether a simple roof massing is needed.
 
-Open questions (recommended answers in bold)
-1. Who reads the blueprint: **an agent through the roomfit MCP** (no extra cost, works today) vs inside the app through a Comfy Cloud vision LLM node (paid API node, works without an agent).
-2. Furniture after a plan change: **keep items inside rooms, move the rest to the library** vs clear the house.
-3. Site source: **from the user/agent, else a default of house + 5 m** vs require a site.
-4. Exterior views: **aerial three-quarter + street** vs aerial only.
+Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approve M9 on the recommended answers and implement it, including the exterior render spike"):
+1. An agent reads the blueprint through the roomfit MCP.
+2. After a plan change, items inside rooms stay; the rest go to the library.
+3. The site comes from the user or agent, else a default of house bounds + 5 m.
+4. Exterior views: aerial three-quarter and street.
 
 ## Change log
 
 - 2026-10-18 Draft, from Dante's request (blueprint → house, land and design renders); spike on a synthetic blueprint: exact extraction.
+- 2026-10-18 Approved on the recommended answers.
+- 2026-10-18 Exterior spike (roofless aerial, polyhedral trees → roof slab and smooth canopies); spec session: schema (`Site`, `Blueprint`), contracts, `plan-diff`, blueprint fixture, AC-83~88 tests; ACs active.

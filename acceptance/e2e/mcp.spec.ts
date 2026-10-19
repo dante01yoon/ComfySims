@@ -141,6 +141,30 @@ test('AC-92 add_product with place false adds to the library only and returns th
   expect(state.layout.assets.some((asset) => asset.id === assetId)).toBe(true)
 })
 
+test('AC-84 set_house_plan applies a plan undoably, moves items outside its rooms to the library, and rejects an invalid plan', async ({ page }) => {
+  const withoutGarage = structuredClone(house.room) as Extract<RoomLayout['room'], { kind: 'plan' }>
+  withoutGarage.zones = withoutGarage.zones.filter((zone) => zone.id !== 'garage')
+  const applied = await call('set_house_plan', { room: withoutGarage })
+  expect(applied.isError).toBe(false)
+  expect(json(applied.content).movedToLibrary).toContain('item-car')
+  const state = await page.evaluate(() => window.roomfit.state())
+  expect(state.layout.items.some((item) => item.id === 'item-car')).toBe(false)
+  expect(state.layout.assets.some((asset) => asset.id === house.items.find((item) => item.id === 'item-car')!.assetId)).toBe(true)
+  expect(state.layout.items.some((item) => item.id === 'item-sofa')).toBe(true)
+  expect(state.undoLabels.at(-1)).toBe('mcp:set_house_plan')
+
+  const invalid = await call('set_house_plan', { room: { ...withoutGarage, zones: [] } })
+  expect(invalid.isError).toBe(true)
+  expect(invalid.content[0]!.text).toMatch(/zones/)
+
+  expect((await call('set_blueprint', { path: 'fixtures/blueprints/synthetic-house.png', cmPerPixel: 1.111, originX: -877.8, originZ: -677.8 })).isError).toBe(false)
+  expect((await page.evaluate(() => window.roomfit.save())).blueprint?.cmPerPixel).toBeCloseTo(1.111, 3)
+  expect((await call('set_site', { site: { lot: [{ x: -1000, z: -800 }, { x: 1000, z: -800 }, { x: 1000, z: 900 }, { x: -1000, z: 900 }], ground: 'paving' } })).isError).toBe(false)
+  const exterior = await call('render_exterior', { view: 'street' })
+  expect(exterior.isError).toBe(false)
+  expect(exterior.content.find((part) => part.type === 'image')?.mimeType).toBe('image/png')
+})
+
 test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
   const closeCode = (url: string, headers: Record<string, string> = {}) => new Promise<number>((resolve) => {
     const socket = new WebSocket(url, { headers })

@@ -60,3 +60,11 @@ export type M7Checks = [
   Assert<Equal<EditorState['libraryFilter'], string | null>>,
   Assert<Equal<NonNullable<RoomLayout['assets'][number]['product']>, AssetProduct>>
 ]
+
+import type { Site } from '../packages/schema/src/index.ts'
+import type { defaultSite } from '../packages/placement/src/index.ts'
+
+export type M9Checks = [
+  Assert<Equal<ReturnType<typeof defaultSite>, Site>>,
+  Assert<Equal<EditorState['site'], Site>>
+]

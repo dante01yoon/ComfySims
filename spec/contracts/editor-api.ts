@@ -1,4 +1,4 @@
-import type { BackendKind, Collision, FitMode, FitReport, Job, JobKind, OutOfBoundsReason, Photo3dSource, RoomLayout } from '../../packages/schema/src/index.ts'
+import type { BackendKind, Blueprint, Collision, FitMode, FitReport, Job, JobKind, OutOfBoundsReason, Photo3dSource, PlanRoom, RoomLayout, Site } from '../../packages/schema/src/index.ts'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -25,6 +25,8 @@ export type EditorState = {
   viewer360: Viewer360 | null
   backend: BackendState
   libraryFilter: string | null
+  site: Site
+  blueprintOpacity: number
   undoLabels: string[]
   agentConnected: boolean
   wallCutCm: number
@@ -48,6 +50,13 @@ export type BackendState = {
 
 /** The workflow a job ran: its file under workflows/, the backend, and the exact API graph submitted. */
 export type JobWorkflow = { file: string; backend: BackendKind; submitted: Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }> }
+
+export type ExteriorView = 'aerial' | 'street'
+
+/** The camera and roof slab an exterior shot uses (roof top = wall height + 20 cm over the walls' bounding box). */
+export type ExteriorShot = { camera: { position: Vec3; target: Vec3 }; roof: { topCm: number; min: { x: number; z: number }; max: { x: number; z: number } } }
+
+export type Issues = { path: string; message: string }[]
 
 export type RenderPasses = { depth: string; normal: string; mask: string }
 
@@ -126,6 +135,12 @@ export type RoomfitEditorApi = {
   setAssetProduct(assetId: string, fields: { url?: string | null; brand?: string | null; store?: string | null }): { ok: true } | { ok: false; reason: 'unknown-asset' | 'invalid-url'; message: string }
   setLibraryFilter(label: string | null): void
   selectItem(itemId: string | null): void
+  setHousePlan(room: PlanRoom): { ok: true; movedToLibrary: string[] } | { ok: false; issues: Issues }
+  setSite(site: Site | null): { ok: true } | { ok: false; issues: Issues }
+  setBlueprint(blueprint: Blueprint | null): { ok: true } | { ok: false; issues: Issues }
+  setBlueprintOpacity(percent: number): void
+  exteriorShot(view: ExteriorView): ExteriorShot
+  renderExterior(view: ExteriorView): Promise<{ ok: true; jobId: string; image: string } | ComfyFailure>
 }
 
 declare global {
