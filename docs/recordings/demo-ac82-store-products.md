@@ -14,7 +14,7 @@ Real run: `pnpm web:dev` on `https://cloud.comfy.org`, the furnished house with 
 
 | Step | Result |
 | --- | --- |
-| Add the HULALA through the form (photo, size, link, brand, store, label) and the other two via the API, all into the garage | three Cloud product jobs in parallel; all done 76 s after the click (63 s, 69 s, 77 s per job) |
+| Add the HULALA through the form (photo, size, link, brand, store, label) and the other two via the API, all into the garage | three Cloud product jobs in parallel; all done 78 s after the click (63 s, 69 s, 77 s per job) |
 | Fit | HULALA `auto` (distortion 1.00); Baxton `exact` 1.23 and DOPEDIO `exact` 1.21, both flagged (> 1.15) — the generated models' proportions differ from the listing by about a fifth |
 | Garage | the three sofas side by side at their listed sizes |
 | Filter by label "living-wall candidates" | library shows the three |
