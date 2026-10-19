@@ -50,6 +50,10 @@ roomfit is built spec-first by coding agents inside a harness, and the whole pro
 - `docs/recordings/` — each implementation session (prompt, time, cost, what the agent reported) and the demos.
 - `docs/journal/` — the build diary (Korean).
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md): spec-first, `pnpm verify` as the judge, and how agent sessions fit in. The harness is described in [docs/harness.md](docs/harness.md).
+
 ## License
 
 GPL-3.0, same as ComfyUI. See [LICENSE](LICENSE).

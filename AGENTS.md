@@ -4,8 +4,8 @@ Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-si
 
 ## Start here
 
-1. Read the active milestone spec: `spec/M1-scaled-furniture.md`. It is the definition of done.
-2. Read `docs/adr/` for decisions you must not silently reverse.
+1. Read the spec you are working on in `spec/` (M1–M7 are implemented; each spec's AC table is the definition of done). `spec/README.md` explains the statuses.
+2. Read `docs/adr/` for decisions you must not silently reverse, and `docs/harness.md` for how you are checked.
 3. Run `pnpm verify` before and after your change. It prints which acceptance criteria (ACs) pass.
 
 ## Two kinds of session
@@ -23,10 +23,14 @@ Real-scale furniture for ComfyUI: product photo + listed dimensions → exact-si
 ## Layout
 
 - `packages/schema` — room layout contract (zod). `pnpm schema:export` regenerates `spec/contracts/room-layout.schema.json`.
+- `packages/` — fit, placement, ComfyUI client (`packages/comfy`).
+- `web/` — the editor and home studio (React + react-three-fiber); its API is `window.roomfit` (`spec/contracts/editor-api.ts`).
+- `mcp/` — the roomfit MCP server (`pnpm mcp`), bridged to the open editor.
+- `nodes/roomfit` — the ComfyUI node pack (Python).
+- `workflows/` — ComfyUI workflows; `workflows/sets.json` picks one per backend and job kind.
 - `acceptance/` — one file per area; test names start with the AC id.
-- `harness/` — `verify.mjs`, hooks, measuring tools, and the harness's own tests.
+- `harness/` — `verify.mjs`, hooks, fakes, measuring tools, and the harness's own tests.
 - `fixtures/` — shared test inputs every agent sees the same way.
-- Planned: `nodes/` (ComfyUI node pack, Python), `web/` (room editor), `workflows/` (ComfyUI workflow JSON).
 
 ## Style
 
