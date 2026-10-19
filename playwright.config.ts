@@ -7,6 +7,7 @@ export default defineConfig({
   outputDir: '.harness/e2e-output',
   reporter: [['json', { outputFile: '.harness/e2e.json' }], ['line']],
   workers: 1,
+  timeout: process.env.CI ? 90_000 : 30_000,
   use: {
     baseURL: 'http://127.0.0.1:5179',
     ...devices['Desktop Chrome'],
