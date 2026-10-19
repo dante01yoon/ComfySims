@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../../harness/tools/lint-workflow.ts'
-import { type BackendKind, DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type Job, type JobKind } from '../../schema/src/index.ts'
+import { inPolygon } from '../../placement/src/index.ts'
+import { type BackendKind, DEFAULT_EXPECTED_SECONDS, type Dimensions, type FitMode, type FloorMaterial, type Job, type JobKind, type RoomLayout, type Zone } from '../../schema/src/index.ts'
 
 export type PromptOutcome = { ok: true; prompt: ApiWorkflow } | { ok: false; missing: string[] }
 
@@ -22,6 +23,55 @@ function wireTaggedInputs(workflow: ApiWorkflow, inputsByTag: InputsByTag): Prom
 export function studioPrompt(roomName: string | undefined, preset: string): string {
   const subject = roomName ? `the ${roomName.toLowerCase()} of a bright modern home` : 'a bright modern home'
   return `Photograph of ${subject}, ${preset} light, photorealistic interior, natural materials, soft shadows`
+}
+
+export type RenderStyle = NonNullable<RoomLayout['renderStyle']>
+
+const FLOOR_WORDS: Record<FloorMaterial, string> = {
+  oak: 'oak wood floor',
+  walnut: 'walnut wood floor',
+  tile: 'ceramic tile floor',
+  concrete: 'polished concrete floor',
+  carpet: 'wool carpet'
+}
+
+const PRESET_WORDS: Record<string, string> = {
+  reading: 'warm reading light',
+  work: 'bright daylight',
+  movie: 'dim evening light',
+  evening: 'warm evening light'
+}
+
+const ROOM_DETAILS: { names: string[]; details: string }[] = [
+  { names: ['living'], details: 'wool rug, linen curtains, houseplants, framed prints, table lamp, books' },
+  { names: ['bed'], details: 'linen bedding, linen curtains, bedside lamp, framed prints, houseplant, rug' },
+  { names: ['kitchen', 'dining'], details: 'fruit bowl, cookbooks, pendant lights, plants' },
+  { names: ['bath'], details: 'folded towels, plant, toiletries' },
+  { names: ['office', 'study'], details: 'books, desk lamp, plants, pinboard' }
+]
+
+const MAX_FURNITURE = 8
+const LIVED_IN_NEGATIVE = 'empty room, white walls, sterile, showroom, CGI, 3d render, cartoon, blurry, distorted, low quality, text'
+const AS_BUILT_NEGATIVE = 'blurry, distorted'
+
+function roomDetails(roomName: string): string {
+  const name = roomName.toLowerCase()
+  return ROOM_DETAILS.find(({ names }) => names.some((word) => name.includes(word)))?.details ?? 'rug, plants, framed prints'
+}
+
+function furnitureNames(layout: RoomLayout, zone: Zone | undefined): string[] {
+  const items = zone ? layout.items.filter(({ position }) => inPolygon(position, zone.polygon)) : layout.items
+  const names = items.flatMap(({ assetId }) => layout.assets.find(({ id }) => id === assetId)?.name.toLowerCase() ?? [])
+  return [...new Set(names)].slice(0, MAX_FURNITURE)
+}
+
+/** The positive and negative render prompts for a room (or the whole home when `zoneId` is null), built from the layout. */
+export function scenePrompt(layout: RoomLayout, zoneId: string | null, preset: string, style: RenderStyle): { positive: string; negative: string } {
+  const zone = layout.room.kind === 'plan' ? layout.room.zones.find(({ id }) => id === zoneId) : undefined
+  if (style === 'as-built') return { positive: studioPrompt(zone?.name, preset), negative: AS_BUILT_NEGATIVE }
+  const subject = zone ? zone.name.toLowerCase() : 'home'
+  const parts = [...furnitureNames(layout, zone), ...(zone ? [FLOOR_WORDS[zone.floor]] : []), 'warm greige painted walls', roomDetails(zone?.name ?? ''), 'realistic interior photography', 'natural imperfections']
+  return { positive: `Photograph of a lived-in ${subject} in the ${PRESET_WORDS[preset] ?? `${preset} light`}: ${parts.join(', ')}`, negative: LIVED_IN_NEGATIVE }
 }
 
 /** Fills the tagged inputs of a product-to-glb workflow; the template is never mutated. */

@@ -6,7 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 
-import { studioPrompt } from '../packages/comfy/src/index.ts'
+import { scenePrompt } from '../packages/comfy/src/index.ts'
 import { itemsInZone, zoneAt } from '../packages/placement/src/index.ts'
 import { FitMode, PlanRoom, Site, type AssetProduct, type JobKind, type RoomLayout } from '../packages/schema/src/index.ts'
 import type { EditorState, EditorView, ExteriorView, ProductRequest, ScenePreset } from '../spec/contracts/editor-api.ts'
@@ -219,12 +219,11 @@ server.registerTool(
   },
   async ({ room, prompt, preset }) => {
     const editor = editorFor('render_room')
-    const { layout, scene } = await editor('state')
+    const { layout, scene, focusedZone, renderStyle } = await editor('state')
     const zoneId = room === undefined ? undefined : zoneIdOf(layout, room)
     if (zoneId !== undefined) await editor('focusZone', zoneId)
     if (preset !== undefined) await editor('setScene', preset)
-    const roomName = zonesOf(layout).find(({ id }) => id === zoneId)?.name
-    const { jobId, image } = succeeded(await editor('renderInComfy', { prompt: prompt ?? studioPrompt(roomName, preset ?? scene) }))
+    const { jobId, image } = succeeded(await editor('renderInComfy', { prompt: prompt ?? scenePrompt(layout, zoneId ?? focusedZone, preset ?? scene, renderStyle).positive }))
     const data = await editor('base64At', image)
     return { content: [...json({ jobId, path: await saveRender(jobId, data) }).content, { type: 'image', data, mimeType: 'image/png' }] }
   }

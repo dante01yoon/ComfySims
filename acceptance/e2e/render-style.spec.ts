@@ -27,6 +27,7 @@ test('AC-101 room renders and the 360° view send the layout-aware prompts', asy
   expect(room.positive).toContain('walnut wood floor')
   expect(room.negative).toContain('white walls')
 
+  await page.getByRole('button', { name: 'Close' }).click()
   await page.getByRole('button', { name: '360° view' }).click()
   await expect(jobs(page).getByRole('article', { name: '360° view · Bedroom' })).toContainText('done', { timeout: 15_000 })
   const pano = await lastPrompt()

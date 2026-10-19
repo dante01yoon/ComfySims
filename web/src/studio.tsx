@@ -4,10 +4,10 @@ import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useSyncExternalStore } from 'react'
 import { Color, Shape, SRGBColorSpace, Vector2, type DirectionalLight, type HemisphereLight, type PointLight } from 'three'
 
-import { expectedSeconds, studioPrompt } from '../../packages/comfy/src/index.ts'
+import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import type { GroundMaterial, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
 import type { ExteriorShot, Lighting, ScenePreset, Vec3 } from '../../spec/contracts/editor-api.ts'
-import { api, cannotRun, siteOf, snapshot, subscribe } from './editor.ts'
+import { api, cannotRun, currentScenePrompt, siteOf, snapshot, subscribe } from './editor.ts'
 import { seededRandom } from './floors.ts'
 import { boundsCenter, compassDirection, polygonBounds, roomBounds, type Bounds } from './framing.ts'
 
@@ -291,7 +291,7 @@ export function ZoneChips({ room }: { room: Room }) {
 
 /** Pill bar of scene presets over the studio view, with a button that renders the current view. */
 export function PresetBar({ room }: { room: Room }) {
-  const { scene, focusedZone, jobs, backend } = useSyncExternalStore(subscribe, snapshot)
+  const { scene, focusedZone, jobs, backend, history } = useSyncExternalStore(subscribe, snapshot)
   const zoneName = room.kind === 'plan' ? room.zones.find(({ id }) => id === focusedZone)?.name : undefined
   const noRender = cannotRun(backend, 'render')
   const noPanorama = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'pano360')
@@ -303,9 +303,13 @@ export function PresetBar({ room }: { room: Room }) {
           {label}
         </button>
       ))}
-      <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: studioPrompt(zoneName, scene) })}>
+      <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: currentScenePrompt(focusedZone).positive })}>
         Render this view
       </button>
+      <select aria-label="Render style" value={history.present.renderStyle ?? 'lived-in'} onChange={(event) => api.setRenderStyle(event.target.value === 'as-built' ? 'as-built' : 'lived-in')}>
+        <option value="lived-in">Lived-in</option>
+        <option value="as-built">As built</option>
+      </select>
       <button
         disabled={noRender !== undefined}
         title={noRender ?? 'Photoreal exterior renders of the house on its site, from the air and from the street'}

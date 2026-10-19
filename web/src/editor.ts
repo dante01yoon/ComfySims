@@ -6,7 +6,7 @@ import { Box3, type Object3D, type PerspectiveCamera, type Scene } from 'three'
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
-import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, studioPrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, type RenderStyle, scenePrompt } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
 import {
@@ -331,6 +331,7 @@ function state(): EditorState {
     agentConnected: editor.agentConnected,
     backend: editor.backend,
     libraryFilter: editor.libraryFilter,
+    renderStyle: renderStyleOf(history.present),
     site: siteOf(history.present),
     blueprintOpacity: editor.blueprintOpacity
   }
@@ -812,8 +813,24 @@ function renderZone(request: RenderRequest, zone: Zone | undefined): Promise<Sta
   return runJob('render', `Room render · ${room}`, render, () => renderZone(request, zone))
 }
 
+function renderStyleOf(layout: RoomLayout): RenderStyle {
+  return layout.renderStyle ?? 'lived-in'
+}
+
+/** The layout-aware prompts for a room (or the whole home) under the current scene and render style. */
+export function currentScenePrompt(zoneId: string | null): { positive: string; negative: string } {
+  const layout = editor.history.present
+  return scenePrompt(layout, zoneId, editor.scene, renderStyleOf(layout))
+}
+
+function setRenderStyle(style: RenderStyle): void {
+  const layout = editor.history.present
+  if (renderStyleOf(layout) !== style) setHistory(commit(editor.history, { ...layout, renderStyle: style }, currentLabel()), 'none')
+}
+
 function renderInComfy(request: RenderRequest): Promise<Started<{ image: string }>> {
-  return renderZone(request, focusedZone())
+  const zone = focusedZone()
+  return renderZone({ ...request, negativePrompt: request.negativePrompt ?? currentScenePrompt(zone?.id ?? null).negative }, zone)
 }
 
 async function photoImage(source: Photo3dSource): Promise<{ ok: true; file: Blob; fileName: string; caption: string } | ComfyFailure> {
@@ -884,7 +901,7 @@ export function isStalePanorama(jobId: string): boolean {
 }
 
 function panoramaPrompt(zone: Zone, prompt: string | undefined): string {
-  const text = prompt ?? `${zone.name}, ${studioPrompt(zone.name, editor.scene)}`
+  const text = prompt ?? `${zone.name}, ${currentScenePrompt(zone.id).positive}`
   return text.startsWith(PANORAMA_PREFIX) ? text : `${PANORAMA_PREFIX}, ${text}`
 }
 
@@ -894,7 +911,7 @@ async function panoramaShot(zone: Zone, prompt: string, run: JobRun): Promise<Fi
     return depthPanoramaOf(zone)
   })
   const generated = await generate(run, { file: await blobAt(depth.image), fileName: 'roomfit-depth-pano.png' }, (depthImageName) =>
-    buildRenderPrompt(run.workflow, { depthImageName, prompt, negativePrompt: '', seed: randomSeed() })
+    buildRenderPrompt(run.workflow, { depthImageName, prompt, negativePrompt: currentScenePrompt(zone.id).negative, seed: randomSeed() })
   )
   if (!generated.ok) return generated
   const image = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: 'image/png' }))
@@ -1198,6 +1215,7 @@ export const api: RoomfitEditorApi = {
   setWorkflow,
   setModel,
   addCustomWorkflow,
+  setRenderStyle,
   setAssetLabels,
   setAssetProduct,
   setLibraryFilter: (label) => update({ libraryFilter: labelInUse(editor.history.present, label) }),
