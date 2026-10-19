@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { RoomLayout } from '../../packages/schema/src/index.ts'
 import type {} from '../../spec/contracts/editor-api.ts'
 
 const house: RoomLayout = JSON.parse(readFileSync('fixtures/layouts/demo-house.json', 'utf8'))
 const lastPrompt = async () => ((await (await fetch('http://127.0.0.1:8199/__prompts')).json()) as { positive: string | null; negative: string | null; savePrefix: string | null }[]).at(-1)!
-const jobs = (page: import('@playwright/test').Page) => page.getByRole('region', { name: 'Jobs' })
+const jobs = (page: Page) => page.getByRole('region', { name: 'Jobs' })
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')

@@ -10,6 +10,7 @@ const PYTHON_REPORT = join(STATE_DIR, 'python.json')
 const COMFYUI_DIR = process.env.ROOMFIT_COMFYUI_DIR ?? join(process.env.HOME ?? '', 'Desktop/github/ComfyUI')
 const COMFYUI_PYTHON = join(COMFYUI_DIR, 'venv/bin/python')
 const HAS_COMFYUI = existsSync(COMFYUI_PYTHON)
+const HAS_UVX = spawnSync('uvx', ['--version'], { encoding: 'utf8' }).status === 0
 
 function run(label, command, args) {
   const started = Date.now()
@@ -99,6 +100,11 @@ rmSync(PYTHON_REPORT, { force: true })
 const gates = [
   run('contract drift', 'pnpm', ['exec', 'tsx', 'packages/schema/scripts/export-json-schema.ts', '--check']),
   run('typecheck', 'pnpm', ['exec', 'tsc', '--noEmit']),
+  run('lint', 'pnpm', ['-s', 'lint']),
+  run('knip', 'pnpm', ['-s', 'knip']),
+  run('deps', 'pnpm', ['-s', 'deps:check']),
+  run('static checks', 'pnpm', ['-s', 'check:static']),
+  ...(HAS_UVX ? [run('python lint', 'pnpm', ['-s', 'lint:python'])] : []),
   run('tests', 'pnpm', ['exec', 'vitest', 'run', '--reporter=json', `--outputFile=${VITEST_REPORT}`]),
   ...(HAS_EDITOR ? [run('editor build', 'pnpm', ['-s', 'web:build']), e2eGate()] : []),
   ...(HAS_EDITOR && existsSync('nodes/roomfit') ? [run('node pack editor build', 'pnpm', ['-s', 'web:build:nodepack'])] : []),
@@ -121,6 +127,7 @@ const plannedIds = criteria.filter((c) => c.status === 'planned').map((c) => c.i
 
 console.log('Gates')
 if (!HAS_EDITOR) console.log('  SKIP  editor build + e2e (no web/index.html yet)')
+if (!HAS_UVX) console.log('  SKIP  python lint (no uvx; install uv)')
 if (!HAS_COMFYUI) console.log(`  SKIP  python acceptance (no ComfyUI venv at ${COMFYUI_DIR}; set ROOMFIT_COMFYUI_DIR)`)
 for (const gate of gates) console.log(`  ${gate.ok ? 'PASS' : 'FAIL'}  ${gate.label} (${gate.ms} ms)`)
 console.log('\nSpec')
@@ -138,7 +145,7 @@ const problems = [
 const ok = problems.length === 0
 writeFileSync(
   join(STATE_DIR, 'last-verify.json'),
-  JSON.stringify({ ok, at: new Date().toISOString(), gates: gates.map(({ output, ...gate }) => gate), criteria, problems }, null, 2)
+  JSON.stringify({ ok, at: new Date().toISOString(), gates: gates.map(({ output: _output, ...gate }) => gate), criteria, problems }, null, 2)
 )
 
 if (!ok) {

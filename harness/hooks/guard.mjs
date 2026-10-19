@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { isAbsolute, relative, resolve } from 'node:path'
 
-export const PROTECTED = ['spec/', 'packages/schema/', 'acceptance/', 'fixtures/', 'harness/', '.claude/', 'vitest.config.ts', 'playwright.config.ts', 'package.json']
+export const PROTECTED = ['spec/', 'packages/schema/', 'acceptance/', 'fixtures/', 'harness/', '.claude/', 'vitest.config.ts', 'playwright.config.ts', 'package.json', '.oxlintrc.json', 'knip.json', '.dependency-cruiser.cjs', '.github/', 'tsconfig.json']
 const WRITE_HINT = /(>|\btee\b|\brm\b|\bmv\b|\bcp\b|\bsed\s+-i|\bperl\s+-p?i|\bgit\s+(checkout|restore|rm|mv)\b|\btruncate\b|\bwriteFile)/
 
 const HARMLESS_REDIRECT = /\d?>\s*\/dev\/null|\d?>&\d/g
