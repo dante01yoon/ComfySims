@@ -4,6 +4,9 @@
 
 ![home studio](docs/recordings/media/studio-grid.jpg)
 
+**Full demo (5 min):** [roomfit-reel.mp4](docs/recordings/media/roomfit-reel.mp4)
+
+- **Make it, put it anywhere** — a product photo and its listed size become an exact-size 3D piece; drag it where you want, turn it, and render the room. [video](docs/recordings/media/roomfit-place.mp4)
 - **Home studio** — a cut-away 3D house with real materials, landscape and Reading / Work / Movie / Evening light presets. All 15 pieces in the demo were generated from product photos on Comfy Cloud. [video](docs/recordings/media/roomfit-studio.mp4)
 - **Live Comfy Cloud run** — photo → 3D → fitted → placed → rendered, from the editor, in 90 seconds. [video](docs/recordings/media/roomfit-cloud-live.mp4)
 - **Local or Cloud, per job** — switch between your own ComfyUI and Comfy Cloud from the workspace rail, no restart. roomfit checks what each one can run (node classes, and installed model files on Local) and greys out the rest with the missing files named. Here the render runs on Cloud and the 3D photo on a Mac's local ComfyUI with only MoGe installed. [video](docs/recordings/media/roomfit-local-cloud.mp4)
