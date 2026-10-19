@@ -101,3 +101,4 @@ Open questions — settled 2026-10-18 on the recommended answers (Dante: "Approv
 - 2026-10-18 Draft, from Dante's request for product photos, links, sources and labels on assets.
 - 2026-10-18 Approved on the recommended answers.
 - 2026-10-18 Spec session: schema, contracts (incl. `selectItem`), demo fixture marked AI-generated, AC-77~81 tests; ACs active.
+- 2026-10-18 Implemented (impl-22); AC-77~81 pass. Screen check: `docs/recordings/media/m7-library-and-selected.jpg`. AC-82 waits for three real products (photo + store link) from Dante.
