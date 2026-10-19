@@ -107,6 +107,7 @@ const AERIAL_FITTING_STEPS = 12
 const STREET_EYE_CM = 160
 const STREET_TARGET_HEIGHT_CM = 140
 const STREET_LOT_INSET_CM = 50
+const STREET_NEAR_GROUND_CM = 100
 
 export type Lens = { fovDeg: number; aspect: number }
 type Pose = { position: Vec3; target: Vec3 }
@@ -176,10 +177,16 @@ export function streetCamera(door: { point: Point; outward: Point }, lot: readon
   return { position: { x, y: STREET_EYE_CM, z }, target: { x: center.x, y: STREET_TARGET_HEIGHT_CM, z: center.z } }
 }
 
-/** Depth range of an exterior shot along the view axis: from the nearest house corner to the farthest lot corner. */
-export function exteriorDepthRange(pose: Pose, houseCorners: readonly Vec3[], lot: readonly Point[]): { nearCm: number; farCm: number } {
+function groundAhead({ position, target }: Pose, distanceCm: number): Vec3 {
+  const forward = unit({ x: target.x - position.x, y: 0, z: target.z - position.z })
+  return { x: position.x + forward.x * distanceCm, y: 0, z: position.z + forward.z * distanceCm }
+}
+
+/** Depth range of an exterior shot along the view axis: from the nearest house corner (aerial) or the ground 1 m ahead of the camera (street) to the farthest lot corner. */
+export function exteriorDepthRange(view: 'aerial' | 'street', pose: Pose, houseCorners: readonly Vec3[], lot: readonly Point[]): { nearCm: number; farCm: number } {
+  const nearPoints = view === 'aerial' ? houseCorners : [groundAhead(pose, STREET_NEAR_GROUND_CM)]
   return {
-    nearCm: Math.min(...houseCorners.map((corner) => viewDepth(pose, corner))),
+    nearCm: Math.min(...nearPoints.map((point) => viewDepth(pose, point))),
     farCm: Math.max(...lot.map(({ x, z }) => viewDepth(pose, { x, y: 0, z })))
   }
 }

@@ -416,7 +416,7 @@ function exteriorShot(view: ExteriorView): ExteriorShot {
   return {
     camera: { ...pose, ...lens },
     roof: { topCm, min: house.min, max: house.max },
-    depthRange: exteriorDepthRange(pose, boxCorners(house, topCm), site.lot),
+    depthRange: exteriorDepthRange(view, pose, boxCorners(house, topCm), site.lot),
     trees: false
   }
 }
