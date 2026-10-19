@@ -4,7 +4,7 @@
 
 **Does this sofa fit my living room?** Drop in a product photo and its listed size. ComfySims turns it into a 3D model on ComfyUI or Comfy Cloud, fits it to the exact listed size, places it in your room or a whole house, checks it against walls and other furniture, and renders the room back to a photo.
 
-<p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a sofa from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
+<p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a chair from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
 
 ## See it
 
