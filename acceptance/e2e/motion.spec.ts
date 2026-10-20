@@ -111,19 +111,25 @@ test('AC-118 orbiting has inertia and comes to rest', async ({ page }) => {
   await page.mouse.up()
   const motion = await page.evaluate(
     () =>
-      new Promise<{ moved: number; settleSeconds: number }>((resolve) => {
+      new Promise<{ movingAtRelease: boolean; coasted: number; settleSeconds: number }>((resolve) => {
         const released = performance.now()
+        const movingAtRelease = window.roomfit.cameraMoving()
         const atRelease = window.roomfit.cameraFrame()
-        setTimeout(() => {
-          const later = window.roomfit.cameraFrame()
-          const moved = Math.hypot(later.position.x - atRelease.position.x, later.position.y - atRelease.position.y, later.position.z - atRelease.position.z)
-          const wait = () => (window.roomfit.cameraMoving() && performance.now() - released < 4000 ? requestAnimationFrame(wait) : resolve({ moved, settleSeconds: (performance.now() - released) / 1000 }))
-          wait()
-        }, 120)
+        const wait = () => {
+          if (window.roomfit.cameraMoving() && performance.now() - released < 4000) return requestAnimationFrame(wait)
+          const rest = window.roomfit.cameraFrame()
+          resolve({
+            movingAtRelease,
+            coasted: Math.hypot(rest.position.x - atRelease.position.x, rest.position.y - atRelease.position.y, rest.position.z - atRelease.position.z),
+            settleSeconds: (performance.now() - released) / 1000
+          })
+        }
+        requestAnimationFrame(wait)
       })
   )
   expect(await page.evaluate(() => window.roomfit.state().selectedId)).toBeNull()
-  expect(motion.moved).toBeGreaterThan(0.5)
+  expect(motion.movingAtRelease).toBe(true)
+  expect(motion.coasted).toBeGreaterThan(0.5)
   expect(motion.settleSeconds).toBeLessThanOrEqual(1.5)
 })
 

@@ -58,15 +58,19 @@ function useDragToLook(canvas: HTMLCanvasElement): void {
   }, [canvas])
 }
 
-function useSmoothZoom(canvas: HTMLCanvasElement): void {
+function useSmoothZoom(source: HTMLElement): void {
   useEffect(() => {
     const onWheel = (event: WheelEvent) => {
       event.preventDefault()
       zoomBy(event.deltaY)
     }
-    canvas.addEventListener('wheel', onWheel, { passive: false })
-    return () => canvas.removeEventListener('wheel', onWheel)
-  }, [canvas])
+    source.addEventListener('wheel', onWheel, { passive: false })
+    return () => source.removeEventListener('wheel', onWheel)
+  }, [source])
+}
+
+function eventSourceOf(connected: unknown, canvas: HTMLCanvasElement): HTMLElement {
+  return connected instanceof HTMLElement ? connected : canvas
 }
 
 /** Drives the main camera each frame (glides, walking, smooth zoom, inertia) and renders a frame whenever the editor changes. */
@@ -76,7 +80,8 @@ export function CameraRig() {
   useEffect(() => subscribe(invalidate), [invalidate])
   useWalkKeys()
   useDragToLook(canvas)
-  useSmoothZoom(canvas)
+  const connected: unknown = useThree((three) => three.events.connected)
+  useSmoothZoom(eventSourceOf(connected, canvas))
   useFrame(() => {
     const now = performance.now()
     advanceWalk(now)
