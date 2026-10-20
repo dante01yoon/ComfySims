@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="278" font-family="Menlo, monospace" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="10" y="20" font-size="15" font-weight="bold">2026-10-19-m15-after · wheel-zoom</text>
+<text x="10" y="38" fill="#555">Flame graph: width = main-thread time (2790 ms sampled), stacks merged; red = GPU upload/shader/resize, amber = GLB parse/fit, green = React</text>
+<g><title>all — 2789.7 ms</title><rect x="10.00" y="252" width="1580.00" height="15" fill="hsl(213, 55%, 68%)" rx="1"/><text x="13.00" y="263" fill="#111">all</text></g>
+<g><title>handleEvent chunk-TK7WHPHW.js:12996 — 3.6 ms</title><rect x="10.00" y="236" width="2.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-TK7WHPHW.js:12799 — 3.6 ms</title><rect x="10.00" y="220" width="2.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleRaycast chunk-TK7WHPHW.js:12813 — 1.3 ms</title><rect x="10.00" y="204" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersectObject chunk-URRDWL2E.js:29459 — 1.3 ms</title><rect x="10.00" y="188" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="10.00" y="172" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="10.00" y="156" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="10.00" y="140" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="10.00" y="124" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="10.00" y="108" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>raycast chunk-URRDWL2E.js:12201 — 1.3 ms</title><rect x="10.00" y="92" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recast chunk-URRDWL2E.js:6331 — 1.3 ms</title><rect x="10.00" y="76" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>at chunk-URRDWL2E.js:6312 — 1.3 ms</title><rect x="10.00" y="60" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>compute chunk-TK7WHPHW.js:14217 — 1.0 ms</title><rect x="10.72" y="204" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>tick — 1.1 ms</title><rect x="12.02" y="236" width="0.62" height="15" fill="hsl(237, 55%, 72%)" rx="1"/></g>
+<g><title>cameraFrame camera.ts:75 — 1.1 ms</title><rect x="12.02" y="220" width="0.62" height="15" fill="hsl(248, 55%, 63%)" rx="1"/></g>
+</svg>

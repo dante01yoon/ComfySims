@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="262" font-family="Menlo, monospace" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="10" y="20" font-size="15" font-weight="bold">2026-10-19-m15-after · wheel-zoom</text>
+<text x="10" y="38" fill="#555">Flame chart: x = time (2790 ms), y = call stack; wide red blocks are main-thread stalls</text>
+<g><title>handleEvent chunk-TK7WHPHW.js:12996 — 1.3 ms</title><rect x="22.31" y="50" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-TK7WHPHW.js:12799 — 1.3 ms</title><rect x="22.31" y="66" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleRaycast chunk-TK7WHPHW.js:12813 — 1.3 ms</title><rect x="22.31" y="82" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersectObject chunk-URRDWL2E.js:29459 — 1.3 ms</title><rect x="22.31" y="98" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="22.31" y="114" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="22.31" y="130" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="22.31" y="146" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="22.31" y="162" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-URRDWL2E.js:29485 — 1.3 ms</title><rect x="22.31" y="178" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>raycast chunk-URRDWL2E.js:12201 — 1.3 ms</title><rect x="22.31" y="194" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recast chunk-URRDWL2E.js:6331 — 1.3 ms</title><rect x="22.31" y="210" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>at chunk-URRDWL2E.js:6312 — 1.3 ms</title><rect x="22.31" y="226" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleEvent chunk-TK7WHPHW.js:12996 — 1.0 ms</title><rect x="616.48" y="50" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-TK7WHPHW.js:12799 — 1.0 ms</title><rect x="616.48" y="66" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>compute chunk-TK7WHPHW.js:14217 — 1.0 ms</title><rect x="616.48" y="82" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleEvent chunk-TK7WHPHW.js:12996 — 1.3 ms</title><rect x="946.88" y="50" width="0.71" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersect chunk-TK7WHPHW.js:12799 — 1.3 ms</title><rect x="946.88" y="66" width="0.71" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>tick — 1.1 ms</title><rect x="1013.25" y="50" width="0.62" height="15" fill="hsl(237, 55%, 72%)" rx="1"/></g>
+<g><title>cameraFrame camera.ts:75 — 1.1 ms</title><rect x="1013.25" y="66" width="0.62" height="15" fill="hsl(248, 55%, 63%)" rx="1"/></g>
+</svg>

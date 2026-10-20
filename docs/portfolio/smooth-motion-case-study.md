@@ -53,6 +53,20 @@ Self time during **editor → studio**:
 | `texSubImage2D` | 136 | more texture uploads |
 | `getProgramInfoLog` | 80 | the studio's shaders (shadows, N8AO, tone mapping) compile on first use |
 
+### Flame graphs
+
+Loading the house (before M15). Red is GPU texture upload.
+
+The left red tower sits under `AssetCard → thumbnailOf → WebGLRenderer.render`: the library renders every asset's 3D thumbnail inside React's render. The right one is the scene's own render. The self-time table only said `texSubImage2D`; the flame graph showed *who* was calling it.
+
+![Flame graph: load-layout before M15](perf/2026-10-19-m15-before/flamegraph-load-layout.svg)
+
+Switching to the studio (before M15), as a flame chart over time. The wide red block is `WebGLRenderer.setSize`, called from a React layout effect: the canvas changes size between views.
+
+![Flame chart: switch-to-studio before M15](perf/2026-10-19-m15-before/flamechart-switch-to-studio.svg)
+
+How the measurements were taken, and how each improvement point was traced from a number to a line of code: [perf/METHOD.md](perf/METHOD.md).
+
 ### Root cause: the generated assets are far heavier than a room needs
 
 Every piece from the image-to-3D workflow comes out the same way:
@@ -97,6 +111,67 @@ Targets (to be checked with the same script):
 | GLB size per piece | 7–17 MB | ≤ 2 MB |
 | Walk inside a room | not possible | WASD + drag-look at 160 cm eye height; walls stop you, doors let you through |
 
+## Step 4 — M15 results (before vs after, same machine, same conditions)
+
+Method:
+- Each version runs from its own checkout: before = `0761e71`, after = `f9a187c`.
+- Headless Chromium on the real GPU (ANGLE Metal, M4 Max) at DPR 2.
+- Median of 3 runs, each in a fresh browser.
+- Every run's numbers, plus the first run's CPU profiles and Chrome traces, are in [`perf/`](perf/README.md).
+- Headless also fixes the frame clock at 60 Hz. Headful runs had drifted between 60 and 120 Hz depending on which display the window opened on.
+
+| Scenario | Metric | Before | After |
+| --- | --- | --- | --- |
+| Focus a room | largest camera step in one frame | 1,731 cm (teleport) | 85 cm (4.9% of a 17.3 m glide) |
+| Switch editor → studio | largest camera step | 1,688 cm | 347 cm (a 131 ms stall lands mid-glide) |
+| Switch editor → studio | longest stall | 223 ms | 131 ms |
+| Idle 3 s (whole house / room) | frames rendered | ~180 (60 fps, always) | **0** |
+| Orbit drag | frames rendered | always | only while moving (303), then coasts to rest |
+| Walk to the kitchen | — | not possible | works: 140 cm/s, through the door, no stalls |
+| Load the house | longest stall (median) | 156 ms | 105 ms (unchanged cause: textures, M16) |
+
+### What profiling caught that the tests did not
+
+The after-run showed `wheel-zoom` with **0 camera movement and 0 rendered frames**.
+
+- **Reproduced:** headless, with a probe script.
+- **Narrowed down:** zoom worked over the whole house, but not after focusing a room.
+- **Cause:** `document.elementFromPoint` at the canvas centre returned the room-label **button**. A focused room's label sits exactly at the screen centre. The new wheel handler listened on the `<canvas>` only, while drei's OrbitControls had listened on the wrapper.
+- **Fix process:** a regression test (AC-124) was written red first, then fixed in a recorded session.
+
+### An honest miss in the spec
+
+AC-123 originally asked for "≤ 50 cm per frame" when focusing. That was mis-specified.
+
+- A 17 m move that lasts ≤ 1 s with ease-in-out peaks near 1.5–2× its average speed, so ~60–90 cm per frame. Meeting an absolute limit would make long moves sluggish.
+- The criterion is now relative (≤ 6% of the glide per frame, no frame gap > 33 ms).
+- The spec's change log records that the original target was not met.
+
+### Bundle (after M15)
+
+One chunk of 1,590 KB (489 KB gzip):
+
+| Package | Size |
+| --- | --- |
+| three | 729 KB |
+| react-dom | 178 KB |
+| n8ao | 137 KB |
+| app code | 129 KB |
+| react-reconciler | 110 KB |
+
+Code-splitting the viewers and post-processing is on the M16 list.
+
 ## Log
 
 - 2026-10-19 — Baseline measured; causes found from CPU profiles and GLB inspection; plan written.
+- 2026-10-19 — M15 spec written with 7 automated acceptance criteria (AC-116~122) and one real-GPU measurement (AC-123).
+  - Key design decision ([ADR-0013](../adr/0013-camera-transitions-keep-the-resting-pose-contract.md)): `camera()` stays the *resting pose* and only the on-screen camera animates. So 13 existing tests, every render path and the agent tools keep working unchanged.
+  - Walk collision is plain 2D geometry against the listed-size footprints; no physics engine.
+  - Implementation handed to a recorded headless session (impl-32).
+- 2026-10-19 — impl-32 implemented M15. BLOCKED once: AC-118's drag started on the coffee table, so the test moved furniture instead of the camera (a test-design slip). It was fixed by starting the drag on empty ground and asserting nothing got selected. Verify then passed (CI-equivalent locally).
+- 2026-10-19 — Measurement tooling upgraded:
+  - Chrome traces, V8 CPU profiles, heap, GC and rendered-frame counts per scenario.
+  - Median of 3 headless runs on the real GPU.
+  - A bundle composition report.
+  - A run index at `perf/README.md`.
+- 2026-10-19 — Before/after measured. Profiling found the wheel-over-label regression; AC-124 added red; AC-123 made relative (see above). impl-33 fixes AC-124.

@@ -1,0 +1,343 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="870" font-family="Menlo, monospace" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="10" y="20" font-size="15" font-weight="bold">2026-10-19-m15-after · switch-to-studio</text>
+<text x="10" y="38" fill="#555">Flame graph: width = main-thread time (2139 ms sampled), stacks merged; red = GPU upload/shader/resize, amber = GLB parse/fit, green = React</text>
+<g><title>all — 2138.7 ms</title><rect x="10.00" y="844" width="1580.00" height="15" fill="hsl(213, 55%, 68%)" rx="1"/><text x="13.00" y="855" fill="#111">all</text></g>
+<g><title>loop chunk-TK7WHPHW.js:14153 — 380.7 ms</title><rect x="10.00" y="828" width="281.24" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="839" fill="#111">loop chunk-TK7WHPHW.js:14153</text></g>
+<g><title>update chunk-TK7WHPHW.js:14132 — 380.7 ms</title><rect x="10.00" y="812" width="281.24" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="823" fill="#111">update chunk-TK7WHPHW.js:14132</text></g>
+<g><title>(anonymous) @react-three_postprocessing.js:3554 — 377.2 ms</title><rect x="10.00" y="796" width="278.63" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="807" fill="#111">(anonymous) @react-three_postprocessing</text></g>
+<g><title>render chunk-FNHBCYTV.js:1094 — 377.2 ms</title><rect x="10.00" y="780" width="278.63" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="791" fill="#111">render chunk-FNHBCYTV.js:1094</text></g>
+<g><title>render chunk-FNHBCYTV.js:6686 — 327.8 ms</title><rect x="10.00" y="764" width="242.17" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="775" fill="#111">render chunk-FNHBCYTV.js:6686</text></g>
+<g><title>WebGLRenderer.render chunk-URRDWL2E.js:40937 — 326.6 ms</title><rect x="10.00" y="748" width="241.24" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="759" fill="#111">WebGLRenderer.render chunk-URRDWL2</text></g>
+<g><title>renderScene chunk-URRDWL2E.js:41082 — 304.6 ms</title><rect x="10.00" y="732" width="225.05" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="743" fill="#111">renderScene chunk-URRDWL2E.js:41</text></g>
+<g><title>renderObjects chunk-URRDWL2E.js:41163 — 304.6 ms</title><rect x="10.00" y="716" width="225.05" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="727" fill="#111">renderObjects chunk-URRDWL2E.js:</text></g>
+<g><title>renderObject chunk-URRDWL2E.js:41179 — 304.5 ms</title><rect x="10.00" y="700" width="224.97" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="711" fill="#111">renderObject chunk-URRDWL2E.js:4</text></g>
+<g><title>WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40745 — 303.3 ms</title><rect x="10.00" y="684" width="224.05" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="695" fill="#111">WebGLRenderer.renderBufferDirect</text></g>
+<g><title>setProgram chunk-URRDWL2E.js:41286 — 292.3 ms</title><rect x="10.00" y="668" width="215.96" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="679" fill="#111">setProgram chunk-URRDWL2E.js:4</text></g>
+<g><title>upload chunk-URRDWL2E.js:35174 — 221.6 ms</title><rect x="10.00" y="652" width="163.71" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="663" fill="#111">upload chunk-URRDWL2E.j</text></g>
+<g><title>setValueT1 chunk-URRDWL2E.js:34784 — 215.5 ms</title><rect x="10.00" y="636" width="159.24" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="647" fill="#111">setValueT1 chunk-URRDW</text></g>
+<g><title>setTexture2D chunk-URRDWL2E.js:38202 — 214.3 ms</title><rect x="10.00" y="620" width="158.33" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="631" fill="#111">setTexture2D chunk-URR</text></g>
+<g><title>uploadTexture chunk-URRDWL2E.js:38378 — 212.7 ms</title><rect x="10.00" y="604" width="157.10" height="15" fill="#29bf12" rx="1"/><text x="13.00" y="615" fill="#111">uploadTexture chunk-UR</text></g>
+<g><title>texSubImage2D chunk-URRDWL2E.js:37750 — 211.4 ms</title><rect x="10.00" y="588" width="156.17" height="15" fill="#e4572e" rx="1"/><text x="13.00" y="599" fill="#111">texSubImage2D chunk-UR</text></g>
+<g><title>texSubImage2D — 211.4 ms</title><rect x="10.00" y="572" width="156.17" height="15" fill="#e4572e" rx="1"/><text x="13.00" y="583" fill="#111">texSubImage2D</text></g>
+<g><title>textureNeedsGenerateMipmaps chunk-URRDWL2E.js:37983 — 1.3 ms</title><rect x="166.17" y="588" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValue chunk-URRDWL2E.js:35121 — 2.5 ms</title><rect x="169.24" y="636" width="1.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValue chunk-URRDWL2E.js:35121 — 1.3 ms</title><rect x="169.24" y="620" width="0.94" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValueT1Array chunk-URRDWL2E.js:34963 — 2.1 ms</title><rect x="171.12" y="636" width="1.58" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>copyArray chunk-URRDWL2E.js:34566 — 2.1 ms</title><rect x="171.12" y="620" width="1.57" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram.getUniforms chunk-URRDWL2E.js:35791 — 49.4 ms</title><rect x="173.71" y="652" width="36.51" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>onFirstUse chunk-URRDWL2E.js:35744 — 49.4 ms</title><rect x="173.71" y="636" width="36.51" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgramInfoLog — 48.2 ms</title><rect x="173.71" y="620" width="35.57" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>getShaderInfoLog — 1.3 ms</title><rect x="209.29" y="620" width="0.94" height="15" fill="hsl(207, 55%, 62%)" rx="1"/></g>
+<g><title>getProgram chunk-URRDWL2E.js:41197 — 10.8 ms</title><rect x="210.22" y="652" width="7.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>acquireProgram chunk-URRDWL2E.js:36317 — 9.5 ms</title><rect x="210.22" y="636" width="7.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram chunk-URRDWL2E.js:35451 — 9.5 ms</title><rect x="210.22" y="620" width="7.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>resolveIncludes chunk-URRDWL2E.js:35333 — 4.6 ms</title><rect x="210.22" y="604" width="3.40" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>replaceLightNums chunk-URRDWL2E.js:35325 — 2.0 ms</title><rect x="213.62" y="604" width="1.50" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>replaceClippingPlaneNums chunk-URRDWL2E.js:35329 — 1.6 ms</title><rect x="215.12" y="604" width="1.20" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLShader chunk-URRDWL2E.js:35191 — 1.3 ms</title><rect x="216.32" y="604" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>shaderSource — 1.3 ms</title><rect x="216.32" y="588" width="0.93" height="15" fill="hsl(216, 55%, 71%)" rx="1"/></g>
+<g><title>getProgramCacheKey chunk-URRDWL2E.js:36138 — 1.3 ms</title><rect x="217.25" y="636" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>refreshMaterialUniforms chunk-URRDWL2E.js:39866 — 2.9 ms</title><rect x="218.18" y="652" width="2.13" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>refreshUniformsCommon chunk-URRDWL2E.js:39909 — 1.6 ms</title><rect x="218.18" y="636" width="1.17" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>refreshTransformUniform chunk-URRDWL2E.js:39851 — 1.6 ms</title><rect x="218.18" y="620" width="1.17" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>refreshUniformsStandard chunk-URRDWL2E.js:40043 — 1.3 ms</title><rect x="219.35" y="636" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>refreshTransformUniform chunk-URRDWL2E.js:39851 — 1.3 ms</title><rect x="219.35" y="620" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValue chunk-URRDWL2E.js:35166 — 2.5 ms</title><rect x="220.31" y="652" width="1.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValueM4 chunk-URRDWL2E.js:34668 — 2.5 ms</title><rect x="220.31" y="636" width="1.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>uniformMatrix4fv — 1.3 ms</title><rect x="220.31" y="620" width="0.94" height="15" fill="hsl(217, 55%, 72%)" rx="1"/></g>
+<g><title>copyArray chunk-URRDWL2E.js:34566 — 1.3 ms</title><rect x="221.25" y="620" width="0.94" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getUniformList chunk-URRDWL2E.js:41260 — 1.3 ms</title><rect x="222.19" y="652" width="0.95" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>markUniformsLightsNeedsUpdate chunk-URRDWL2E.js:41479 — 1.3 ms</title><rect x="223.14" y="652" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>useProgram chunk-URRDWL2E.js:37504 — 1.3 ms</title><rect x="224.07" y="652" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>useProgram — 1.3 ms</title><rect x="224.07" y="636" width="0.93" height="15" fill="hsl(207, 55%, 62%)" rx="1"/></g>
+<g><title>setup chunk-URRDWL2E.js:32831 — 6.2 ms</title><rect x="225.96" y="668" width="4.56" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>needsUpdate chunk-URRDWL2E.js:32901 — 6.0 ms</title><rect x="225.96" y="652" width="4.42" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLShadowMap.render chunk-URRDWL2E.js:36984 — 12.1 ms</title><rect x="235.05" y="732" width="8.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 11.3 ms</title><rect x="235.05" y="716" width="8.36" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 11.3 ms</title><rect x="235.05" y="700" width="8.36" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 11.3 ms</title><rect x="235.05" y="684" width="8.36" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40745 — 6.9 ms</title><rect x="235.05" y="668" width="5.07" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setup chunk-URRDWL2E.js:32831 — 3.6 ms</title><rect x="235.05" y="652" width="2.68" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>needsUpdate chunk-URRDWL2E.js:32901 — 2.1 ms</title><rect x="235.05" y="636" width="1.54" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setProgram chunk-URRDWL2E.js:41286 — 3.2 ms</title><rect x="237.73" y="652" width="2.38" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgram chunk-URRDWL2E.js:41197 — 1.8 ms</title><rect x="237.73" y="636" width="1.31" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>acquireProgram chunk-URRDWL2E.js:36317 — 1.8 ms</title><rect x="237.73" y="620" width="1.31" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram chunk-URRDWL2E.js:35451 — 1.8 ms</title><rect x="237.73" y="604" width="1.31" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram.getUniforms chunk-URRDWL2E.js:35791 — 1.4 ms</title><rect x="239.04" y="636" width="1.04" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>onFirstUse chunk-URRDWL2E.js:35744 — 1.4 ms</title><rect x="239.04" y="620" width="1.04" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgramInfoLog — 1.3 ms</title><rect x="239.04" y="604" width="0.95" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 3.0 ms</title><rect x="240.12" y="668" width="2.23" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 3.0 ms</title><rect x="240.12" y="652" width="2.23" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:37131 — 3.0 ms</title><rect x="240.12" y="636" width="2.23" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:34488 — 3.0 ms</title><rect x="240.12" y="620" width="2.23" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:34234 — 3.0 ms</title><rect x="240.12" y="604" width="2.23" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:31900 — 1.8 ms</title><rect x="240.12" y="588" width="1.33" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>createBuffer chunk-URRDWL2E.js:31809 — 1.8 ms</title><rect x="240.12" y="572" width="1.33" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>bufferData — 1.8 ms</title><rect x="240.12" y="556" width="1.33" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>updateMatrices chunk-URRDWL2E.js:24514 — 0.8 ms</title><rect x="243.42" y="716" width="0.61" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>multiplyMatrices chunk-URRDWL2E.js:7083 — 0.8 ms</title><rect x="243.42" y="700" width="0.61" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 5.8 ms</title><rect x="244.02" y="732" width="4.26" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 5.8 ms</title><rect x="244.02" y="716" width="4.26" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 5.8 ms</title><rect x="244.02" y="700" width="4.26" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>intersectsObject chunk-URRDWL2E.js:15329 — 2.8 ms</title><rect x="244.02" y="684" width="2.05" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>applyMatrix4 chunk-URRDWL2E.js:6164 — 2.8 ms</title><rect x="244.02" y="668" width="2.04" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getMaxScaleOnAxis chunk-URRDWL2E.js:7262 — 2.8 ms</title><rect x="244.02" y="652" width="2.04" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 2.0 ms</title><rect x="246.08" y="684" width="1.46" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 1.3 ms</title><rect x="246.08" y="668" width="0.93" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:34488 — 0.7 ms</title><rect x="247.01" y="668" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:34234 — 0.7 ms</title><rect x="247.01" y="652" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>update chunk-URRDWL2E.js:31900 — 0.7 ms</title><rect x="247.01" y="636" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>createBuffer chunk-URRDWL2E.js:31809 — 0.7 ms</title><rect x="247.01" y="620" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>createBuffer — 0.7 ms</title><rect x="247.01" y="604" width="0.53" height="15" fill="hsl(224, 55%, 59%)" rx="1"/></g>
+<g><title>dot chunk-URRDWL2E.js:2872 — 0.9 ms</title><rect x="247.53" y="684" width="0.65" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:8756 — 2.7 ms</title><rect x="248.29" y="732" width="1.99" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:8756 — 2.7 ms</title><rect x="248.29" y="716" width="1.99" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:8756 — 2.7 ms</title><rect x="248.29" y="700" width="1.99" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>multiplyMatrices chunk-URRDWL2E.js:7083 — 1.4 ms</title><rect x="248.29" y="684" width="1.03" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>sort chunk-URRDWL2E.js:36472 — 1.3 ms</title><rect x="250.28" y="732" width="0.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render chunk-FNHBCYTV.js:645 — 1.3 ms</title><rect x="251.24" y="748" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.setRenderTarget chunk-URRDWL2E.js:41519 — 1.3 ms</title><rect x="251.24" y="732" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>bindFramebuffer chunk-URRDWL2E.js:37463 — 1.3 ms</title><rect x="251.24" y="716" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render @react-three_postprocessing.js:3297 — 37.2 ms</title><rect x="252.17" y="764" width="27.46" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render @react-three_postprocessing.js:1759 — 37.2 ms</title><rect x="252.17" y="748" width="27.46" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.render chunk-URRDWL2E.js:40937 — 37.2 ms</title><rect x="252.17" y="732" width="27.46" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderScene chunk-URRDWL2E.js:41082 — 35.0 ms</title><rect x="252.17" y="716" width="25.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObjects chunk-URRDWL2E.js:41163 — 35.0 ms</title><rect x="252.17" y="700" width="25.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:41179 — 35.0 ms</title><rect x="252.17" y="684" width="25.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40745 — 35.0 ms</title><rect x="252.17" y="668" width="25.88" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setProgram chunk-URRDWL2E.js:41286 — 33.0 ms</title><rect x="252.17" y="652" width="24.34" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram.getUniforms chunk-URRDWL2E.js:35791 — 29.4 ms</title><rect x="252.17" y="636" width="21.70" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>onFirstUse chunk-URRDWL2E.js:35744 — 29.4 ms</title><rect x="252.17" y="620" width="21.70" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgramInfoLog — 28.1 ms</title><rect x="252.17" y="604" width="20.74" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>setValue chunk-URRDWL2E.js:35166 — 1.6 ms</title><rect x="273.87" y="636" width="1.21" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgram chunk-URRDWL2E.js:41197 — 1.2 ms</title><rect x="275.08" y="636" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getParameters chunk-URRDWL2E.js:35923 — 1.2 ms</title><rect x="275.08" y="620" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>upload chunk-URRDWL2E.js:35174 — 0.7 ms</title><rect x="276.01" y="636" width="0.50" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setValueT1 chunk-URRDWL2E.js:34784 — 0.6 ms</title><rect x="276.01" y="620" width="0.48" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setTexture2D chunk-URRDWL2E.js:38202 — 0.6 ms</title><rect x="276.01" y="604" width="0.48" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>bindTexture chunk-URRDWL2E.js:37705 — 0.6 ms</title><rect x="276.01" y="588" width="0.48" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setup chunk-URRDWL2E.js:32831 — 1.3 ms</title><rect x="276.51" y="652" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>needsUpdate chunk-URRDWL2E.js:32901 — 1.3 ms</title><rect x="276.51" y="636" width="0.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setMaterial chunk-URRDWL2E.js:37626 — 0.8 ms</title><rect x="277.43" y="652" width="0.61" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setTest chunk-URRDWL2E.js:37247 — 0.8 ms</title><rect x="277.43" y="636" width="0.61" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render chunk-URRDWL2E.js:32673 — 1.4 ms</title><rect x="278.05" y="716" width="1.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setClear chunk-URRDWL2E.js:32788 — 1.4 ms</title><rect x="278.05" y="700" width="1.02" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:12670 — 0.8 ms</title><rect x="279.07" y="716" width="0.57" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render chunk-FNHBCYTV.js:14742 — 10.5 ms</title><rect x="279.63" y="764" width="7.76" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.render chunk-URRDWL2E.js:40937 — 10.5 ms</title><rect x="279.63" y="748" width="7.76" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderScene chunk-URRDWL2E.js:41082 — 4.7 ms</title><rect x="279.63" y="732" width="3.45" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObjects chunk-URRDWL2E.js:41163 — 4.6 ms</title><rect x="279.63" y="716" width="3.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderObject chunk-URRDWL2E.js:41179 — 4.6 ms</title><rect x="279.63" y="700" width="3.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40745 — 4.6 ms</title><rect x="279.63" y="684" width="3.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setProgram chunk-URRDWL2E.js:41286 — 2.6 ms</title><rect x="279.63" y="668" width="1.95" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLProgram.getUniforms chunk-URRDWL2E.js:35791 — 2.6 ms</title><rect x="279.63" y="652" width="1.95" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>onFirstUse chunk-URRDWL2E.js:35744 — 2.6 ms</title><rect x="279.63" y="636" width="1.95" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>getProgramInfoLog — 2.6 ms</title><rect x="279.63" y="620" width="1.95" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>setup chunk-URRDWL2E.js:32831 — 2.0 ms</title><rect x="281.58" y="668" width="1.48" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>needsUpdate chunk-URRDWL2E.js:32901 — 2.0 ms</title><rect x="281.58" y="652" width="1.48" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>render chunk-URRDWL2E.js:32673 — 4.3 ms</title><rect x="283.08" y="732" width="3.17" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.clear chunk-URRDWL2E.js:40632 — 4.3 ms</title><rect x="283.08" y="716" width="3.17" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>clear — 4.3 ms</title><rect x="283.08" y="700" width="3.17" height="15" fill="hsl(209, 55%, 64%)" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 1.6 ms</title><rect x="286.24" y="732" width="1.15" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>projectObject chunk-URRDWL2E.js:41024 — 1.6 ms</title><rect x="286.24" y="716" width="1.15" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>copy chunk-URRDWL2E.js:9785 — 1.4 ms</title><rect x="288.63" y="796" width="1.03" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) @react-three_drei.js:529 — 1.2 ms</title><rect x="289.66" y="796" width="0.85" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:12670 — 1.2 ms</title><rect x="289.66" y="780" width="0.85" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) studio.tsx:76 — 1.0 ms</title><rect x="290.52" y="796" width="0.72" height="15" fill="hsl(224, 55%, 59%)" rx="1"/></g>
+<g><title>updateMatrixWorld chunk-URRDWL2E.js:8756 — 1.0 ms</title><rect x="290.52" y="780" width="0.72" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkUntilDeadline chunk-RMQKLT5B.js:16 — 64.3 ms</title><rect x="291.24" y="828" width="47.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkOnRootViaSchedulerTask chunk-RMQKLT5B.js:13489 — 64.3 ms</title><rect x="291.24" y="812" width="47.47" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkOnRoot chunk-RMQKLT5B.js:11706 — 64.2 ms</title><rect x="291.24" y="796" width="47.44" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRootWhenReady chunk-RMQKLT5B.js:11973 — 62.5 ms</title><rect x="291.24" y="780" width="46.19" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRoot chunk-RMQKLT5B.js:12716 — 62.5 ms</title><rect x="291.24" y="764" width="46.19" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>flushLayoutEffects chunk-RMQKLT5B.js:12886 — 59.8 ms</title><rect x="291.24" y="748" width="44.20" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="732" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="716" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="700" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="684" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="668" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="652" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="636" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="620" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="604" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="588" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="572" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-RMQKLT5B.js:10789 — 58.9 ms</title><rect x="291.24" y="556" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-RMQKLT5B.js:9897 — 58.9 ms</title><rect x="291.24" y="540" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitHookLayoutEffects chunk-RMQKLT5B.js:9390 — 58.9 ms</title><rect x="291.24" y="524" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitHookEffectListMount chunk-RMQKLT5B.js:9404 — 58.9 ms</title><rect x="291.24" y="508" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-RMQKLT5B.js:993 — 58.9 ms</title><rect x="291.24" y="492" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 58.9 ms</title><rect x="291.24" y="476" width="43.49" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>react_stack_bottom_frame chunk-RMQKLT5B.js:18564 — 58.9 ms</title><rect x="291.24" y="460" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-TK7WHPHW.js:14392 — 58.9 ms</title><rect x="291.24" y="444" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run2 chunk-TK7WHPHW.js:14396 — 58.9 ms</title><rect x="291.24" y="428" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>configure chunk-TK7WHPHW.js:13765 — 58.9 ms</title><rect x="291.24" y="412" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setSize chunk-TK7WHPHW.js:13170 — 58.9 ms</title><rect x="291.24" y="396" width="43.49" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>setState chunk-TK7WHPHW.js:12205 — 58.9 ms</title><rect x="291.24" y="380" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-TK7WHPHW.js:12210 — 58.9 ms</title><rect x="291.24" y="364" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-TK7WHPHW.js:13247 — 58.9 ms</title><rect x="291.24" y="348" width="43.49" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>WebGLRenderer.setSize chunk-URRDWL2E.js:40557 — 58.9 ms</title><rect x="291.24" y="332" width="43.49" height="15" fill="#e4572e" rx="1"/></g>
+<g><title>run — 1.0 ms</title><rect x="334.73" y="732" width="0.70" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>logRenderPhase chunk-RMQKLT5B.js:3301 — 2.6 ms</title><rect x="335.44" y="748" width="1.95" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 2.6 ms</title><rect x="335.44" y="732" width="1.95" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>renderRootSync chunk-RMQKLT5B.js:12366 — 1.7 ms</title><rect x="337.43" y="780" width="1.25" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>prepareFreshStack chunk-RMQKLT5B.js:12095 — 1.1 ms</title><rect x="337.43" y="764" width="0.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>workLoopSync chunk-RMQKLT5B.js:12423 — 0.6 ms</title><rect x="338.24" y="764" width="0.44" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performUnitOfWork chunk-RMQKLT5B.js:12559 — 0.6 ms</title><rect x="338.24" y="748" width="0.44" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-RMQKLT5B.js:993 — 0.6 ms</title><rect x="338.24" y="732" width="0.44" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkUntilDeadline chunk-TK7WHPHW.js:216 — 14.8 ms</title><rect x="338.73" y="828" width="10.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>processRootScheduleInMicrotask chunk-TK7WHPHW.js:1960 — 14.8 ms</title><rect x="338.73" y="812" width="10.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>flushSyncWorkAcrossRoots_impl chunk-TK7WHPHW.js:1932 — 14.8 ms</title><rect x="338.73" y="796" width="10.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performSyncWorkOnRoot chunk-TK7WHPHW.js:2041 — 14.8 ms</title><rect x="338.73" y="780" width="10.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkOnRoot chunk-TK7WHPHW.js:8840 — 14.8 ms</title><rect x="338.73" y="764" width="10.96" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRootWhenReady chunk-TK7WHPHW.js:9005 — 8.0 ms</title><rect x="338.73" y="748" width="5.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRoot chunk-TK7WHPHW.js:9546 — 8.0 ms</title><rect x="338.73" y="732" width="5.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRootImpl chunk-TK7WHPHW.js:9566 — 8.0 ms</title><rect x="338.73" y="716" width="5.92" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffects chunk-TK7WHPHW.js:7748 — 6.5 ms</title><rect x="338.73" y="700" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="684" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="668" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="652" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="636" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="620" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="604" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="588" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="572" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="556" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="540" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="524" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="508" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="492" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="476" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="460" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="444" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="428" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="412" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="396" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseMutationEffects chunk-TK7WHPHW.js:7754 — 6.5 ms</title><rect x="338.73" y="380" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitMutationEffectsOnFiber chunk-TK7WHPHW.js:7796 — 6.5 ms</title><rect x="338.73" y="364" width="4.81" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitReconciliationEffects chunk-TK7WHPHW.js:8074 — 6.0 ms</title><rect x="338.73" y="348" width="4.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-TK7WHPHW.js:909 — 6.0 ms</title><rect x="338.73" y="332" width="4.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitPlacement chunk-TK7WHPHW.js:7267 — 6.0 ms</title><rect x="338.73" y="316" width="4.43" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>insertOrAppendPlacementNodeIntoContainer chunk-TK7WHPHW.js:7251 — 5.9 ms</title><rect x="338.73" y="300" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>insertOrAppendPlacementNodeIntoContainer chunk-TK7WHPHW.js:7251 — 5.9 ms</title><rect x="338.73" y="284" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>insertOrAppendPlacementNodeIntoContainer chunk-TK7WHPHW.js:7251 — 5.9 ms</title><rect x="338.73" y="268" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>insertInContainerBefore chunk-TK7WHPHW.js:13576 — 5.9 ms</title><rect x="338.73" y="252" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>insertBefore chunk-TK7WHPHW.js:13444 — 5.9 ms</title><rect x="338.73" y="236" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleContainerEffects chunk-TK7WHPHW.js:13400 — 5.9 ms</title><rect x="338.73" y="220" width="4.37" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleContainerEffects chunk-TK7WHPHW.js:13400 — 5.4 ms</title><rect x="338.73" y="204" width="4.00" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleContainerEffects chunk-TK7WHPHW.js:13400 — 5.4 ms</title><rect x="338.73" y="188" width="4.00" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>handleContainerEffects chunk-TK7WHPHW.js:13400 — 2.7 ms</title><rect x="338.73" y="172" width="1.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>applyProps chunk-TK7WHPHW.js:12677 — 2.7 ms</title><rect x="338.73" y="156" width="1.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>_ShapeGeometry chunk-URRDWL2E.js:20886 — 1.4 ms</title><rect x="340.70" y="172" width="1.07" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>addShape chunk-URRDWL2E.js:20913 — 1.4 ms</title><rect x="340.70" y="156" width="1.07" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>triangulateShape chunk-URRDWL2E.js:19946 — 1.4 ms</title><rect x="340.70" y="140" width="1.07" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>triangulate chunk-URRDWL2E.js:19911 — 1.4 ms</title><rect x="340.70" y="124" width="1.07" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>_IcosahedronGeometry chunk-URRDWL2E.js:20423 — 1.3 ms</title><rect x="341.77" y="172" width="0.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>_PolyhedronGeometry chunk-URRDWL2E.js:17571 — 1.3 ms</title><rect x="341.77" y="156" width="0.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>normalizeNormals chunk-URRDWL2E.js:11902 — 1.3 ms</title><rect x="341.77" y="140" width="0.97" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffects chunk-TK7WHPHW.js:8095 — 1.5 ms</title><rect x="343.54" y="700" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="684" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="668" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="652" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="636" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="620" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="604" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="588" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="572" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="556" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="540" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="524" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="508" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="492" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="476" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="460" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="444" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="428" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="412" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="396" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="380" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="364" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="348" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="332" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="316" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="300" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="284" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="268" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="252" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="236" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>recursivelyTraverseLayoutEffects chunk-TK7WHPHW.js:8101 — 1.5 ms</title><rect x="343.54" y="220" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitLayoutEffectOnFiber chunk-TK7WHPHW.js:7371 — 1.5 ms</title><rect x="343.54" y="204" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitHookLayoutEffects chunk-TK7WHPHW.js:6930 — 1.5 ms</title><rect x="343.54" y="188" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitHookEffectListMount chunk-TK7WHPHW.js:6944 — 1.5 ms</title><rect x="343.54" y="172" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-TK7WHPHW.js:909 — 1.5 ms</title><rect x="343.54" y="156" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>react-stack-bottom-frame chunk-TK7WHPHW.js:10531 — 1.5 ms</title><rect x="343.54" y="140" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) @react-three_postprocessing.js:4371 — 1.5 ms</title><rect x="343.54" y="124" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>applyProps chunk-TK7WHPHW.js:12677 — 1.5 ms</title><rect x="343.54" y="108" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>set @react-three_postprocessing.js:2925 — 1.5 ms</title><rect x="343.54" y="92" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>configureDenoisePass @react-three_postprocessing.js:3210 — 1.5 ms</title><rect x="343.54" y="76" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>generateDenoiseSamples @react-three_postprocessing.js:3262 — 1.5 ms</title><rect x="343.54" y="60" width="1.11" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderRootSync chunk-TK7WHPHW.js:9193 — 6.8 ms</title><rect x="344.66" y="748" width="5.03" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>workLoopSync chunk-TK7WHPHW.js:9251 — 6.8 ms</title><rect x="344.66" y="732" width="5.03" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performUnitOfWork chunk-TK7WHPHW.js:9389 — 6.8 ms</title><rect x="344.66" y="716" width="5.03" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-TK7WHPHW.js:909 — 6.6 ms</title><rect x="344.66" y="700" width="4.90" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>beginWork chunk-TK7WHPHW.js:5752 — 6.6 ms</title><rect x="344.66" y="684" width="4.90" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateFunctionComponent chunk-TK7WHPHW.js:4831 — 3.2 ms</title><rect x="344.66" y="668" width="2.39" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderWithHooks chunk-TK7WHPHW.js:3255 — 0.8 ms</title><rect x="344.66" y="652" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>react-stack-bottom-frame chunk-TK7WHPHW.js:10480 — 0.8 ms</title><rect x="344.66" y="636" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>reconcileChildren chunk-TK7WHPHW.js:4673 — 0.7 ms</title><rect x="345.24" y="652" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-TK7WHPHW.js:3087 — 0.7 ms</title><rect x="345.24" y="636" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>reconcileChildFibersImpl chunk-TK7WHPHW.js:2922 — 0.7 ms</title><rect x="345.24" y="620" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>placeSingleChild chunk-TK7WHPHW.js:2537 — 0.7 ms</title><rect x="345.24" y="604" width="0.53" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>reconcileChildren chunk-TK7WHPHW.js:4673 — 1.3 ms</title><rect x="347.05" y="668" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-TK7WHPHW.js:3087 — 1.3 ms</title><rect x="347.05" y="652" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>reconcileChildFibersImpl chunk-TK7WHPHW.js:2922 — 1.3 ms</title><rect x="347.05" y="636" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>reconcileChildrenArray chunk-TK7WHPHW.js:2791 — 1.3 ms</title><rect x="347.05" y="620" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>warnOnInvalidKey chunk-TK7WHPHW.js:2762 — 1.3 ms</title><rect x="347.05" y="604" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>warnForMissingKey chunk-TK7WHPHW.js:10555 — 1.3 ms</title><rect x="347.05" y="588" width="0.98" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateForwardRef chunk-TK7WHPHW.js:4681 — 1.1 ms</title><rect x="348.02" y="668" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderWithHooks chunk-TK7WHPHW.js:3255 — 1.1 ms</title><rect x="348.02" y="652" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>react-stack-bottom-frame chunk-TK7WHPHW.js:10480 — 1.1 ms</title><rect x="348.02" y="636" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) @react-three_postprocessing.js:3547 — 1.1 ms</title><rect x="348.02" y="620" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>exports.useMemo chunk-KSRSB2NJ.js:946 — 1.1 ms</title><rect x="348.02" y="604" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>useMemo chunk-TK7WHPHW.js:10657 — 1.1 ms</title><rect x="348.02" y="588" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>mountMemo chunk-TK7WHPHW.js:4082 — 1.1 ms</title><rect x="348.02" y="572" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) @react-three_postprocessing.js:3548 — 1.1 ms</title><rect x="348.02" y="556" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>EffectComposer chunk-FNHBCYTV.js:798 — 1.1 ms</title><rect x="348.02" y="540" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setRenderer chunk-FNHBCYTV.js:871 — 1.1 ms</title><rect x="348.02" y="524" width="0.78" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(anonymous) chunk-RMQKLT5B.js:13527 — 6.5 ms</title><rect x="349.69" y="828" width="4.77" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>processRootScheduleInMicrotask chunk-RMQKLT5B.js:13425 — 6.5 ms</title><rect x="349.69" y="812" width="4.77" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>flushSyncWorkAcrossRoots_impl chunk-RMQKLT5B.js:13392 — 6.5 ms</title><rect x="349.69" y="796" width="4.77" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performSyncWorkOnRoot chunk-RMQKLT5B.js:13513 — 6.5 ms</title><rect x="349.69" y="780" width="4.77" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performWorkOnRoot chunk-RMQKLT5B.js:11706 — 6.5 ms</title><rect x="349.69" y="764" width="4.77" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderRootSync chunk-RMQKLT5B.js:12366 — 5.2 ms</title><rect x="349.69" y="748" width="3.87" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>workLoopSync chunk-RMQKLT5B.js:12423 — 4.5 ms</title><rect x="349.69" y="732" width="3.33" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>performUnitOfWork chunk-RMQKLT5B.js:12559 — 4.5 ms</title><rect x="349.69" y="716" width="3.33" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-RMQKLT5B.js:993 — 3.7 ms</title><rect x="349.69" y="700" width="2.75" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 3.7 ms</title><rect x="349.69" y="684" width="2.75" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>beginWork chunk-RMQKLT5B.js:8416 — 3.7 ms</title><rect x="349.69" y="668" width="2.75" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>updateFunctionComponent chunk-RMQKLT5B.js:7457 — 3.7 ms</title><rect x="349.69" y="652" width="2.75" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>renderWithHooks chunk-RMQKLT5B.js:5638 — 3.7 ms</title><rect x="349.69" y="636" width="2.75" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>react_stack_bottom_frame chunk-RMQKLT5B.js:18505 — 3.7 ms</title><rect x="349.69" y="620" width="2.75" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>AssetCard workspace.tsx:634 — 1.6 ms</title><rect x="349.69" y="604" width="1.22" height="15" fill="hsl(255, 55%, 70%)" rx="1"/></g>
+<g><title>exports.jsxDEV react_jsx-dev-runtime.js:239 — 1.6 ms</title><rect x="349.69" y="588" width="1.22" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>ComfyPanel App.tsx:811 — 1.6 ms</title><rect x="350.91" y="604" width="1.19" height="15" fill="hsl(222, 55%, 57%)" rx="1"/></g>
+<g><title>exports.jsxDEV react_jsx-dev-runtime.js:239 — 1.6 ms</title><rect x="350.91" y="588" width="1.19" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>completeUnitOfWork chunk-RMQKLT5B.js:12656 — 0.8 ms</title><rect x="352.43" y="700" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>runWithFiberInDEV chunk-RMQKLT5B.js:993 — 0.8 ms</title><rect x="352.43" y="684" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 0.8 ms</title><rect x="352.43" y="668" width="0.59" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>completeWork chunk-RMQKLT5B.js:8907 — 0.8 ms</title><rect x="352.43" y="652" width="0.59" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setInitialProperties chunk-RMQKLT5B.js:14553 — 0.7 ms</title><rect x="352.43" y="636" width="0.54" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>setProp chunk-RMQKLT5B.js:14173 — 0.7 ms</title><rect x="352.43" y="620" width="0.54" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>prepareFreshStack chunk-RMQKLT5B.js:12095 — 0.7 ms</title><rect x="353.02" y="732" width="0.54" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 0.7 ms</title><rect x="353.02" y="716" width="0.52" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>measure — 0.7 ms</title><rect x="353.02" y="700" width="0.52" height="15" fill="hsl(226, 55%, 61%)" rx="1"/></g>
+<g><title>commitRootWhenReady chunk-RMQKLT5B.js:11973 — 1.2 ms</title><rect x="353.56" y="748" width="0.90" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>commitRoot chunk-RMQKLT5B.js:12716 — 1.2 ms</title><rect x="353.56" y="732" width="0.90" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>logRenderPhase chunk-RMQKLT5B.js:3301 — 0.6 ms</title><rect x="353.56" y="716" width="0.45" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>run — 0.6 ms</title><rect x="353.56" y="700" width="0.45" height="15" fill="hsl(211, 55%, 66%)" rx="1"/></g>
+<g><title>flushSpawnedWork chunk-RMQKLT5B.js:12967 — 0.6 ms</title><rect x="354.01" y="716" width="0.42" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>flushPendingEffects chunk-RMQKLT5B.js:13084 — 0.6 ms</title><rect x="354.01" y="700" width="0.42" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>flushPassiveEffects chunk-RMQKLT5B.js:13090 — 0.6 ms</title><rect x="354.01" y="684" width="0.42" height="15" fill="#29bf12" rx="1"/></g>
+<g><title>(garbage collector) — 1.3 ms</title><rect x="354.46" y="828" width="0.94" height="15" fill="#9aa5b1" rx="1"/></g>
+</svg>

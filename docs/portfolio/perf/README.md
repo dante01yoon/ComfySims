@@ -1,6 +1,6 @@
 # Performance runs
 
-Every measurement of the editor's motion and loading, newest last. Each run folder has a report, raw numbers, V8 CPU profiles and Chrome traces. Made with `demo/measure-motion.mjs` (`MOTION_LABEL=<label> node demo/measure-motion.mjs`).
+Every measurement of the editor's motion and loading, newest last. Each run folder has a report, raw numbers, V8 CPU profiles and Chrome traces. Environment, scenarios, signals and how the improvement points were found: [METHOD.md](METHOD.md). Each run also has flame graphs and flame charts (`flamegraph-*.svg`, `flamechart-*.svg`).
 
 | Run | Commit | Machine | Load longest stall | Switch longest stall | Focus max step | Idle rendered frames (3 s) |
 | --- | --- | --- | --- | --- | --- | --- |

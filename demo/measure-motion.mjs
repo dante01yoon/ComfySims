@@ -15,7 +15,7 @@ const layout = JSON.parse(readFileSync('demo/out/agent/final-state.json', 'utf8'
 mkdirSync(OUT, { recursive: true })
 
 async function run(index) {
-  const browser = await chromium.launch({ headless: process.env.MOTION_HEADFUL !== '1', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'] })
+  const browser = await chromium.launch({ headless: process.env.MOTION_HEADFUL !== '1', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--mute-audio'] })
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: DPR })
   const cdp = await page.context().newCDPSession(page)
   await cdp.send('Profiler.enable')
@@ -229,7 +229,7 @@ const index = `${PERF}/README.md`
 const header = [
   '# Performance runs',
   '',
-  'Every measurement of the editor\'s motion and loading, newest last. Each run folder has a report, raw numbers, V8 CPU profiles and Chrome traces. Made with `demo/measure-motion.mjs` (`MOTION_LABEL=<label> node demo/measure-motion.mjs`).',
+  'Every measurement of the editor\'s motion and loading, newest last. Each run folder has a report, raw numbers, V8 CPU profiles, Chrome traces, flame graphs and flame charts. Environment, scenarios, signals and how the improvement points were found: [METHOD.md](METHOD.md).',
   '',
   '| Run | Commit | Machine | Load longest stall | Switch longest stall | Focus max step | Idle rendered frames (3 s) |',
   '| --- | --- | --- | --- | --- | --- | --- |'
@@ -238,4 +238,5 @@ const byName = Object.fromEntries(results.map((r) => [r.name, r]))
 const row = `| [${LABEL}](${LABEL}/report.md) | \`${COMMIT}\` | ${environment.cpu} @${DPR}x, median of ${RUNS} | ${byName['load-layout'].longestTaskMs} ms | ${byName['switch-to-studio'].longestTaskMs} ms | ${byName['focus-room'].largestCameraStepCm} cm | ${cell(byName['idle-house'].renderedFrames)} |`
 const existing = existsSync(index) ? readFileSync(index, 'utf8').trimEnd().split('\n').filter((line) => !line.startsWith(`| [${LABEL}]`)).join('\n') : header
 writeFileSync(index, `${existing}\n${row}\n`)
+execFileSync('node', ['demo/flamechart.mjs', OUT], { stdio: 'inherit' })
 console.log(report.split('\n').slice(0, 14).join('\n'))
