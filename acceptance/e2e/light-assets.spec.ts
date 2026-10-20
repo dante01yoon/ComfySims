@@ -170,3 +170,18 @@ for (const view of ['editor', 'studio'] as const) {
     expect(Math.abs(centre - (left + right) / 2)).toBeLessThan(width * 0.1)
   })
 }
+
+for (const size of [{ width: 800, height: 450 }, { width: 1600, height: 900 }]) {
+  test(`AC-135 the bottom bar and room chips sit in the part of the canvas no panel covers (${size.width}×${size.height})`, async ({ page }) => {
+    await page.setViewportSize(size)
+    await page.evaluate((layout) => window.roomfit.load(layout), house)
+    await page.evaluate(() => window.roomfit.setView('studio'))
+    await page.waitForFunction(() => !window.roomfit.cameraMoving())
+    for (const control of [page.getByRole('button', { name: 'Walk', exact: true }), page.getByRole('button', { name: 'Living', exact: true }), page.getByRole('button', { name: 'Evening', exact: true })]) {
+      await expect(control).toBeVisible()
+      const box = (await control.boundingBox())!
+      const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('button')?.textContent?.trim() ?? null, { x: box.x + box.width / 2, y: box.y + box.height / 2 })
+      expect(hit).toBe(await control.textContent().then((text) => text?.trim() ?? null))
+    }
+  })
+}

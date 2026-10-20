@@ -128,6 +128,7 @@ None.
 | AC-130 | active | `renderStats()` reports draw calls, triangles, textures and texture bytes, and texture bytes for the demo house with the heavy fixture as every piece is ≤ 25% of the same house unoptimised |
 | AC-132 | active | Library thumbnails: loading a layout whose assets already have thumbnails renders none (`thumbnailRenders` unchanged); missing ones render at most one per animation frame, outside React render, and are saved on the asset |
 | AC-134 | active | With the canvas at a fixed size under the side panels, the editor and studio views frame the whole house in the part of the canvas no panel covers: its corners, through `projectToScreen`, lie inside that part with a 2% margin and are centred within 10% |
+| AC-135 | active | The bottom bar and room chips sit in the part of the canvas no panel covers, so every control is clickable at 800 × 450 and 1600 × 900 |
 | AC-131 | manual | Real-GPU measurement (median of 3 headless runs): loading the 17-piece demo house and switching to the studio have no main-thread stall over 50 ms after the first load (cached) and none over 100 ms on the first load (evidence 2026-10-19: `docs/portfolio/perf/2026-10-19-m16-after/report.md` — partly met: loads pass, view switch still 69–76 ms) |
 
 ## 9. Test plan
@@ -136,7 +137,7 @@ None.
 | --- | --- |
 | AC-125, AC-126 | vitest (`acceptance/optimize.test.ts`), heavy fixture `fixtures/glb/heavy-generated.glb` (built by `harness/tools/build-heavy-fixture.ts`), a fake resizer that records sizes |
 | AC-129 (chunks) | vitest (`acceptance/bundle.test.ts`): production build into a temp dir |
-| AC-127 ~ AC-130, AC-132, AC-134 | e2e (`acceptance/e2e/light-assets.spec.ts`): the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
+| AC-127 ~ AC-130, AC-132, AC-134, AC-135 | e2e (`acceptance/e2e/light-assets.spec.ts`): the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
 | AC-131 | manual: `demo/measure-motion.mjs` before/after |
 
 ## 10. Risks and open questions
@@ -154,6 +155,7 @@ None.
   - **Follow-ups found by the profile,** done in the same follow-up session:
     - Switch stalls come from synchronous shader checks: turn `renderer.debug.checkShaderErrors` off in production builds, and precompile the studio as soon as the house has loaded.
     - The cold load is serial in one worker: use a pool of `min(4, max(1, cores / 2))` workers.
+  - **AC-135 added (2026-10-20).** Running the motion tests at 800 × 450 for CI showed the Walk button under the Workspace panel. Since the canvas runs under the panels, the bottom bar centred on the whole canvas. Overlays now follow the uncovered area, like the camera framing (AC-134). The implementation session (impl-36) stopped on it rather than widening the test window: right call.
   - **Lesson:** a bundle criterion has to measure what loads at startup (the entry plus its static imports), not one chunk. This is a follow-up.
   - **Two spec-session slips (BLOCKED):**
     - `FitReport` in the schema lacked `optimised`, though §5 required it.

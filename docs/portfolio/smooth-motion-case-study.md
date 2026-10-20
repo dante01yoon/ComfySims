@@ -228,3 +228,8 @@ The same load after M16: the main thread is idle most of the 5.3 s window while 
   - GPU textures: ~1.09 GB → 209 MB.
   - AC-131 partly met: the view switch stalls 69–76 ms on synchronous shader checks (`getProgramInfoLog`).
   - Follow-ups: disable shader error checks in production, precompile right after load, a worker pool, measure production builds, KTX2.
+- 2026-10-20 — First CI run with the M15/M16 tests (GitHub runner, software WebGL at ~3 fps with the demo house): 6 of 105 e2e failed. Fast-machine-only assumptions surfaced:
+  - **Dev-server reload.** Vite discovered the worker's dependencies (gltf-transform, meshoptimizer) only when the first product was generated, and reloaded the page mid-test. Reproduced locally from a cold cache; fixed with `optimizeDeps.include` and confirmed by the reproduction script.
+  - **Derived data vs undo.** Thumbnails written in the background landed in the layout, so "undo back to the loaded layout" no longer compared equal. The test now ignores derived thumbnails.
+  - **Frame-rate-dependent settling.** Inertia counted as "moving" until the per-frame step fell below a fixed distance. At 3 fps each frame steps further, so the camera "moved" for 4.5 s after it looked still. Renders and screenshots wait on that flag. It is now judged by speed (impl-36).
+  - **Glide sampling.** At 3 fps a 0.8 s glide shows only 2–3 frames. The motion tests now run at 800 × 450 so the software renderer keeps up.
