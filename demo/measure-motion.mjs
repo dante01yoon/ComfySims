@@ -79,6 +79,10 @@ async function run(index) {
     const { profile } = await cdp.send('Profiler.stop')
     const to = await page.evaluate(() => performance.now())
     const framesAfter = await renderedFrames()
+  const gpu = await page.evaluate(() => {
+    const stats = window.roomfit.renderStats?.()
+    return stats && 'textureBytes' in stats ? { textureMb: +(stats.textureBytes / 1048576).toFixed(1), drawCalls: stats.drawCalls, triangles: stats.triangles, textures: stats.textures } : null
+  })
     if (index === 0) {
       writeFileSync(`${OUT}/cpu-${name}.cpuprofile.gz`, gzipSync(JSON.stringify(profile)))
       writeFileSync(`${OUT}/trace-${name}.json.gz`, gzipSync(JSON.stringify(trace)))
@@ -106,6 +110,9 @@ async function run(index) {
       name,
       ...metrics,
       renderedFrames: framesBefore === null || framesAfter === null ? null : framesAfter - framesBefore,
+    textureMb: gpu?.textureMb ?? null,
+    drawCalls: gpu?.drawCalls ?? null,
+    triangles: gpu?.triangles ?? null,
       heapMbAfter: +heapAfter.toFixed(1),
       heapMbDelta: +(heapAfter - heapBefore).toFixed(1),
       cpu: topSelfTime(profile)
@@ -148,6 +155,31 @@ async function run(index) {
     await page.waitForTimeout(1000)
   }))
   results.push(await scenario('idle-room', () => page.waitForTimeout(3000)))
+  await page.reload()
+  await page.waitForFunction(() => typeof window.roomfit?.ready === 'function')
+  await page.evaluate(() => window.roomfit.ready())
+  await page.evaluate(() => {
+    window.__motion = { frames: [], longTasks: [], camera: [] }
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) window.__motion.longTasks.push({ at: entry.startTime, ms: entry.duration })
+    }).observe({ type: 'longtask', buffered: false })
+    const tick = (now) => {
+      window.__motion.frames.push(now)
+      const { position } = (window.roomfit.cameraFrame ?? window.roomfit.camera)()
+      window.__motion.camera.push({ at: now, x: position.x, y: position.y, z: position.z })
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+  results.push(await scenario('reload-layout', async () => {
+    await page.evaluate((value) => window.roomfit.load(value), layout)
+    await page.waitForFunction(async () => (await window.roomfit.scene()).every((item) => item.meshLoaded), null, { timeout: 120_000 })
+  }))
+  results.push(await scenario('switch-to-studio-again', async () => {
+    await page.evaluate(() => { window.roomfit.setView('studio'); window.roomfit.setScene('work') })
+    await page.waitForTimeout(2000)
+  }))
+  results.push(await scenario('studio-settled', () => page.waitForTimeout(1500)))
   const canWalk = await page.evaluate(() => typeof window.roomfit.walk === 'function')
   if (canWalk) {
     results.push(await scenario('walk-to-kitchen', async () => {
@@ -192,7 +224,7 @@ const median = (values) => {
   const sorted = values.filter((value) => value !== null).sort((a, b) => a - b)
   return sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : null
 }
-const NUMERIC = ['seconds', 'fps', 'frameMsP50', 'frameMsP95', 'framesOver33ms', 'longTasks', 'longestTaskMs', 'largestCameraStepCm', 'renderedFrames', 'heapMbAfter', 'heapMbDelta']
+const NUMERIC = ['seconds', 'fps', 'frameMsP50', 'frameMsP95', 'framesOver33ms', 'longTasks', 'longestTaskMs', 'largestCameraStepCm', 'renderedFrames', 'heapMbAfter', 'heapMbDelta', 'textureMb', 'drawCalls', 'triangles']
 const results = runs[0].results.map((first) => {
   const all = runs.map(({ results: list }) => list.find(({ name }) => name === first.name))
   return {
@@ -210,9 +242,9 @@ const report = [
   '',
   `Median of ${RUNS} runs (fresh browser each; profiles and traces from run 1) · commit \`${COMMIT}\` · ${environment.at} · ${environment.cpu} · GPU ${environment.gpu} · ${environment.browser} · ${environment.viewport} @${DPR}x · ${environment.items} items`,
   '',
-  '| Scenario | fps (rAF) | p50 ms | p95 ms | frames > 33 ms | long tasks | longest ms (min–max) | max camera step cm | rendered frames | heap MB (Δ) | GC ms |',
-  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-  ...results.map((r) => `| ${r.name} | ${r.fps} | ${cell(r.frameMsP50)} | ${cell(r.frameMsP95)} | ${r.framesOver33ms} | ${r.longTasks} | ${r.longestTaskMs} (${r.range.longestTaskMs.join('–')}) | ${r.largestCameraStepCm} | ${cell(r.renderedFrames)} | ${r.heapMbAfter} (${r.heapMbDelta >= 0 ? '+' : ''}${r.heapMbDelta}) | ${r.cpu.gcMs} |`),
+  '| Scenario | fps (rAF) | p50 ms | p95 ms | frames > 33 ms | long tasks | longest ms (min–max) | max camera step cm | rendered frames | heap MB (Δ) | GC ms | GPU textures MB | draw calls | triangles |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+  ...results.map((r) => `| ${r.name} | ${r.fps} | ${cell(r.frameMsP50)} | ${cell(r.frameMsP95)} | ${r.framesOver33ms} | ${r.longTasks} | ${r.longestTaskMs} (${r.range.longestTaskMs.join('–')}) | ${r.largestCameraStepCm} | ${cell(r.renderedFrames)} | ${r.heapMbAfter} (${r.heapMbDelta >= 0 ? '+' : ''}${r.heapMbDelta}) | ${r.cpu.gcMs} | ${cell(r.textureMb)} | ${cell(r.drawCalls)} | ${cell(r.triangles)} |`),
   '',
   '## Top main-thread self time per scenario (V8 CPU profile)',
   '',

@@ -1,0 +1,176 @@
+{
+  "files": [
+    {
+      "file": "fit.worker-H6IPQXeZ.js",
+      "kb": 268,
+      "gzipKb": 88
+    },
+    {
+      "file": "index-X7ypU6-u.js",
+      "kb": 482,
+      "gzipKb": 184
+    },
+    {
+      "file": "panorama-viewer-DgUb3FmZ.js",
+      "kb": 2,
+      "gzipKb": 1
+    },
+    {
+      "file": "photo-viewer-DpAd71aV.js",
+      "kb": 3,
+      "gzipKb": 1
+    },
+    {
+      "file": "react-rKR1k4Yv.js",
+      "kb": 303,
+      "gzipKb": 95
+    },
+    {
+      "file": "three-Bm4m2plr.js",
+      "kb": 731,
+      "gzipKb": 190
+    }
+  ],
+  "packages": [
+    {
+      "name": "three",
+      "kb": 728
+    },
+    {
+      "name": "react-dom",
+      "kb": 177
+    },
+    {
+      "name": "meshoptimizer",
+      "kb": 144
+    },
+    {
+      "name": "n8ao",
+      "kb": 137
+    },
+    {
+      "name": "app code",
+      "kb": 137
+    },
+    {
+      "name": "react-reconciler",
+      "kb": 109
+    },
+    {
+      "name": "zod",
+      "kb": 95
+    },
+    {
+      "name": "@gltf-transform/core",
+      "kb": 65
+    },
+    {
+      "name": "postprocessing",
+      "kb": 53
+    },
+    {
+      "name": "@react-three/fiber",
+      "kb": 29
+    },
+    {
+      "name": "@gltf-transform/functions",
+      "kb": 21
+    },
+    {
+      "name": "three-stdlib",
+      "kb": 14
+    },
+    {
+      "name": "@react-three/drei",
+      "kb": 9
+    },
+    {
+      "name": "cwise-compiler",
+      "kb": 9
+    },
+    {
+      "name": "ndarray-ops",
+      "kb": 9
+    },
+    {
+      "name": "react",
+      "kb": 8
+    },
+    {
+      "name": "scheduler",
+      "kb": 7
+    },
+    {
+      "name": "ndarray",
+      "kb": 6
+    },
+    {
+      "name": "property-graph",
+      "kb": 6
+    },
+    {
+      "name": "[unmapped]",
+      "kb": 5
+    },
+    {
+      "name": "[EOLs]",
+      "kb": 5
+    },
+    {
+      "name": "react-use-measure",
+      "kb": 3
+    },
+    {
+      "name": "@react-three/postprocessing",
+      "kb": 3
+    },
+    {
+      "name": "maath",
+      "kb": 2
+    },
+    {
+      "name": "use-sync-external-store",
+      "kb": 2
+    },
+    {
+      "name": "@gltf-transform/extensions",
+      "kb": 1
+    },
+    {
+      "name": "its-fine",
+      "kb": 1
+    },
+    {
+      "name": "suspend-react",
+      "kb": 1
+    },
+    {
+      "name": "zustand",
+      "kb": 1
+    },
+    {
+      "name": "ndarray-pixels",
+      "kb": 0
+    },
+    {
+      "name": "uniq",
+      "kb": 0
+    },
+    {
+      "name": "is-buffer",
+      "kb": 0
+    },
+    {
+      "name": "[sourceMappingURL]",
+      "kb": 0
+    },
+    {
+      "name": "@babel/runtime",
+      "kb": 0
+    },
+    {
+      "name": "iota-array",
+      "kb": 0
+    }
+  ]
+}

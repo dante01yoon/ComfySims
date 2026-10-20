@@ -131,3 +131,42 @@ test('AC-132 thumbnails render once outside React, are saved on the asset, and a
   await page.waitForTimeout(1000)
   expect((await page.evaluate(() => window.roomfit.renderStats())).thumbnailRenders).toBe(0)
 })
+
+async function houseOnScreen(page: Page) {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('canvas')!
+    const rect = canvas.getBoundingClientRect()
+    const wrapper = canvas.parentElement!
+    const midY = rect.top + rect.height / 2
+    let visibleRight = rect.left
+    for (let x = rect.right - 1; x > rect.left; x -= 2) {
+      const hit = document.elementFromPoint(x, midY)
+      if (hit && (hit === canvas || wrapper.contains(hit))) {
+        visibleRight = x
+        break
+      }
+    }
+    const room = window.roomfit.state().layout.room
+    if (room.kind !== 'plan') throw new Error('expected a plan')
+    const xs = room.walls.flatMap((wall) => [wall.from.x, wall.to.x])
+    const zs = room.walls.flatMap((wall) => [wall.from.z, wall.to.z])
+    const corners = [Math.min(...xs), Math.max(...xs)].flatMap((x) => [Math.min(...zs), Math.max(...zs)].flatMap((z) => [0, room.wallHeight].map((y) => ({ x, y, z }))))
+    const points = corners.map((corner) => window.roomfit.projectToScreen(corner)).filter((point) => point !== null)
+    return { left: rect.left, right: visibleRight, xs: points.map(({ x }) => x), count: corners.length, projected: points.length }
+  })
+}
+
+for (const view of ['editor', 'studio'] as const) {
+  test(`AC-134 the whole house is framed in the part of the canvas no panel covers (${view})`, async ({ page }) => {
+    await page.evaluate((layout) => window.roomfit.load(layout), house)
+    await page.evaluate((next) => window.roomfit.setView(next), view)
+    await page.waitForFunction(() => !window.roomfit.cameraMoving())
+    const { left, right, xs, count, projected } = await houseOnScreen(page)
+    expect(projected).toBe(count)
+    const width = right - left
+    expect(Math.min(...xs)).toBeGreaterThan(left + width * 0.02)
+    expect(Math.max(...xs)).toBeLessThan(right - width * 0.02)
+    const centre = (Math.min(...xs) + Math.max(...xs)) / 2
+    expect(Math.abs(centre - (left + right) / 2)).toBeLessThan(width * 0.1)
+  })
+}

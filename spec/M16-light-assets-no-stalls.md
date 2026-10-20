@@ -107,6 +107,7 @@ Non-goals (M16)
   - `renderStats()` gains the fields above.
   - New `assetStats(assetId): { triangles: number; textures: { width: number; height: number }[]; bytes: number } | null`.
   - New `clearAssetCache(): Promise<void>`.
+  - New `projectToScreen(point): { x, y } | null`: page CSS pixels of a world point through the on-screen camera (used by AC-134; also useful to agents).
 - `packages/schema`: `AssetFit` gains optional `optimised`; `Asset` gains optional `thumbnail` (data URL ≤ 40 KB); `JobStep` gains `optimising`.
 - `packages/fit`: new `optimizeGlb(document, options)`; `fitGlbBytes(bytes, dimensions, mode, { align?, optimise?: { resizeImage } })`; `optimizeGlbBytes(bytes, { largestCm, resizeImage })` returns `{ ok: true, bytes, report } | { ok: false, reason: 'unreadable' | 'no-scene' }`; `type ResizeImage = (image: Uint8Array, mimeType: string, size: { width: number; height: number }) => Promise<{ image: Uint8Array; mimeType: string }>`.
 - New dependencies: `@gltf-transform/functions`, `@gltf-transform/extensions` (EXT_texture_webp) and `meshoptimizer` (MeshoptSimplifier, WASM, works in workers).
@@ -126,7 +127,8 @@ None.
 | AC-129 | active | Switching editor ↔ studio keeps the canvas size; the 360° and 3D-photo viewers are separate chunks (`panorama-viewer-*.js`, `photo-viewer-*.js`) and the entry chunk is ≤ 1,100 KB |
 | AC-130 | active | `renderStats()` reports draw calls, triangles, textures and texture bytes, and texture bytes for the demo house with the heavy fixture as every piece is ≤ 25% of the same house unoptimised |
 | AC-132 | active | Library thumbnails: loading a layout whose assets already have thumbnails renders none (`thumbnailRenders` unchanged); missing ones render at most one per animation frame, outside React render, and are saved on the asset |
-| AC-131 | manual | Real-GPU measurement (median of 3 headless runs): loading the 17-piece demo house and switching to the studio have no main-thread stall over 50 ms after the first load (cached) and none over 100 ms on the first load; evidence in the case study |
+| AC-134 | active | With the canvas at a fixed size under the side panels, the editor and studio views frame the whole house in the part of the canvas no panel covers: its corners, through `projectToScreen`, lie inside that part with a 2% margin and are centred within 10% |
+| AC-131 | manual | Real-GPU measurement (median of 3 headless runs): loading the 17-piece demo house and switching to the studio have no main-thread stall over 50 ms after the first load (cached) and none over 100 ms on the first load (evidence 2026-10-19: `docs/portfolio/perf/2026-10-19-m16-after/report.md` — partly met: loads pass, view switch still 69–76 ms) |
 
 ## 9. Test plan
 
@@ -134,7 +136,7 @@ None.
 | --- | --- |
 | AC-125, AC-126 | vitest (`acceptance/optimize.test.ts`), heavy fixture `fixtures/glb/heavy-generated.glb` (built by `harness/tools/build-heavy-fixture.ts`), a fake resizer that records sizes |
 | AC-129 (chunks) | vitest (`acceptance/bundle.test.ts`): production build into a temp dir |
-| AC-127 ~ AC-130, AC-132 | e2e (`acceptance/e2e/light-assets.spec.ts`): the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
+| AC-127 ~ AC-130, AC-132, AC-134 | e2e (`acceptance/e2e/light-assets.spec.ts`): the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
 | AC-131 | manual: `demo/measure-motion.mjs` before/after |
 
 ## 10. Risks and open questions
@@ -147,6 +149,11 @@ None.
 
 - 2026-10-19 After the implementation session (impl-34):
   - **AC-129's "entry chunk ≤ 1,100 KB" was met by its letter, not its intent.** The session split three and React into vendor chunks, so the entry chunk shrank but the bytes loaded at startup barely changed. Only the two viewers became lazy. Moving post-processing to a lazy chunk broke the AC-116 glide test and was reverted.
+  - **AC-134 test, first draft.** It compared screenshot pixels against the background and failed on the pre-M16 build too: the canvas is transparent, and the editor floor and studio lawn fill the frame. It now projects the house corners through a new `projectToScreen`.
+  - **AC-134 added after measuring.** The editor screenshot showed the house centred on the whole canvas, which now runs under the side panel, so the garage was hidden behind it. The fix shifts the projection centre (`camera.setViewOffset`) instead of resizing the canvas.
+  - **Follow-ups found by the profile,** done in the same follow-up session:
+    - Switch stalls come from synchronous shader checks: turn `renderer.debug.checkShaderErrors` off in production builds, and precompile the studio as soon as the house has loaded.
+    - The cold load is serial in one worker: use a pool of `min(4, max(1, cores / 2))` workers.
   - **Lesson:** a bundle criterion has to measure what loads at startup (the entry plus its static imports), not one chunk. This is a follow-up.
   - **Two spec-session slips (BLOCKED):**
     - `FitReport` in the schema lacked `optimised`, though §5 required it.

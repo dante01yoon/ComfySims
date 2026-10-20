@@ -161,6 +161,40 @@ One chunk of 1,590 KB (489 KB gzip):
 
 Code-splitting the viewers and post-processing is on the M16 list.
 
+## Step 5 — M16 results (before vs after, same method)
+
+Before = `c4f6d24` (M15 done, M16 spec only), after = `6879ae4`. Headless real GPU, median of 3 fresh-browser runs. Reports: [m16-before](perf/2026-10-19-m16-before/report.md), [m16-after](perf/2026-10-19-m16-after/report.md).
+
+| Scenario | Metric | Before | After |
+| --- | --- | --- | --- |
+| First load (cold) | frames per second while loading | 18.6 | **57.6** |
+| First load (cold) | p95 frame gap | 150 ms | **16.8 ms** |
+| First load (cold) | main-thread stalls / longest | 7 / 143 ms | **1 / 66 ms** |
+| First load (cold) | wall time until every piece is in | 1.9 s | 5.3 s (slower, see below) |
+| Reload (cached) | stalls / longest | 11 / 130 ms | **0 / 0 ms** |
+| Reload (cached) | wall time | 2.5 s | **0.8 s** |
+| Switch to studio | longest stall | 167 ms | 69 ms |
+| Switch again after reload | longest stall | 86 ms | 76 ms |
+| GPU texture memory, whole house | — | ~1,090 MB (estimated: 45 × 2048² RGBA + mips) | **209 MB** (measured, `renderStats`) |
+| Triangles drawn, whole house in the studio | — | ~2.0 M | **0.81 M** |
+| `texSubImage2D` main-thread time during load | — | ~920 ms | **39 ms** |
+
+### Reading it honestly
+
+- **The freeze on load is gone; the cold load got slower.** One worker optimises 17 pieces (205 MB) one after another: simplify plus WebP encoding.
+  - The main thread stays at ~58 fps and pieces appear as they finish, with box stand-ins first. But the house is complete at 5.3 s instead of 1.9 s.
+  - Every later load comes from the cache in 0.8 s.
+  - A worker pool (one per 2 cores) is the obvious next step.
+- **AC-131 is only partly met.**
+  - Met: cached load has no stall over 50 ms (0 ms), and the cold load has none over 100 ms (66 ms).
+  - Not met: the view switch still stalls 69–76 ms against a 50 ms target. The profile names the cause: `getProgramInfoLog`, 34–54 ms of self time. three.js checks every new shader program synchronously (`renderer.debug.checkShaderErrors`, on by default), and the studio precompile only starts after 2 s of idle, so a switch right after load still compiles. Two fixes: turn the check off in production, and precompile as soon as the house is loaded.
+- **Texture memory per piece is 12.3 MB, not the 6 MB I set as a goal in Step 3.** The spec (AC-130: ≤ 25% of unoptimised) is met at 19%. The 6 MB goal would need 512² for everything or GPU-compressed KTX2 textures (ADR-0014's next step).
+- **The measurements run on the Vite dev server.** React development mode (`jsxDEV`) shows up in every profile, so absolute numbers are pessimistic. The next run should also measure a production build.
+
+![Flame graph: load-layout after M16](perf/2026-10-19-m16-after/flamegraph-load-layout.svg)
+
+The same load after M16: the main thread is idle most of the 5.3 s window while the worker optimises, and the red upload towers from Step 2 are gone.
+
 ## Log
 
 - 2026-10-19 — Baseline measured; causes found from CPU profiles and GLB inspection; plan written.
@@ -188,3 +222,9 @@ Code-splitting the viewers and post-processing is on the M16 list.
   - A fixed-sleep MCP test that had only passed because of the old canvas resize.
 
   Both fixed. Honest note: AC-129 (entry chunk ≤ 1,100 KB) was met by splitting vendors into separate chunks, which does not reduce the bytes loaded at startup. The criterion was mis-specified and the startup weight is a follow-up.
+- 2026-10-19 — M16 measured before/after.
+  - Cold load: freeze gone (18.6 → 57.6 fps, longest stall 143 → 66 ms) but slower to complete (1.9 → 5.3 s).
+  - Cached reload: 0.8 s with no stalls.
+  - GPU textures: ~1.09 GB → 209 MB.
+  - AC-131 partly met: the view switch stalls 69–76 ms on synchronous shader checks (`getProgramInfoLog`).
+  - Follow-ups: disable shader error checks in production, precompile right after load, a worker pool, measure production builds, KTX2.

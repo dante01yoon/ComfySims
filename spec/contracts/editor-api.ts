@@ -174,6 +174,8 @@ export type RoomfitEditorApi = {
   /** The stored GLB of an asset as loaded: triangle count, its textures and its size in bytes; null for an unknown asset or one without a mesh yet. */
   assetStats(assetId: string): { triangles: number; textures: { width: number; height: number; mimeType: string }[]; bytes: number } | null
   clearAssetCache(): Promise<void>
+  /** Where a world point (cm) appears on the page in CSS pixels, through the camera on screen now; null when it is behind the camera. */
+  projectToScreen(point: Vec3): { x: number; y: number } | null
 }
 
 declare global {
