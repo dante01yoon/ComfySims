@@ -3,6 +3,7 @@ import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
 import { PerspectiveCamera, Vector3 } from 'three'
 
+import { frameSeconds, orbitDampingFactor, orbitMotion } from '../../packages/motion/src/index.ts'
 import type { Vec3 } from '../../spec/contracts/editor-api.ts'
 import type { Lens } from './framing.ts'
 
@@ -15,15 +16,10 @@ type Glide = { from: CameraPose; to: CameraPose; startedAt: number; seconds: num
 const GLIDE_SECONDS = { shortest: 0.6, longest: 1.0 }
 const GLIDE_LONGEST_AT_CM = 1500
 const GLIDE_SKIPPED_BELOW_CM = 0.5
-const ORBIT_DAMPING_SECONDS = 0.1
-const ORBIT_SETTLED_STEP_CM = 0.05
-const ORBIT_STILL_STEP_CM = 0.001
 const ZOOM_SECONDS = 0.12
 const ZOOM_PER_WHEEL_PIXEL = 1.0015
 const ZOOM_DISTANCE_CM = { min: 100, max: 12000 }
 const ZOOM_SETTLED_CM = 0.05
-const IDLE_FRAME_GAP_MS = 250
-const STEADY_FRAME_SECONDS = 1 / 60
 
 let getThree: (() => RootState) | null = null
 let controls: OrbitControlsImpl | null = null
@@ -35,6 +31,8 @@ let itemDragging = false
 let orbitDragging = false
 let orbitMoving = false
 let lastFrameAt = 0
+let lastFrameSeconds = 0
+let motionContinues = false
 let positionBeforeControls: Vec3 = { x: 0, y: 0, z: 0 }
 let frames = 0
 
@@ -237,17 +235,13 @@ function zoomStep(goal: number, seconds: number): void {
   if (arrived) zoomGoalCm = null
 }
 
-function frameSeconds(now: number): number {
-  const gap = now - lastFrameAt
-  lastFrameAt = now
-  return gap > IDLE_FRAME_GAP_MS ? STEADY_FRAME_SECONDS : gap / 1000
-}
-
 /** Runs before the orbit controls each frame: glide, smooth zoom and frame-rate independent damping. */
 export function advanceCamera(now: number): void {
   frames += 1
-  const seconds = frameSeconds(now)
-  if (controls) controls.dampingFactor = 1 - Math.exp(-seconds / ORBIT_DAMPING_SECONDS)
+  const seconds = frameSeconds(now - lastFrameAt, motionContinues)
+  lastFrameAt = now
+  lastFrameSeconds = seconds
+  if (controls) controls.dampingFactor = orbitDampingFactor(seconds)
   if (glide) {
     const progress = (now - glide.startedAt) / (glide.seconds * 1000)
     if (progress >= 1) finishGlide()
@@ -258,18 +252,18 @@ export function advanceCamera(now: number): void {
   positionBeforeControls = copy(getThree?.().camera.position ?? positionBeforeControls)
 }
 
+function orbitStillCoasting(): boolean {
+  if (!getThree || !controls?.enabled) return false
+  const motion = orbitMotion(distanceCm(getThree().camera.position, positionBeforeControls), lastFrameSeconds)
+  if (motion !== 'slow' || orbitDragging || zoomGoalCm !== null) return motion !== 'still'
+  flushOrbitInertia()
+  return false
+}
+
 /** Runs after the orbit controls each frame: notices inertia and stops it once it has slowed to a crawl. */
 export function settleOrbit(): void {
-  if (!getThree || !controls?.enabled) {
-    orbitMoving = false
-    return
-  }
-  const step = distanceCm(getThree().camera.position, positionBeforeControls)
-  orbitMoving = step > ORBIT_STILL_STEP_CM
-  if (orbitMoving && !orbitDragging && zoomGoalCm === null && step < ORBIT_SETTLED_STEP_CM) {
-    flushOrbitInertia()
-    orbitMoving = false
-  }
+  orbitMoving = orbitStillCoasting()
+  motionContinues = cameraGliding()
 }
 
 /** Whether a glide, orbit inertia or a smooth zoom is moving the camera. */
