@@ -1,9 +1,21 @@
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
-import { useMemo, useRef, useSyncExternalStore } from 'react'
-import { Color, Shape, SRGBColorSpace, Vector2 } from 'three'
-import type { DirectionalLight, HemisphereLight, PointLight } from 'three'
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import {
+  Color,
+  DirectionalLight,
+  HalfFloatType,
+  HemisphereLight,
+  Light,
+  PointLight,
+  Scene,
+  Shape,
+  SRGBColorSpace,
+  Vector2,
+  WebGLRenderTarget
+} from 'three'
+import type { Camera, Object3D, WebGLRenderer } from 'three'
 
 import { expectedSeconds } from '../../packages/comfy/src/index.ts'
 import type { GroundMaterial, Room, RoomLayout, Zone } from '../../packages/schema/src/index.ts'
@@ -30,6 +42,7 @@ const SURROUNDINGS = '#5a5f4c'
 const SURROUNDINGS_MARGIN_CM = 2500
 const PATH_WIDTH_CM = 120
 const ROOF_THICKNESS_CM = 20
+const SHADER_COMPILE_IDLE_MS = 2000
 
 const PRESET_BUTTONS: { preset: ScenePreset; label: string; dot: string }[] = [
   { preset: 'reading', label: 'Reading', dot: '#f3b562' },
@@ -282,6 +295,53 @@ export function StudioScene({ layout }: { layout: RoomLayout }) {
       </EffectComposer>
     </>
   )
+}
+
+function studioLights(room: Room): Scene {
+  const sun = new DirectionalLight()
+  sun.castShadow = true
+  const zones = room.kind === 'plan' ? room.zones : []
+  return new Scene().add(new HemisphereLight(), sun, ...zones.map(() => new PointLight()))
+}
+
+function compileForStudio(gl: WebGLRenderer, scene: Scene, camera: Camera, room: Room): void {
+  const shownLights: Object3D[] = []
+  scene.traverseVisible((object) => {
+    if (object instanceof Light) shownLights.push(object)
+  })
+  const composerLike = new WebGLRenderTarget(1, 1, { type: HalfFloatType })
+  const previous = gl.getRenderTarget()
+  shownLights.forEach((light) => (light.visible = false))
+  gl.setRenderTarget(composerLike)
+  const compiling = gl.compileAsync(scene, camera, studioLights(room))
+  gl.setRenderTarget(previous)
+  shownLights.forEach((light) => (light.visible = true))
+  void compiling.finally(() => composerLike.dispose())
+}
+
+/** Compiles the studio's shaders for the loaded pieces once the editor has been quiet for a while, so the first switch to the studio does not. */
+export function StudioShadersAhead({ room, meshes }: { room: Room; meshes: ReadonlyMap<string, Object3D | null> }) {
+  const get = useThree((three) => three.get)
+  useEffect(() => {
+    let idle = 0
+    const compile = () => {
+      if (api.cameraMoving()) return waitForQuiet()
+      stopListening()
+      const { gl, scene, camera } = get()
+      compileForStudio(gl, scene, camera, room)
+    }
+    const waitForQuiet = () => {
+      clearTimeout(idle)
+      idle = window.setTimeout(compile, SHADER_COMPILE_IDLE_MS)
+    }
+    const stopListening = subscribe(waitForQuiet)
+    waitForQuiet()
+    return () => {
+      clearTimeout(idle)
+      stopListening()
+    }
+  }, [get, room, meshes])
+  return null
 }
 
 /** One chip per zone above the preset bar; pressing the active chip returns to the whole house. */

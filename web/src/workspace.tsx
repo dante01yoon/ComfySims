@@ -23,9 +23,6 @@ import {
   subscribe
 } from './editor.ts'
 import { polygonCentroid } from './framing.ts'
-import { meshKey } from './meshes.ts'
-import { useEscapeCloses } from './panorama-viewer.tsx'
-import { thumbnailOf } from './thumbnails.ts'
 import { JOB_KINDS, workflowChoiceOf } from './workflows.ts'
 
 const CLOCK_TICK_MS = 250
@@ -94,6 +91,18 @@ function backendLabel({ kind, status, unavailable }: BackendState): string {
   const count = unavailable.length
   const detail = status !== 'ready' ? status : count === 0 ? 'ready' : `${count} ${count === 1 ? 'workflow' : 'workflows'} unavailable`
   return `${BACKEND_NAMES[kind]} · ${detail}`
+}
+
+/** Calls `close` when Escape is pressed anywhere; pass null while there is nothing to close. */
+export function useEscapeCloses(close: (() => void) | null): void {
+  useEffect(() => {
+    if (!close) return
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [close])
 }
 
 function BackendChip() {
@@ -373,9 +382,7 @@ export function selectedAsset(layout: RoomLayout, selectedId: string | null): As
 
 /** An asset's product card: photo (or model thumbnail), name, size, brand · store, product link and labels. */
 export function AssetCard({ asset, children }: { asset: Asset; children?: ReactNode }) {
-  const { meshes } = useSyncExternalStore(subscribe, snapshot)
-  const mesh = meshes.get(meshKey(asset))
-  const thumbnail = useMemo(() => (mesh ? thumbnailOf(mesh) : null), [mesh])
+  const { thumbnail } = asset
   const photo = asset.product?.photo?.thumbnail
   const url = asset.product?.url
   const store = storeLine(asset)

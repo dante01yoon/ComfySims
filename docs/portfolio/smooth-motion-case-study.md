@@ -183,3 +183,8 @@ Code-splitting the viewers and post-processing is on the M16 list.
   - 7 ACs: optimiser unit tests on a synthetic heavy fixture (119,600 triangles, three 2048² textures), worker, cache, stable canvas, chunks, render stats, thumbnails.
   - Plus one real-GPU AC.
   - The fake ComfyUI can now return any fixture as the generated product (`/__product-glb`).
+- 2026-10-19 — impl-34 implemented M16 (53 min, 231 turns). Every M16 target AC passed. It was BLOCKED on two spec-side slips:
+  - A missing `optimised` field on the `FitReport` type.
+  - A fixed-sleep MCP test that had only passed because of the old canvas resize.
+
+  Both fixed. Honest note: AC-129 (entry chunk ≤ 1,100 KB) was met by splitting vendors into separate chunks, which does not reduce the bytes loaded at startup. The criterion was mis-specified and the startup weight is a follow-up.

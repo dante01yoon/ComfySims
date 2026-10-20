@@ -1,7 +1,12 @@
-import { WebIO, getBounds } from '@gltf-transform/core'
-import type { Document, Scene, vec4 } from '@gltf-transform/core'
+import { getBounds } from '@gltf-transform/core'
+import type { Document, Scene, WebIO, vec4 } from '@gltf-transform/core'
 
 import type { Dimensions, FitMode } from '../../schema/src/index.ts'
+import { glbIO, optimizeGlb } from './optimize.ts'
+import type { OptimiseReport, ResizeImage } from './optimize.ts'
+
+export { glbIO, optimizeGlb, optimizeGlbBytes } from './optimize.ts'
+export type { OptimiseReport, ResizeImage } from './optimize.ts'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -16,6 +21,7 @@ export type FitReport = {
   scale: Vec3
   distortion: number
   flagged: boolean
+  optimised?: OptimiseReport
 }
 
 export const DISTORTION_FLAG_THRESHOLD = 1.15
@@ -128,19 +134,23 @@ async function readGlb(io: WebIO, bytes: Uint8Array): Promise<Document | undefin
   }
 }
 
-/** Turns GLB bytes to their smallest footprint and scales them to the listed dimensions with the pivot at bottom center; failures are returned, never thrown. */
+export type FitOptions = { align?: FitAlign; optimise?: { resizeImage: ResizeImage } }
+
+/** Optimises GLB bytes when asked (see `optimizeGlb`), turns them to their smallest footprint and scales them to the listed dimensions with the pivot at bottom center; failures are returned, never thrown. */
 export async function fitGlbBytes(
   bytes: Uint8Array,
   dimensions: Dimensions,
   mode: FitMode = 'exact',
-  { align = 'auto' }: { align?: FitAlign } = {}
+  { align = 'auto', optimise }: FitOptions = {}
 ): Promise<FitBytesOutcome> {
-  const io = new WebIO()
+  const io = glbIO()
   const document = await readGlb(io, bytes)
   if (!document) return { ok: false, reason: 'unreadable' }
   const root = document.getRoot()
   const scene = root.getDefaultScene() ?? root.listScenes()[0]
   if (!scene) return { ok: false, reason: 'no-scene' }
+  const largestCm = Math.max(dimensions.width, dimensions.depth, dimensions.height)
+  const counts = optimise && (await optimizeGlb(document, { largestCm, resizeImage: optimise.resizeImage }))
 
   const yawDegrees = align === 'auto' ? alignedYaw(footprintPoints(scene), dimensions) : 0
   const turn = document.createNode('roomfit-align').setRotation(yawRotation(yawDegrees))
@@ -160,7 +170,9 @@ export async function fitGlbBytes(
   pivot.addChild(turn)
   scene.addChild(pivot)
 
-  return { ok: true, bytes: await io.writeBinary(document), report: fitReport(applied, scale, mode, yawDegrees) }
+  const written = await io.writeBinary(document)
+  const report = fitReport(applied, scale, mode, yawDegrees)
+  return { ok: true, bytes: written, report: counts ? { ...report, optimised: { ...counts, bytesBefore: bytes.length, bytesAfter: written.length } } : report }
 }
 
 async function readSource(path: string): Promise<Uint8Array> {

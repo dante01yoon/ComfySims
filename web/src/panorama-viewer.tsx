@@ -1,10 +1,11 @@
 import { Canvas, useFrame, useLoader } from '@react-three/fiber'
-import { Suspense, useEffect, useRef, useSyncExternalStore } from 'react'
+import { Suspense, useRef, useSyncExternalStore } from 'react'
 import type { PointerEvent, WheelEvent } from 'react'
 import { BackSide, PerspectiveCamera, SRGBColorSpace, TextureLoader } from 'three'
 
 import type { Viewer360 } from '../../spec/contracts/editor-api.ts'
 import { api, snapshot, subscribe, turn360, zoom360 } from './editor.ts'
+import { useEscapeCloses } from './workspace.tsx'
 
 const HALF_TURN_DEG = 180
 const QUARTER_TURN_DEG = 90
@@ -33,18 +34,6 @@ function LookAround({ yawDegrees, pitchDegrees, fovDegrees }: Pick<Viewer360, 'y
     camera.lookAt(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch))
   })
   return null
-}
-
-/** Calls `close` when Escape is pressed anywhere; pass null while there is nothing to close. */
-export function useEscapeCloses(close: (() => void) | null): void {
-  useEffect(() => {
-    if (!close) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [close])
 }
 
 /** The full-window 360° viewer: the panorama on the inside of a sphere; drag to look around, wheel to zoom. */

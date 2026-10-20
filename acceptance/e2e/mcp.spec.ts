@@ -199,8 +199,12 @@ test('AC-60 the bridge refuses a wrong token and foreign origins', async () => {
 
 test('AC-60 with the editor closed, tools say no editor is connected', async ({ page }) => {
   await page.close()
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  const result = await call('get_house')
+  const deadline = Date.now() + 5000
+  let result = await call('get_house')
+  while (!result.isError && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    result = await call('get_house')
+  }
   expect(result.isError).toBe(true)
   expect(result.content[0]!.text).toMatch(/^No roomfit editor is connected/)
 })

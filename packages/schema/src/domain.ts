@@ -17,6 +17,7 @@ export type FitReport = {
   yawDegrees: number
   distortion: number
   flagged: boolean
+  optimised?: { trianglesBefore: number; trianglesAfter: number; bytesBefore: number; bytesAfter: number; textureSizeBefore: number; textureSizeAfter: number }
 }
 
 /** Where a new item of a given size can stand in a zone: back against a wall, front (+Z) facing the room. */

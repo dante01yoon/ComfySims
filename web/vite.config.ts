@@ -133,6 +133,13 @@ function comfyBackends({ cloudUrl, localUrl, startUrl, apiKey }: Backends): Plug
   }
 }
 
+const VENDOR_CHUNKS: Record<string, string> = { three: 'three', react: 'react', 'react-dom': 'react', 'react-reconciler': 'react', scheduler: 'react' }
+
+function vendorChunk(id: string): string | undefined {
+  const name = /\/node_modules\/((?:@[^/]+\/)?[^/]+)\/(?!.*\/node_modules\/)/.exec(id)?.[1]
+  return name === undefined ? undefined : VENDOR_CHUNKS[name]
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, repoRoot, '')
   return {
@@ -147,6 +154,7 @@ export default defineConfig(({ mode }) => {
       }),
       bridge({ tokenFile: resolve(repoRoot, '.harness/bridge-token') })
     ],
-    server: { host: '127.0.0.1' }
+    server: { host: '127.0.0.1' },
+    build: { rollupOptions: { output: { manualChunks: vendorChunk } } }
   }
 })

@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { Color, DoubleSide, Mesh, MeshStandardMaterial, Plane, Shape, SRGBColorSpace, Texture, Vector2, Vector3 } from 'three'
 import type { Material, Object3D } from 'three'
@@ -33,10 +33,11 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
-import { PanoramaViewer, useEscapeCloses } from './panorama-viewer.tsx'
-import { PhotoViewer } from './photo-viewer.tsx'
-import { PresetBar, StudioScene, ZoneChips } from './studio.tsx'
-import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, WorkspaceRail } from './workspace.tsx'
+import { PresetBar, StudioScene, StudioShadersAhead, ZoneChips } from './studio.tsx'
+import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, useEscapeCloses, WorkspaceRail } from './workspace.tsx'
+
+const PanoramaViewer = lazy(async () => ({ default: (await import('./panorama-viewer.tsx')).PanoramaViewer }))
+const PhotoViewer = lazy(async () => ({ default: (await import('./photo-viewer.tsx')).PhotoViewer }))
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -45,6 +46,8 @@ const emphasisColors = { none: new Color(0x000000), selected: new Color(0x1f4f8f
 
 const WALL_PLASTER = '#efe4d1'
 const BLUEPRINT_ABOVE_FLOOR_CM = 1
+const UNDER_VIEWPORT = { position: 'absolute', inset: 0 } as const
+const UNDER_VIEWPORT_AND_PANEL = { ...UNDER_VIEWPORT, width: 'calc(100% + var(--panel))' } as const
 
 type Emphasis = keyof typeof emphasisColors
 
@@ -52,6 +55,7 @@ function Bridge({ revision }: { revision: number }) {
   const get = useThree((three) => three.get)
   useEffect(() => attachThree(get), [get])
   useLayoutEffect(() => markCommitted(revision), [revision])
+  useFrame(({ gl }) => gl.info.reset(), -3)
   return null
 }
 
@@ -376,7 +380,8 @@ const STEP_LABELS: Record<JobKind, Partial<Record<JobStep, string>>> = {
     uploading: 'Uploading photo',
     queued: 'Queued on ComfyUI',
     generating: 'Generating 3D on ComfyUI',
-    downloading: 'Downloading the model'
+    downloading: 'Downloading the model',
+    optimising: 'Optimising'
   },
   render: {
     uploading: 'Uploading depth pass',
@@ -693,7 +698,7 @@ export function App() {
   return (
     <>
       <main className={studio ? 'viewport studio' : 'viewport'}>
-        <Canvas frameloop="demand" shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
+        <Canvas style={studio ? UNDER_VIEWPORT : UNDER_VIEWPORT_AND_PANEL} frameloop="demand" shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
           <Bridge revision={editor.revision} />
           <CameraRig />
           {layout.blueprint && <BlueprintUnderlay blueprint={layout.blueprint} visible={!studio && !editor.blueprintHidden} opacity={editor.blueprintOpacity} />}
@@ -703,6 +708,7 @@ export function App() {
             <>
               <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />
               <directionalLight position={[200, 400, 300]} intensity={1.5} />
+              <StudioShadersAhead room={layout.room} meshes={editor.meshes} />
             </>
           )}
           <OrbitControls makeDefault ref={attachControls} enableZoom={false} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />
@@ -732,8 +738,10 @@ export function App() {
       <Panel hidden={studio} />
       {railOpen && <WorkspaceRail />}
       <OpenedRender studio={studio} />
-      <PhotoViewer />
-      <PanoramaViewer />
+      <Suspense fallback={null}>
+        {editor.photoViewer && <PhotoViewer />}
+        {editor.viewer360 && <PanoramaViewer />}
+      </Suspense>
     </>
   )
 }

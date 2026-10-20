@@ -7,10 +7,9 @@ import { z } from 'zod'
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
 import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, scenePrompt } from '../../packages/comfy/src/index.ts'
 import type { RenderStyle } from '../../packages/comfy/src/index.ts'
-import { fitGlbBytes } from '../../packages/fit/src/index.ts'
 import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, walkerBlocked, walkerStep, walkObstacles, zoneAt } from '../../packages/placement/src/index.ts'
 import { ApiGraph, AssetLabels, AssetProduct, Dimensions, MAX_CONCURRENT_JOBS, parseLayout } from '../../packages/schema/src/index.ts'
-import type { Asset, BackendKind, Blueprint, FitReport, GenerationChoice, Job, JobKind, JobStep, Photo3dSource, PlacedItem, PlanRoom, RoomLayout, Site, Zone } from '../../packages/schema/src/index.ts'
+import type { Asset, AssetFit, BackendKind, Blueprint, FitReport, GenerationChoice, Job, JobKind, JobStep, Photo3dSource, PlacedItem, PlanRoom, RoomLayout, Site, Zone } from '../../packages/schema/src/index.ts'
 import type {
   BackendState,
   ComfyFailure,
@@ -41,7 +40,8 @@ import type { CameraPose } from './camera.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo } from './history.ts'
 import type { History } from './history.ts'
-import { loadMesh, meshKey } from './meshes.ts'
+import { attachRenderer, clearAssetCache, glbStatsOf, loadMesh, meshKey, processedFresh, texturesIn } from './meshes.ts'
+import { thumbnailOf } from './thumbnails.ts'
 import { aerialCamera, boundsCenter, boxCorners, exteriorDepthRange, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
 import { exportDepthPanorama, exportPasses } from './passes.ts'
 import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unavailableJobs, workflowChoiceOf, workflowKindOf } from './workflows.ts'
@@ -223,8 +223,39 @@ function requestMeshes(layout: RoomLayout): void {
     const key = meshKey(asset)
     void loadMesh(asset).then((mesh) => {
       if (!editor.meshes.has(key)) update({ meshes: new Map(editor.meshes).set(key, mesh) })
+      if (mesh) queueThumbnail(asset.id)
     })
   }
+}
+
+const thumbnailQueue: string[] = []
+let thumbnailRenders = 0
+
+function needsThumbnail(asset: Asset): boolean {
+  return !asset.thumbnail && !asset.product?.photo
+}
+
+function queueThumbnail(assetId: string): void {
+  if (thumbnailQueue.includes(assetId)) return
+  thumbnailQueue.push(assetId)
+  if (thumbnailQueue.length === 1) requestAnimationFrame(renderNextThumbnail)
+}
+
+function withThumbnail(layout: RoomLayout, assetId: string, thumbnail: string): RoomLayout {
+  return { ...layout, assets: layout.assets.map((asset) => (asset.id === assetId ? { ...asset, thumbnail } : asset)) }
+}
+
+function renderNextThumbnail(): void {
+  const layout = editor.history.present
+  const asset = layout.assets.find(({ id }) => id === thumbnailQueue[0])
+  const mesh = asset && editor.meshes.get(meshKey(asset))
+  if (asset && mesh && needsThumbnail(asset)) {
+    const thumbnail = thumbnailOf(mesh)
+    thumbnailRenders += 1
+    if (thumbnail.length <= PHOTO_THUMBNAIL_MAX_CHARS) setHistory(amend(editor.history, withThumbnail(layout, asset.id, thumbnail)))
+  }
+  thumbnailQueue.shift()
+  if (thumbnailQueue.length > 0) requestAnimationFrame(renderNextThumbnail)
 }
 
 function nextFrame(): Promise<number> {
@@ -277,6 +308,9 @@ export function snapshot(): Editor {
 
 export function attachThree(get: () => RootState): void {
   getThree = get
+  const { gl } = get()
+  gl.info.autoReset = false
+  attachRenderer(gl)
   attachCameraThree(get)
   threeAttached()
 }
@@ -854,6 +888,10 @@ function hasTag(workflow: ApiWorkflow, tag: string): boolean {
   return Object.values(workflow).some((node) => node._meta?.title === tag)
 }
 
+function optimisedAnything(report: AssetFit['optimised']): report is NonNullable<AssetFit['optimised']> {
+  return report !== undefined && (report.trianglesAfter < report.trianglesBefore || report.textureSizeAfter < report.textureSizeBefore)
+}
+
 async function generateProduct(request: ProductRequest, run: JobRun, label: string): Promise<Finished<ProductPlaced> | ComfyFailure> {
   const mode = request.mode ?? 'exact'
   const name = request.name.trim()
@@ -879,11 +917,13 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   )
   if (!generated.ok) return generated
 
+  run.step('optimising')
+  const uri = comfyOutputUri(generated.file, run.backend)
+  const fitted = await processedFresh({ uri, dimensions: request.dimensions, mode }, generated.bytes)
+  if (!fitted.ok || !fitted.fit) return { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.ok ? 'not fitted' : fitted.reason}` }
   run.step('fitting')
-  const fitted = await fitGlbBytes(generated.bytes, request.dimensions, mode)
-  if (!fitted.ok) return { ok: false, reason: 'unreadable', message: `the generated mesh cannot be fitted: ${fitted.reason}` }
-  const { flagged, requested, yawDegrees } = fitted.report
-  const distortion = roundedToFloat32Noise(fitted.report.distortion)
+  const { flagged, requested, yawDegrees } = fitted.fit
+  const distortion = roundedToFloat32Noise(fitted.fit.distortion)
   const placement = placementIn(zoneId, request.dimensions)
   if (!placement.ok) return placement
   const photo = await thumbnail
@@ -891,10 +931,10 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   const asset: Asset = {
     id: uniqueId(name, layout.assets),
     name,
-    uri: comfyOutputUri(generated.file, run.backend),
+    uri,
     dimensions: request.dimensions,
     source: { kind: 'generated', workflow: run.file.replace(/\.json$/, '') },
-    fit: { mode, distortion },
+    fit: optimisedAnything(fitted.optimised) ? { mode, distortion, optimised: fitted.optimised } : { mode, distortion },
     product: photo ? { ...details.product, photo: { thumbnail: photo, comfyInputName: generated.inputName } } : details.product,
     labels: details.labels
   }
@@ -907,7 +947,7 @@ async function generateProduct(request: ProductRequest, run: JobRun, label: stri
   const added = item ? { itemId: item.id } : {}
   return {
     ok: true,
-    value: { itemId: item?.id ?? null, assetId: asset.id, report: { mode: fitted.report.mode, requested, yawDegrees, distortion, flagged } },
+    value: { itemId: item?.id ?? null, assetId: asset.id, report: { mode: fitted.fit.mode, requested, yawDegrees, distortion, flagged } },
     result: 'file' in input ? { image: URL.createObjectURL(input.file), ...added } : added
   }
 }
@@ -1369,7 +1409,24 @@ export const api: RoomfitEditorApi = {
   stopWalking,
   walkStep,
   look,
-  renderStats: () => ({ frames: renderedFrames() })
+  renderStats,
+  assetStats: (assetId) => {
+    const asset = editor.history.present.assets.find(({ id }) => id === assetId)
+    return asset ? glbStatsOf(asset) : null
+  },
+  clearAssetCache
+}
+
+function textureBytes(scene: Scene): number {
+  return [...texturesIn(scene)].reduce((sum, { image }: { image?: { width?: number; height?: number } }) => sum + (image?.width ?? 0) * (image?.height ?? 0) * 4 * (4 / 3), 0)
+}
+
+function renderStats(): ReturnType<RoomfitEditorApi['renderStats']> {
+  const three = getThree?.()
+  const counts = { frames: renderedFrames(), mainThreadFits: 0, thumbnailRenders }
+  if (!three) return { ...counts, drawCalls: 0, triangles: 0, geometries: 0, textures: 0, textureBytes: 0 }
+  const { render, memory } = three.gl.info
+  return { ...counts, drawCalls: render.calls, triangles: render.triangles, geometries: memory.geometries, textures: memory.textures, textureBytes: textureBytes(three.scene) }
 }
 
 const ImportedSize = z.number().positive().nullable()

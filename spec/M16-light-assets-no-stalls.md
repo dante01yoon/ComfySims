@@ -145,4 +145,11 @@ None.
 
 ## Change log
 
+- 2026-10-19 After the implementation session (impl-34):
+  - **AC-129's "entry chunk ≤ 1,100 KB" was met by its letter, not its intent.** The session split three and React into vendor chunks, so the entry chunk shrank but the bytes loaded at startup barely changed. Only the two viewers became lazy. Moving post-processing to a lazy chunk broke the AC-116 glide test and was reverted.
+  - **Lesson:** a bundle criterion has to measure what loads at startup (the entry plus its static imports), not one chunk. This is a follow-up.
+  - **Two spec-session slips (BLOCKED):**
+    - `FitReport` in the schema lacked `optimised`, though §5 required it.
+    - AC-60's fixed 500 ms wait only passed because the canvas resize had delayed the first studio frame. It now polls.
+
 - 2026-10-19 Written from the M15 measurements; approved under Dante's "계속 진행해" with the targets set in the case study.

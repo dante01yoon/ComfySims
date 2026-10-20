@@ -130,7 +130,7 @@ None.
 | AC-120 | active | Walking: a wall stops the walker ≥ 25 cm from its face, a door lets it into the next room (navigation and focused room follow), furniture ≥ 50 cm tall stops it, lower furniture does not; holding W for 1 s moves 100–180 cm |
 | AC-121 | active | Look: drag turns yaw freely and clamps pitch to ±60°; `look()` turns relative to the current direction |
 | AC-122 | active | Render on demand: no frames render while idle for 2 s; moving an item renders at least one frame |
-| AC-123 | manual | Real-GPU measurement after M15 (`demo/measure-motion.mjs`, median of 3 headless runs): when focusing a room, no frame moves the camera more than 6% of the glide's length and no frame gap exceeds 33 ms; and a recording of walking through the demo house (evidence in the case study) |
+| AC-123 | manual | Real-GPU measurement after M15 (`demo/measure-motion.mjs`, median of 3 headless runs): when focusing a room, no frame moves the camera more than 6% of the glide's length and no frame gap exceeds 33 ms; and a recording of walking through the demo house (evidence 2026-10-19: `docs/portfolio/perf/2026-10-19-m15-final/report.md`, `docs/recordings/media/roomfit-walk.mp4`) |
 | AC-124 | active | Wheel zoom works anywhere over the 3D view, including over a room label or other overlay on the canvas |
 | AC-133 | active | In walk mode the bottom bar keeps its one-row height and the key hint stays on one line |
 
