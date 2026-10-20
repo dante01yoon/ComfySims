@@ -1,7 +1,8 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
+import { PerspectiveCamera } from 'three'
 
-import { advanceCamera, settleOrbit, zoomBy } from './camera.ts'
+import { advanceCamera, lensChanged, observeUncovered, settleOrbit, uncoveredWidth, zoomBy } from './camera.ts'
 import { advanceWalk, api, holdWalkKey, isWalkKey, releaseWalkKeys, snapshot, subscribe } from './editor.ts'
 
 const LOOK_DEG_PER_PIXEL = 0.25
@@ -69,6 +70,27 @@ function useSmoothZoom(source: HTMLElement): void {
   }, [source])
 }
 
+function useCentreInUncoveredPart(canvas: HTMLCanvasElement): void {
+  const get = useThree((three) => three.get)
+  const { width, height } = useThree((three) => three.size)
+  useEffect(() => {
+    const { camera, invalidate } = get()
+    if (!(camera instanceof PerspectiveCamera)) return
+    camera.manual = true
+    const centre = () => {
+      const visible = uncoveredWidth(canvas, width)
+      const aspect = visible / height
+      const changed = aspect !== camera.aspect
+      camera.aspect = aspect
+      camera.setViewOffset(visible, height, 0, 0, width, height)
+      if (changed) lensChanged()
+      invalidate()
+    }
+    centre()
+    return observeUncovered(canvas, centre)
+  }, [get, canvas, width, height])
+}
+
 function eventSourceOf(connected: unknown, canvas: HTMLCanvasElement): HTMLElement {
   return connected instanceof HTMLElement ? connected : canvas
 }
@@ -80,6 +102,7 @@ export function CameraRig() {
   useEffect(() => subscribe(invalidate), [invalidate])
   useWalkKeys()
   useDragToLook(canvas)
+  useCentreInUncoveredPart(canvas)
   const connected: unknown = useThree((three) => three.events.connected)
   useSmoothZoom(eventSourceOf(connected, canvas))
   useFrame(() => {

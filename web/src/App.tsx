@@ -53,7 +53,10 @@ type Emphasis = keyof typeof emphasisColors
 
 function Bridge({ revision }: { revision: number }) {
   const get = useThree((three) => three.get)
-  useEffect(() => attachThree(get), [get])
+  useEffect(() => {
+    get().gl.debug.checkShaderErrors = import.meta.env.DEV
+    attachThree(get)
+  }, [get])
   useLayoutEffect(() => markCommitted(revision), [revision])
   useFrame(({ gl }) => gl.info.reset(), -3)
   return null
@@ -708,7 +711,7 @@ export function App() {
             <>
               <hemisphereLight args={['#ffffff', '#8a8178', 1.2]} />
               <directionalLight position={[200, 400, 300]} intensity={1.5} />
-              <StudioShadersAhead room={layout.room} meshes={editor.meshes} />
+              <StudioShadersAhead layout={layout} meshes={editor.meshes} />
             </>
           )}
           <OrbitControls makeDefault ref={attachControls} enableZoom={false} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />

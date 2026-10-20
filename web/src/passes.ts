@@ -56,6 +56,7 @@ function onSideOf(override: Material, original: Mesh['material']): Material {
 function passCamera(camera: Camera, size: Size): Camera {
   if (!(camera instanceof PerspectiveCamera)) return camera
   const copy = camera.clone()
+  copy.clearViewOffset()
   copy.aspect = size.width / size.height
   copy.updateProjectionMatrix()
   return copy

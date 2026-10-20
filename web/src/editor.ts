@@ -1,4 +1,5 @@
 import type { RootState } from '@react-three/fiber'
+import { flushSync } from 'react-dom'
 import { Box3 } from 'three'
 import type { Object3D, PerspectiveCamera, Scene } from 'three'
 
@@ -35,8 +36,8 @@ import type {
 import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import type { ComfyInput, ComfyRun } from './comfy.ts'
 import { bookmarkletFor } from './bookmarklet.ts'
-import { attachCameraThree, cameraFrame, cameraGliding, finishGlide, glideTo, holdForItemDrag, invalidate, jumpTo, renderedFrames, restingPose, retarget, setWalking } from './camera.ts'
-import type { CameraPose } from './camera.ts'
+import { attachCameraThree, cameraFrame, cameraGliding, finishGlide, glideTo, glideToFrame, holdForItemDrag, invalidate, jumpTo, projectToScreen, renderedFrames, restingPose, retarget, setWalking } from './camera.ts'
+import type { CameraPose, Frame } from './camera.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo } from './history.ts'
 import type { History } from './history.ts'
@@ -344,7 +345,7 @@ export async function loadUnknown(input: unknown): ReturnType<RoomfitEditorApi['
   const wasWalking = editor.walking
   leaveWalk()
   update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null, libraryFilter: null, walking: false })
-  if (wasWalking) glideTo(focusFrame())
+  if (wasWalking) glideToFrame(focusFrame())
   requestMeshes(parsed.layout)
   return { ok: true }
 }
@@ -507,13 +508,13 @@ function focusedZone(): Zone | undefined {
   return zoneById(editor.focusedZone)
 }
 
-function houseFrame(): CameraPose {
-  return studioCamera(roomBounds(editor.history.present.room))
+function houseFrame(): Frame {
+  return (lens) => studioCamera(roomBounds(editor.history.present.room), wallCutCm(editor), lens)
 }
 
-function focusFrame(): CameraPose {
+function focusFrame(): Frame {
   const zone = focusedZone()
-  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : houseFrame()
+  return zone ? (lens) => studioCamera(polygonBounds(zone.polygon), wallCutCm(editor), lens, 'room') : houseFrame()
 }
 
 function eyeLevelShot(zone: Zone): CameraPose {
@@ -568,7 +569,7 @@ function focusZone(zoneId: string | null): void {
   if (zoneId !== null && (room.kind !== 'plan' || !room.zones.some(({ id }) => id === zoneId))) return
   leaveWalk()
   update({ focusedZone: zoneId, walking: false })
-  glideTo(focusFrame())
+  glideToFrame(focusFrame())
 }
 
 let walker: Walker = { eye: { x: 0, z: 0 }, yawDeg: 0, pitchDeg: 0 }
@@ -631,7 +632,7 @@ function stopWalking(): void {
   if (!editor.walking) return
   leaveWalk()
   update({ walking: false })
-  glideTo(focusFrame())
+  glideToFrame(focusFrame())
 }
 
 function moveWalker(next: Walker): void {
@@ -1362,8 +1363,8 @@ export const api: RoomfitEditorApi = {
   closePhoto3d: () => update({ photoViewer: null }),
   setView: (view) => {
     if (view === 'editor') leaveWalk()
-    update({ view, walking: editor.walking && view === 'studio' })
-    if (!editor.walking) glideTo(view === 'studio' ? focusFrame() : houseFrame())
+    flushSync(() => update({ view, walking: editor.walking && view === 'studio' }))
+    if (!editor.walking) glideToFrame(view === 'studio' ? focusFrame() : houseFrame())
   },
   setScene: (scene) => update({ scene }),
   lighting: () => ({ preset: editor.scene, ...SCENE_LIGHTING[editor.scene] }),
@@ -1414,7 +1415,8 @@ export const api: RoomfitEditorApi = {
     const asset = editor.history.present.assets.find(({ id }) => id === assetId)
     return asset ? glbStatsOf(asset) : null
   },
-  clearAssetCache
+  clearAssetCache,
+  projectToScreen
 }
 
 function textureBytes(scene: Scene): number {

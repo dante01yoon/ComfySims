@@ -24,6 +24,7 @@ import { api, cannotRun, currentScenePrompt, siteOf, snapshot, subscribe } from 
 import { seededRandom } from './floors.ts'
 import { boundsCenter, compassDirection, polygonBounds, roomBounds } from './framing.ts'
 import type { Bounds } from './framing.ts'
+import { meshKey } from './meshes.ts'
 
 type Levels = Omit<Lighting, 'preset'>
 
@@ -42,7 +43,6 @@ const SURROUNDINGS = '#5a5f4c'
 const SURROUNDINGS_MARGIN_CM = 2500
 const PATH_WIDTH_CM = 120
 const ROOF_THICKNESS_CM = 20
-const SHADER_COMPILE_IDLE_MS = 2000
 
 const PRESET_BUTTONS: { preset: ScenePreset; label: string; dot: string }[] = [
   { preset: 'reading', label: 'Reading', dot: '#f3b562' },
@@ -319,28 +319,15 @@ function compileForStudio(gl: WebGLRenderer, scene: Scene, camera: Camera, room:
   void compiling.finally(() => composerLike.dispose())
 }
 
-/** Compiles the studio's shaders for the loaded pieces once the editor has been quiet for a while, so the first switch to the studio does not. */
-export function StudioShadersAhead({ room, meshes }: { room: Room; meshes: ReadonlyMap<string, Object3D | null> }) {
+/** Compiles the studio's shaders as soon as every piece of the house has loaded, so the first switch to the studio does not. */
+export function StudioShadersAhead({ layout, meshes }: { layout: RoomLayout; meshes: ReadonlyMap<string, Object3D | null> }) {
   const get = useThree((three) => three.get)
+  const loaded = layout.assets.every((asset) => meshes.has(meshKey(asset)))
   useEffect(() => {
-    let idle = 0
-    const compile = () => {
-      if (api.cameraMoving()) return waitForQuiet()
-      stopListening()
-      const { gl, scene, camera } = get()
-      compileForStudio(gl, scene, camera, room)
-    }
-    const waitForQuiet = () => {
-      clearTimeout(idle)
-      idle = window.setTimeout(compile, SHADER_COMPILE_IDLE_MS)
-    }
-    const stopListening = subscribe(waitForQuiet)
-    waitForQuiet()
-    return () => {
-      clearTimeout(idle)
-      stopListening()
-    }
-  }, [get, room, meshes])
+    if (!loaded) return
+    const { gl, scene, camera } = get()
+    compileForStudio(gl, scene, camera, layout.room)
+  }, [get, layout.room, meshes, loaded])
   return null
 }
 

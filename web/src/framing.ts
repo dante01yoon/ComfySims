@@ -7,6 +7,8 @@ const STUDIO_AZIMUTH_DEG = 135
 const HOUSE_ELEVATION_DEG = 47
 const ROOM_ELEVATION_DEG = 60
 const STUDIO_DISTANCE_PER_RADIUS = 2.6
+const STUDIO_MAX_FILL = 0.9
+const STUDIO_FITTING_STEPS = 4
 
 /** Floor-plan extent of a room in cm. */
 export function roomBounds(room: Room): Bounds {
@@ -191,13 +193,15 @@ export function exteriorDepthRange(view: 'aerial' | 'street', pose: Pose, houseC
   }
 }
 
-/** The studio camera framing a floor-plan extent from the south-east, steeper for a single room so its walls do not hide it. */
-export function studioCamera(bounds: Bounds, framing: 'house' | 'room' = 'house'): { position: Vec3; target: Vec3 } {
+/** The studio camera framing a floor-plan extent up to a height from the south-east, steeper for a single room so its walls do not hide it, backed off until it fits the lens. */
+export function studioCamera(bounds: Bounds, topCm: number, lens: Lens, framing: 'house' | 'room' = 'house'): Pose {
   const target = boundsCenter(bounds)
-  const distance = (Math.hypot(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2) * STUDIO_DISTANCE_PER_RADIUS
   const direction = compassDirection(STUDIO_AZIMUTH_DEG, framing === 'room' ? ROOM_ELEVATION_DEG : HOUSE_ELEVATION_DEG)
-  return {
-    position: { x: target.x + direction.x * distance, y: target.y + direction.y * distance, z: target.z + direction.z * distance },
-    target
-  }
+  const at = (distance: number): Pose => ({ position: { x: target.x + direction.x * distance, y: target.y + direction.y * distance, z: target.z + direction.z * distance }, target })
+  const corners = boxCorners(bounds, topCm)
+  const distance = Array.from({ length: STUDIO_FITTING_STEPS }).reduce<number>(
+    (current) => current * Math.max(1, frameFill(at(current), lens, corners) / STUDIO_MAX_FILL),
+    (Math.hypot(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2) * STUDIO_DISTANCE_PER_RADIUS
+  )
+  return at(distance)
 }

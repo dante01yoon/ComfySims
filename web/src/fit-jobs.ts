@@ -14,27 +14,40 @@ export type FitResult = ({ ok: true } & Processed) | { ok: false; reason: string
 const DATABASE = 'comfysims-assets'
 const STORE = 'glb'
 
-let worker: Worker | null = null
+type PooledWorker = { worker: Worker; running: number }
+
+const POOL_SIZE = Math.min(4, Math.max(1, Math.floor(navigator.hardwareConcurrency / 2)))
+
+const pool: PooledWorker[] = []
 let jobs = 0
 const waiting = new Map<number, (result: FitResult) => void>()
 
-function fitWorker(): Worker {
-  if (worker) return worker
-  const started = new Worker(new URL('./fit.worker.ts', import.meta.url), { type: 'module', name: 'fit' })
-  started.onmessage = ({ data }: MessageEvent<{ id: number; result: FitResult }>) => {
+function startWorker(): PooledWorker {
+  const pooled = { worker: new Worker(new URL('./fit.worker.ts', import.meta.url), { type: 'module', name: 'fit' }), running: 0 }
+  pooled.worker.onmessage = ({ data }: MessageEvent<{ id: number; result: FitResult }>) => {
+    pooled.running -= 1
     waiting.get(data.id)?.(data.result)
     waiting.delete(data.id)
   }
-  worker = started
-  return started
+  pool.push(pooled)
+  return pooled
 }
 
-/** Optimises (and fits) GLB bytes in the fit worker; the bytes are transferred, so the caller must not use them afterwards. */
+function leastBusyWorker(): PooledWorker {
+  const idle = pool.find(({ running }) => running === 0)
+  if (idle) return idle
+  if (pool.length < POOL_SIZE) return startWorker()
+  return pool.reduce((best, pooled) => (pooled.running < best.running ? pooled : best))
+}
+
+/** Optimises (and fits) GLB bytes in the least busy of up to four fit workers; the bytes are transferred, so the caller must not use them afterwards. */
 export function inWorker(job: FitJob): Promise<FitResult> {
   const id = ++jobs
+  const pooled = leastBusyWorker()
+  pooled.running += 1
   return new Promise((resolve) => {
     waiting.set(id, resolve)
-    fitWorker().postMessage({ ...job, id }, [job.bytes.buffer])
+    pooled.worker.postMessage({ ...job, id }, [job.bytes.buffer])
   })
 }
 

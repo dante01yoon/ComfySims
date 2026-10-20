@@ -1,11 +1,15 @@
 import type { OrbitControls } from '@react-three/drei'
 import type { RootState } from '@react-three/fiber'
 import type { ComponentRef } from 'react'
+import { PerspectiveCamera, Vector3 } from 'three'
 
 import type { Vec3 } from '../../spec/contracts/editor-api.ts'
+import type { Lens } from './framing.ts'
 
 type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 export type CameraPose = { position: Vec3; target: Vec3 }
+/** A pose that depends on the lens, so it can be refitted when the uncovered part of the canvas changes. */
+export type Frame = (lens: Lens) => CameraPose
 type Glide = { from: CameraPose; to: CameraPose; startedAt: number; seconds: number }
 
 const GLIDE_SECONDS = { shortest: 0.6, longest: 1.0 }
@@ -24,6 +28,7 @@ const STEADY_FRAME_SECONDS = 1 / 60
 let getThree: (() => RootState) | null = null
 let controls: OrbitControlsImpl | null = null
 let glide: Glide | null = null
+let heldFrame: Frame | null = null
 let zoomGoalCm: number | null = null
 let walking = false
 let itemDragging = false
@@ -35,6 +40,7 @@ let frames = 0
 
 const startOrbitDrag = () => {
   orbitDragging = true
+  heldFrame = null
 }
 const endOrbitDrag = () => {
   orbitDragging = false
@@ -66,6 +72,7 @@ function syncControls(): void {
 /** Hands the camera to walk mode (controls off) or back to orbiting. */
 export function setWalking(value: boolean): void {
   walking = value
+  if (value) heldFrame = null
   syncControls()
 }
 
@@ -135,6 +142,7 @@ function settle(): void {
 /** Puts the camera at a pose at once, cancelling any glide, inertia or zoom. */
 export function jumpTo(pose: CameraPose): void {
   glide = null
+  heldFrame = null
   zoomGoalCm = null
   flushOrbitInertia()
   applyPose(pose)
@@ -145,6 +153,7 @@ export function jumpTo(pose: CameraPose): void {
 export function glideTo(to: CameraPose): void {
   const from = cameraFrame()
   if (poseDistanceCm(from, to) < GLIDE_SKIPPED_BELOW_CM) return jumpTo(to)
+  heldFrame = null
   zoomGoalCm = null
   flushOrbitInertia()
   glide = { from, to, startedAt: performance.now(), seconds: glideSeconds(from, to) }
@@ -152,8 +161,48 @@ export function glideTo(to: CameraPose): void {
   invalidate()
 }
 
+function viewportHolding(canvas: HTMLCanvasElement): Element | null {
+  return canvas.parentElement?.parentElement?.offsetParent ?? null
+}
+
+/** Width in CSS pixels of the part of the canvas that no panel covers, measured from the page now. */
+export function uncoveredWidth(canvas: HTMLCanvasElement, canvasWidth: number): number {
+  return Math.min(canvasWidth, viewportHolding(canvas)?.clientWidth ?? canvasWidth)
+}
+
+/** Follows changes to the part of the canvas that no panel covers. */
+export function observeUncovered(canvas: HTMLCanvasElement, changed: () => void): () => void {
+  const host = viewportHolding(canvas)
+  if (!host) return () => undefined
+  const observer = new ResizeObserver(changed)
+  observer.observe(host)
+  return () => observer.disconnect()
+}
+
+function lens(): Lens {
+  if (!getThree) return { fovDeg: 50, aspect: 1 }
+  const { camera, gl, size } = getThree()
+  const fovDeg = camera instanceof PerspectiveCamera ? camera.fov : 50
+  return { fovDeg, aspect: uncoveredWidth(gl.domElement, size.width) / size.height }
+}
+
+/** Glides to a lens-dependent pose and keeps refitting it to the lens until something else moves the camera. */
+export function glideToFrame(frame: Frame): void {
+  glideTo(frame(lens()))
+  heldFrame = frame
+}
+
+/** Refits a held frame after the lens changed, for example when a panel opens or closes over the canvas. */
+export function lensChanged(): void {
+  if (!heldFrame) return
+  if (glide) glide.to = heldFrame(lens())
+  else glideToFrame(heldFrame)
+  invalidate()
+}
+
 /** Changes where the camera is going: the end of a running glide, else the pose on screen. */
 export function retarget(to: CameraPose): void {
+  heldFrame = null
   if (glide) glide.to = to
   else applyPose(to)
   invalidate()
@@ -170,6 +219,7 @@ export function finishGlide(): void {
 /** Zooms the orbit camera toward or away from its target, smoothly; positive wheel pixels move away. */
 export function zoomBy(wheelPixels: number): void {
   if (glide || walking || !getThree) return
+  heldFrame = null
   const { camera } = getThree()
   const current = zoomGoalCm ?? distanceCm(camera.position, controls?.target ?? { x: 0, y: 0, z: 0 })
   zoomGoalCm = Math.min(ZOOM_DISTANCE_CM.max, Math.max(ZOOM_DISTANCE_CM.min, current * ZOOM_PER_WHEEL_PIXEL ** wheelPixels))
@@ -225,6 +275,18 @@ export function settleOrbit(): void {
 /** Whether a glide, orbit inertia or a smooth zoom is moving the camera. */
 export function cameraGliding(): boolean {
   return glide !== null || orbitMoving || zoomGoalCm !== null
+}
+
+/** Where a world point appears on the page in CSS pixels through the camera on screen; null behind the camera. */
+export function projectToScreen({ x, y, z }: Vec3): { x: number; y: number } | null {
+  if (!getThree) return null
+  const { camera, gl } = getThree()
+  camera.updateMatrixWorld()
+  const inView = new Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse)
+  if (inView.z >= 0) return null
+  const clip = inView.applyMatrix4(camera.projectionMatrix)
+  const rect = gl.domElement.getBoundingClientRect()
+  return { x: rect.left + ((clip.x + 1) / 2) * rect.width, y: rect.top + ((1 - clip.y) / 2) * rect.height }
 }
 
 /** Frames the main canvas has rendered. */
