@@ -314,6 +314,50 @@
               "distortion": {
                 "type": "number",
                 "minimum": 1
+              },
+              "optimised": {
+                "type": "object",
+                "properties": {
+                  "trianglesBefore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "trianglesAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "bytesBefore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "bytesAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "textureSizeBefore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "textureSizeAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "trianglesBefore",
+                  "trianglesAfter",
+                  "bytesBefore",
+                  "bytesAfter",
+                  "textureSizeBefore",
+                  "textureSizeAfter"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -321,6 +365,11 @@
               "distortion"
             ],
             "additionalProperties": false
+          },
+          "thumbnail": {
+            "type": "string",
+            "maxLength": 56000,
+            "pattern": "^data:image\\/(jpeg|png|webp);base64,"
           },
           "product": {
             "type": "object",

@@ -169,7 +169,11 @@ export type RoomfitEditorApi = {
   /** Moves the walker in centimetres in its own frame (forward along the view, right to the side), stopping at walls and furniture ≥ 50 cm tall. */
   walkStep(move: { forward: number; right: number }): { moved: number; blocked: boolean }
   look(turn: { yawDeg: number; pitchDeg: number }): void
-  renderStats(): { frames: number }
+  /** Main-canvas counters: frames rendered, the last frame's draw calls and triangles, live GPU resources, estimated texture memory (width × height × 4 × 4/3), fits run on the main thread (must stay 0) and library thumbnails rendered. */
+  renderStats(): { frames: number; drawCalls: number; triangles: number; geometries: number; textures: number; textureBytes: number; mainThreadFits: number; thumbnailRenders: number }
+  /** The stored GLB of an asset as loaded: triangle count, its textures and its size in bytes; null for an unknown asset or one without a mesh yet. */
+  assetStats(assetId: string): { triangles: number; textures: { width: number; height: number; mimeType: string }[]; bytes: number } | null
+  clearAssetCache(): Promise<void>
 }
 
 declare global {

@@ -132,12 +132,13 @@ None.
 | AC-122 | active | Render on demand: no frames render while idle for 2 s; moving an item renders at least one frame |
 | AC-123 | manual | Real-GPU measurement after M15 (`demo/measure-motion.mjs`, median of 3 headless runs): when focusing a room, no frame moves the camera more than 6% of the glide's length and no frame gap exceeds 33 ms; and a recording of walking through the demo house (evidence in the case study) |
 | AC-124 | active | Wheel zoom works anywhere over the 3D view, including over a room label or other overlay on the canvas |
+| AC-133 | active | In walk mode the bottom bar keeps its one-row height and the key hint stays on one line |
 
 ## 9. Test plan
 
 | AC | Level |
 | --- | --- |
-| AC-116 ~ AC-122, AC-124 | e2e (`acceptance/e2e/motion.spec.ts`): sample `cameraFrame()` every animation frame from the page; walk with `walkStep` for deterministic collision checks and with the keyboard for speed |
+| AC-116 ~ AC-122, AC-124, AC-133 | e2e (`acceptance/e2e/motion.spec.ts`): sample `cameraFrame()` every animation frame from the page; walk with `walkStep` for deterministic collision checks and with the keyboard for speed |
 | AC-123 | manual: measurement script + recording |
 
 Existing tests that read `camera()` right after `focusZone`/`setView` stay valid because `camera()` is the resting pose.
@@ -153,6 +154,7 @@ Existing tests that read `camera()` right after `focusZone`/`setView` stay valid
 - 2026-10-19 After the first real-GPU measurement:
   - **AC-123 revised.** It said "largest camera step per frame ≤ 50 cm". That limit was mis-specified: a 17 m glide that takes ≤ 1 s with ease-in-out peaks at roughly 1.5–2× its average speed, so ~60–90 cm per frame. It cannot meet an absolute limit without becoming slow. Measured: 85 cm, which is 4.9% of the 17.3 m glide.
   - **New AC-123.** The criterion is now relative (≤ 6% of the glide per frame) plus "no frame gap > 33 ms". The original limit is recorded as not met.
+  - **AC-133 added.** The walk recording showed the key hint wrapping one word per line inside the bottom bar, stretching the bar to ~220 px. No test checked layout.
   - **AC-124 added.** Profiling showed wheel zoom did nothing over a focused room: the room label sits at the screen centre and the new wheel handler listened on the canvas only. No test had covered it.
 
 - 2026-10-19 Written after measuring (see the case study). Approved in one step: Dante asked for exactly this ("이거 해결해줄 수 있어?" and "해결 과정 기록해놔"), and the open choices follow the reference demos and the existing eye-level camera rules.

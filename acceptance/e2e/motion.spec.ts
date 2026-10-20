@@ -266,3 +266,16 @@ test('AC-124 wheel zoom works anywhere over the 3D view, including over a room l
   const reach = (pose: Pose) => Math.hypot(pose.position.x - pose.target.x, pose.position.y - pose.target.y, pose.position.z - pose.target.z)
   expect(reach(after)).toBeLessThan(reach(before) - 50)
 })
+
+test('AC-133 walk mode keeps the bottom bar on one row and the key hint on one line', async ({ page }) => {
+  const bar = page.getByRole('navigation', { name: 'Scene presets' })
+  const orbitHeight = (await bar.boundingBox())!.height
+  await page.evaluate(() => window.roomfit.focusZone('living'))
+  await settled(page)
+  await page.getByRole('button', { name: 'Walk', exact: true }).click()
+  await settled(page)
+  expect((await bar.boundingBox())!.height).toBeLessThanOrEqual(orbitHeight + 2)
+  const hint = page.getByText('WASD / arrows to move', { exact: false })
+  await expect(hint).toBeVisible()
+  expect((await hint.boundingBox())!.height).toBeLessThanOrEqual(24)
+})

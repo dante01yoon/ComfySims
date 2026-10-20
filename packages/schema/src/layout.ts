@@ -83,9 +83,22 @@ export const AssetLabels = z
 
 export const FitMode = z.enum(['exact', 'uniform', 'auto'])
 
+const count = z.number().int().min(0)
+
+/** What optimising a generated mesh changed: triangles, GLB bytes and the largest texture side, before and after. */
+const AssetOptimised = z.strictObject({
+  trianglesBefore: count,
+  trianglesAfter: count,
+  bytesBefore: count,
+  bytesAfter: count,
+  textureSizeBefore: count,
+  textureSizeAfter: count
+})
+
 export const AssetFit = z.strictObject({
   mode: FitMode,
-  distortion: z.number().finite().min(1)
+  distortion: z.number().finite().min(1),
+  optimised: AssetOptimised.optional()
 })
 
 export const Asset = z.strictObject({
@@ -95,6 +108,7 @@ export const Asset = z.strictObject({
   dimensions: Dimensions,
   source: AssetSource,
   fit: AssetFit.optional(),
+  thumbnail: PhotoThumbnail.optional(),
   product: AssetProduct.optional(),
   labels: AssetLabels.optional()
 })

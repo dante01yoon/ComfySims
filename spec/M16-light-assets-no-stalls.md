@@ -107,9 +107,9 @@ Non-goals (M16)
   - `renderStats()` gains the fields above.
   - New `assetStats(assetId): { triangles: number; textures: { width: number; height: number }[]; bytes: number } | null`.
   - New `clearAssetCache(): Promise<void>`.
-- `packages/schema`: `AssetFit` gains optional `optimised`.
-- `packages/fit`: new `optimizeGlb(document, options)`; `fitGlbBytes` takes `{ optimise?: { resizeImage } }`.
-- New dependencies: `@gltf-transform/functions` and `meshoptimizer` (MeshoptSimplifier, WASM, works in workers).
+- `packages/schema`: `AssetFit` gains optional `optimised`; `Asset` gains optional `thumbnail` (data URL ≤ 40 KB); `JobStep` gains `optimising`.
+- `packages/fit`: new `optimizeGlb(document, options)`; `fitGlbBytes(bytes, dimensions, mode, { align?, optimise?: { resizeImage } })`; `optimizeGlbBytes(bytes, { largestCm, resizeImage })` returns `{ ok: true, bytes, report } | { ok: false, reason: 'unreadable' | 'no-scene' }`; `type ResizeImage = (image: Uint8Array, mimeType: string, size: { width: number; height: number }) => Promise<{ image: Uint8Array; mimeType: string }>`.
+- New dependencies: `@gltf-transform/functions`, `@gltf-transform/extensions` (EXT_texture_webp) and `meshoptimizer` (MeshoptSimplifier, WASM, works in workers).
 
 ## 7. ComfyUI workflows
 
@@ -119,21 +119,22 @@ None.
 
 | AC | Status | Criterion |
 | --- | --- | --- |
-| AC-125 | planned | `optimizeGlb` on the heavy fixture (119,600 triangles, three 2048² textures): ≤ 25,000 triangles, bounds within 0.5% of the largest dimension, textures resized by the given resizer to 1024 (≥ 100 cm) or 512, and a report with before/after counts; a mesh already under the budget is unchanged |
-| AC-126 | planned | Fitting after optimising keeps AC-3/AC-4: the optimised heavy fixture fitted to 70 × 80 × 75 cm is within ±1 cm and bottom-centred |
-| AC-127 | planned | In the editor, a product whose ComfyUI output is the heavy fixture becomes an asset with ≤ 25,000 triangles, WebP textures ≤ 512² (it is under 100 cm), a GLB at least 80% smaller, and `mainThreadFits` stays 0 |
-| AC-128 | planned | Reloading the same layout downloads no GLB again (request count 0 for asset URLs) and its pieces load from the cache; `clearAssetCache()` makes the next load download again |
-| AC-129 | planned | Switching editor ↔ studio keeps the canvas size; the 360° and 3D-photo viewers are separate chunks and the first chunk is ≤ 1,100 KB |
-| AC-130 | planned | `renderStats()` reports draw calls, triangles, textures and texture bytes, and texture bytes for the demo house with the heavy fixture as every piece is ≤ 25% of the same house unoptimised |
-| AC-132 | planned | Library thumbnails: loading a layout whose assets already have thumbnails renders none (`thumbnailRenders` unchanged); missing ones render at most one per animation frame, outside React render, and are saved on the asset |
+| AC-125 | active | `optimizeGlb` on the heavy fixture (119,600 triangles, three 2048² textures): ≤ 25,000 triangles, bounds within 0.5% of the largest dimension, textures resized by the given resizer to 1024 (≥ 100 cm) or 512, and a report with before/after counts; a mesh already under the budget is unchanged |
+| AC-126 | active | Fitting after optimising keeps AC-3/AC-4: the optimised heavy fixture fitted to 70 × 80 × 75 cm is within ±1 cm and bottom-centred |
+| AC-127 | active | In the editor, a product whose ComfyUI output is the heavy fixture becomes an asset with ≤ 25,000 triangles, WebP textures ≤ 512² (it is under 100 cm), a GLB at least 80% smaller, and `mainThreadFits` stays 0 |
+| AC-128 | active | Reloading the same layout downloads no GLB again (request count 0 for asset URLs) and its pieces load from the cache; `clearAssetCache()` makes the next load download again |
+| AC-129 | active | Switching editor ↔ studio keeps the canvas size; the 360° and 3D-photo viewers are separate chunks (`panorama-viewer-*.js`, `photo-viewer-*.js`) and the entry chunk is ≤ 1,100 KB |
+| AC-130 | active | `renderStats()` reports draw calls, triangles, textures and texture bytes, and texture bytes for the demo house with the heavy fixture as every piece is ≤ 25% of the same house unoptimised |
+| AC-132 | active | Library thumbnails: loading a layout whose assets already have thumbnails renders none (`thumbnailRenders` unchanged); missing ones render at most one per animation frame, outside React render, and are saved on the asset |
 | AC-131 | manual | Real-GPU measurement (median of 3 headless runs): loading the 17-piece demo house and switching to the studio have no main-thread stall over 50 ms after the first load (cached) and none over 100 ms on the first load; evidence in the case study |
 
 ## 9. Test plan
 
 | AC | Level |
 | --- | --- |
-| AC-125, AC-126 | vitest (`packages/fit`), heavy fixture `fixtures/glb/heavy-generated.glb` (built by `harness/tools/build-heavy-fixture.ts`), a fake resizer that records sizes |
-| AC-127 ~ AC-130, AC-132 | e2e: the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
+| AC-125, AC-126 | vitest (`acceptance/optimize.test.ts`), heavy fixture `fixtures/glb/heavy-generated.glb` (built by `harness/tools/build-heavy-fixture.ts`), a fake resizer that records sizes |
+| AC-129 (chunks) | vitest (`acceptance/bundle.test.ts`): production build into a temp dir |
+| AC-127 ~ AC-130, AC-132 | e2e (`acceptance/e2e/light-assets.spec.ts`): the fake ComfyUI returns the heavy fixture when asked (`/__product-glb?fixture=heavy-generated.glb`, restored after each test) |
 | AC-131 | manual: `demo/measure-motion.mjs` before/after |
 
 ## 10. Risks and open questions

@@ -175,3 +175,11 @@ Code-splitting the viewers and post-processing is on the M16 list.
   - A bundle composition report.
   - A run index at `perf/README.md`.
 - 2026-10-19 — Before/after measured. Profiling found the wheel-over-label regression; AC-124 added red; AC-123 made relative (see above). impl-33 fixes AC-124.
+- 2026-10-19 — Final M15 measurement (`perf/2026-10-19-m15-final`):
+  - Wheel zoom renders 154 frames with a largest step of 19 cm; the AC-124 fix works.
+  - Focus peaks at 83 cm per frame, 4.8% of the glide, with 0 frame gaps over 33 ms. AC-123 is met.
+- 2026-10-19 — Walk recording (`docs/recordings/media/roomfit-walk.mp4`, headless, muted). It caught one more defect no test covered: in walk mode the key hint wrapped one word per line inside the bottom bar, stretching the bar to ~220 px. AC-133 was added red; the fix goes into the M16 session.
+- 2026-10-19 — M16 spec activated:
+  - 7 ACs: optimiser unit tests on a synthetic heavy fixture (119,600 triangles, three 2048² textures), worker, cache, stable canvas, chunks, render stats, thumbnails.
+  - Plus one real-GPU AC.
+  - The fake ComfyUI can now return any fixture as the generated product (`/__product-glb`).

@@ -1,7 +1,8 @@
 import { createServer } from 'node:http'
 import { readFileSync } from 'node:fs'
 
-const GLB = readFileSync(new URL('../../fixtures/glb/generated-offset-box.glb', import.meta.url))
+const glbFixture = (name) => readFileSync(new URL(`../../fixtures/glb/${name}`, import.meta.url))
+const DEFAULT_PRODUCT_GLB = 'generated-offset-box.glb'
 const PHOTO3D_GLB = readFileSync(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url))
 const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', import.meta.url))
 const snapshotAt = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'))
@@ -50,13 +51,14 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
   const prompts = new Map()
   const uploadNames = new Map()
   let uploads = 0
+  let productGlb = glbFixture(DEFAULT_PRODUCT_GLB)
   let jobs = 0
 
   const storage = createServer((request, response) => {
     requests.push({ server: 'storage', method: request.method, url: request.url, headers: request.headers })
     const isGlb = request.url.includes('.glb')
     response.setHeader('Content-Type', isGlb ? 'model/gltf-binary' : 'image/png')
-    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : GLB) : request.url.includes('pano360') ? PANORAMA : PNG)
+    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : productGlb) : request.url.includes('pano360') ? PANORAMA : PNG)
   })
 
   const api = createServer(async (request, response) => {
@@ -74,6 +76,12 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     if (url.pathname === '/__requests') return json(200, requests.filter((entry) => entry.url !== '/__requests').map(({ body: _body, ...entry }) => entry))
     if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null, negative: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:negative')?.inputs.text ?? null })))
     if (url.pathname === '/__last-prompt') return json(200, lastPrompt)
+    if (url.pathname === '/__product-glb') {
+      const fixture = url.searchParams.get('fixture') ?? DEFAULT_PRODUCT_GLB
+      if (!/^[a-z0-9-]+\.glb$/.test(fixture)) return json(400, { error: 'fixture must be a file name in fixtures/glb' })
+      productGlb = glbFixture(fixture)
+      return json(200, { fixture, bytes: productGlb.length })
+    }
     if (requireKey && request.headers['x-api-key'] !== requireKey) return json(401, { error: 'unauthorized' })
     if (request.method === 'GET' && url.pathname === '/api/object_info') return json(200, objectInfo)
 

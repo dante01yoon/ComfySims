@@ -28,7 +28,7 @@ export type FindSpotOutcome =
 export type JobKind = 'product' | 'render' | 'photo3d' | 'pano360'
 
 /** Steps a ComfyUI job goes through, in order; it ends in `done` or `failed`. */
-export type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'fitting' | 'meshing' | 'done' | 'failed'
+export type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'optimising' | 'fitting' | 'meshing' | 'done' | 'failed'
 
 /** Source image for a 3D photo: a finished render job or an uploaded photo. */
 export type Photo3dSource = { kind: 'render'; jobId: string } | { kind: 'upload'; fileName: string; imageBase64: string }
