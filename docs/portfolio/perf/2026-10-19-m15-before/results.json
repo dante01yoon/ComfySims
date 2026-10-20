@@ -1,0 +1,1552 @@
+{
+  "environment": {
+    "label": "2026-10-19-m15-before",
+    "commit": "0761e71",
+    "url": "http://127.0.0.1:5189/",
+    "at": "2026-10-20T01:10:27.692Z",
+    "cpu": "Apple M4 Max",
+    "memoryGb": 36,
+    "dpr": 2,
+    "viewport": "1600x900",
+    "browser": "141.0.7390.37",
+    "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)",
+    "items": 17,
+    "runs": 3
+  },
+  "results": [
+    {
+      "name": "load-layout",
+      "seconds": 2.14,
+      "fps": 25.7,
+      "frameMsP50": 16.7,
+      "frameMsP95": 149.9,
+      "framesOver33ms": 13,
+      "longTasks": 4,
+      "longestTaskMs": 156,
+      "largestCameraStepCm": 0,
+      "renderedFrames": null,
+      "heapMbAfter": 19.4,
+      "heapMbDelta": 4.3,
+      "range": {
+        "longestTaskMs": [
+          156,
+          202
+        ],
+        "frameMsP95": [
+          133.3,
+          150
+        ],
+        "largestCameraStepCm": [
+          0,
+          0
+        ]
+      },
+      "cpu": {
+        "gcMs": 63,
+        "top": [
+          {
+            "fn": "texSubImage2D :-1",
+            "ms": 924
+          },
+          {
+            "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+            "ms": 65
+          },
+          {
+            "fn": "(anonymous) three_examples_jsm_loaders_GLTFLoader__js.js:1879",
+            "ms": 57
+          },
+          {
+            "fn": "toDataURL :-1",
+            "ms": 55
+          },
+          {
+            "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+            "ms": 52
+          },
+          {
+            "fn": "(anonymous) chunk-URRDWL2E.js:23912",
+            "ms": 49
+          },
+          {
+            "fn": "run :-1",
+            "ms": 41
+          },
+          {
+            "fn": "GLTFBinaryExtension three_examples_jsm_loaders_GLTFLoader__js.js:1053",
+            "ms": 37
+          }
+        ]
+      }
+    },
+    {
+      "name": "switch-to-studio",
+      "seconds": 2.2,
+      "fps": 49.6,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.8,
+      "framesOver33ms": 3,
+      "longTasks": 2,
+      "longestTaskMs": 223,
+      "largestCameraStepCm": 1688,
+      "renderedFrames": null,
+      "heapMbAfter": 30.7,
+      "heapMbDelta": 11.1,
+      "range": {
+        "longestTaskMs": [
+          192,
+          253
+        ],
+        "frameMsP95": [
+          16.8,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          1688,
+          1688
+        ]
+      },
+      "cpu": {
+        "gcMs": 2,
+        "top": [
+          {
+            "fn": "WebGLRenderer.setSize chunk-URRDWL2E.js:40556",
+            "ms": 230
+          },
+          {
+            "fn": "texSubImage2D :-1",
+            "ms": 113
+          },
+          {
+            "fn": "getProgramInfoLog :-1",
+            "ms": 111
+          },
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 26
+          },
+          {
+            "fn": "clear :-1",
+            "ms": 11
+          },
+          {
+            "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+            "ms": 9
+          },
+          {
+            "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+            "ms": 8
+          },
+          {
+            "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+            "ms": 7
+          }
+        ]
+      }
+    },
+    {
+      "name": "idle-house",
+      "seconds": 3.27,
+      "fps": 59.8,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.8,
+      "framesOver33ms": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 0,
+      "renderedFrames": null,
+      "heapMbAfter": 25.2,
+      "heapMbDelta": 1.4,
+      "range": {
+        "longestTaskMs": [
+          0,
+          0
+        ],
+        "frameMsP95": [
+          16.7,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          0,
+          0
+        ]
+      },
+      "cpu": {
+        "gcMs": 3,
+        "top": [
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 56
+          },
+          {
+            "fn": "WebGLShadowMap.render chunk-URRDWL2E.js:36983",
+            "ms": 15
+          },
+          {
+            "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+            "ms": 12
+          },
+          {
+            "fn": "setup chunk-URRDWL2E.js:32830",
+            "ms": 9
+          },
+          {
+            "fn": "upload chunk-URRDWL2E.js:35173",
+            "ms": 7
+          },
+          {
+            "fn": "loop chunk-TK7WHPHW.js:14152",
+            "ms": 6
+          },
+          {
+            "fn": "projectObject chunk-URRDWL2E.js:41023",
+            "ms": 5
+          },
+          {
+            "fn": "setValueM4 chunk-URRDWL2E.js:34667",
+            "ms": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "orbit-drag",
+      "seconds": 6.25,
+      "fps": 59.9,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.8,
+      "framesOver33ms": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 34,
+      "renderedFrames": null,
+      "heapMbAfter": 27.6,
+      "heapMbDelta": 2.4,
+      "range": {
+        "longestTaskMs": [
+          0,
+          0
+        ],
+        "frameMsP95": [
+          16.7,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          33,
+          34
+        ]
+      },
+      "cpu": {
+        "gcMs": 11,
+        "top": [
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 82
+          },
+          {
+            "fn": "intersectTriangle chunk-URRDWL2E.js:6584",
+            "ms": 31
+          },
+          {
+            "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+            "ms": 29
+          },
+          {
+            "fn": "(anonymous) @react-three_drei.js:528",
+            "ms": 15
+          },
+          {
+            "fn": "projectObject chunk-URRDWL2E.js:41023",
+            "ms": 13
+          },
+          {
+            "fn": "_computeIntersections chunk-URRDWL2E.js:12220",
+            "ms": 12
+          },
+          {
+            "fn": "getX chunk-URRDWL2E.js:13870",
+            "ms": 11
+          },
+          {
+            "fn": "update chunk-URRDWL2E.js:31899",
+            "ms": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "focus-room",
+      "seconds": 2.21,
+      "fps": 59.1,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.8,
+      "framesOver33ms": 1,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 1731,
+      "renderedFrames": null,
+      "heapMbAfter": 25.3,
+      "heapMbDelta": -2.3,
+      "range": {
+        "longestTaskMs": [
+          0,
+          52
+        ],
+        "frameMsP95": [
+          16.8,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          1731,
+          1731
+        ]
+      },
+      "cpu": {
+        "gcMs": 1,
+        "top": [
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 19
+          },
+          {
+            "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+            "ms": 9
+          },
+          {
+            "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+            "ms": 9
+          },
+          {
+            "fn": "uniformMatrix4fv :-1",
+            "ms": 4
+          },
+          {
+            "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+            "ms": 4
+          },
+          {
+            "fn": "(anonymous) @react-three_drei.js:528",
+            "ms": 4
+          },
+          {
+            "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+            "ms": 3
+          },
+          {
+            "fn": "clear :-1",
+            "ms": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "wheel-zoom",
+      "seconds": 3.27,
+      "fps": 59.8,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.7,
+      "framesOver33ms": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 46,
+      "renderedFrames": null,
+      "heapMbAfter": 33.1,
+      "heapMbDelta": 7.9,
+      "range": {
+        "longestTaskMs": [
+          0,
+          0
+        ],
+        "frameMsP95": [
+          16.7,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          46,
+          46
+        ]
+      },
+      "cpu": {
+        "gcMs": 0,
+        "top": [
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 23
+          },
+          {
+            "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+            "ms": 12
+          },
+          {
+            "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+            "ms": 11
+          },
+          {
+            "fn": "projectObject chunk-URRDWL2E.js:41023",
+            "ms": 5
+          },
+          {
+            "fn": "markUniformsLightsNeedsUpdate chunk-URRDWL2E.js:41478",
+            "ms": 5
+          },
+          {
+            "fn": "copyArray chunk-URRDWL2E.js:34565",
+            "ms": 4
+          },
+          {
+            "fn": "upload chunk-URRDWL2E.js:35173",
+            "ms": 4
+          },
+          {
+            "fn": "bindVertexArray :-1",
+            "ms": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "idle-room",
+      "seconds": 3.25,
+      "fps": 59.7,
+      "frameMsP50": 16.7,
+      "frameMsP95": 16.8,
+      "framesOver33ms": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 0,
+      "renderedFrames": null,
+      "heapMbAfter": 29.2,
+      "heapMbDelta": -3.9,
+      "range": {
+        "longestTaskMs": [
+          0,
+          0
+        ],
+        "frameMsP95": [
+          16.7,
+          16.8
+        ],
+        "largestCameraStepCm": [
+          0,
+          0
+        ]
+      },
+      "cpu": {
+        "gcMs": 1,
+        "top": [
+          {
+            "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+            "ms": 31
+          },
+          {
+            "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+            "ms": 10
+          },
+          {
+            "fn": "setup chunk-URRDWL2E.js:32830",
+            "ms": 5
+          },
+          {
+            "fn": "upload chunk-URRDWL2E.js:35173",
+            "ms": 5
+          },
+          {
+            "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+            "ms": 5
+          },
+          {
+            "fn": "multiplyMatrices chunk-URRDWL2E.js:7082",
+            "ms": 5
+          },
+          {
+            "fn": "refreshUniformsCommon chunk-URRDWL2E.js:39908",
+            "ms": 4
+          },
+          {
+            "fn": "intersectsSphere chunk-URRDWL2E.js:15358",
+            "ms": 4
+          }
+        ]
+      }
+    }
+  ],
+  "runs": [
+    [
+      {
+        "name": "load-layout",
+        "seconds": 2.44,
+        "fps": 21.8,
+        "frameMsP50": 16.7,
+        "frameMsP95": 149.9,
+        "framesOver33ms": 20,
+        "longTasks": 9,
+        "longestTaskMs": 156,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 22.2,
+        "heapMbDelta": 6.9,
+        "cpu": {
+          "gcMs": 81,
+          "top": [
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 924
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 65
+            },
+            {
+              "fn": "(anonymous) three_examples_jsm_loaders_GLTFLoader__js.js:1879",
+              "ms": 57
+            },
+            {
+              "fn": "toDataURL :-1",
+              "ms": 55
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 52
+            },
+            {
+              "fn": "(anonymous) chunk-URRDWL2E.js:23912",
+              "ms": 49
+            },
+            {
+              "fn": "run :-1",
+              "ms": 41
+            },
+            {
+              "fn": "GLTFBinaryExtension three_examples_jsm_loaders_GLTFLoader__js.js:1053",
+              "ms": 37
+            }
+          ]
+        }
+      },
+      {
+        "name": "switch-to-studio",
+        "seconds": 2.2,
+        "fps": 46.9,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 2,
+        "longTasks": 2,
+        "longestTaskMs": 253,
+        "largestCameraStepCm": 1688,
+        "renderedFrames": null,
+        "heapMbAfter": 31.4,
+        "heapMbDelta": 9.2,
+        "cpu": {
+          "gcMs": 2,
+          "top": [
+            {
+              "fn": "WebGLRenderer.setSize chunk-URRDWL2E.js:40556",
+              "ms": 230
+            },
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 113
+            },
+            {
+              "fn": "getProgramInfoLog :-1",
+              "ms": 111
+            },
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 26
+            },
+            {
+              "fn": "clear :-1",
+              "ms": 11
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 9
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 8
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 7
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-house",
+        "seconds": 3.35,
+        "fps": 59.8,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 1,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 26,
+        "heapMbDelta": 1.5,
+        "cpu": {
+          "gcMs": 4,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 56
+            },
+            {
+              "fn": "WebGLShadowMap.render chunk-URRDWL2E.js:36983",
+              "ms": 15
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 12
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 9
+            },
+            {
+              "fn": "upload chunk-URRDWL2E.js:35173",
+              "ms": 7
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 6
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 5
+            },
+            {
+              "fn": "setValueM4 chunk-URRDWL2E.js:34667",
+              "ms": 5
+            }
+          ]
+        }
+      },
+      {
+        "name": "orbit-drag",
+        "seconds": 6.25,
+        "fps": 59.9,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.7,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 34,
+        "renderedFrames": null,
+        "heapMbAfter": 28.4,
+        "heapMbDelta": 2.4,
+        "cpu": {
+          "gcMs": 11,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 82
+            },
+            {
+              "fn": "intersectTriangle chunk-URRDWL2E.js:6584",
+              "ms": 31
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 29
+            },
+            {
+              "fn": "(anonymous) @react-three_drei.js:528",
+              "ms": 15
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 13
+            },
+            {
+              "fn": "_computeIntersections chunk-URRDWL2E.js:12220",
+              "ms": 12
+            },
+            {
+              "fn": "getX chunk-URRDWL2E.js:13870",
+              "ms": 11
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 11
+            }
+          ]
+        }
+      },
+      {
+        "name": "focus-room",
+        "seconds": 2.21,
+        "fps": 59.2,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 1731,
+        "renderedFrames": null,
+        "heapMbAfter": 26.1,
+        "heapMbDelta": -2.4,
+        "cpu": {
+          "gcMs": 1,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 19
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 9
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 9
+            },
+            {
+              "fn": "uniformMatrix4fv :-1",
+              "ms": 4
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 4
+            },
+            {
+              "fn": "(anonymous) @react-three_drei.js:528",
+              "ms": 4
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 3
+            },
+            {
+              "fn": "clear :-1",
+              "ms": 3
+            }
+          ]
+        }
+      },
+      {
+        "name": "wheel-zoom",
+        "seconds": 3.26,
+        "fps": 59.8,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 46,
+        "renderedFrames": null,
+        "heapMbAfter": 34.1,
+        "heapMbDelta": 8,
+        "cpu": {
+          "gcMs": 0,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 23
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 12
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 11
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 5
+            },
+            {
+              "fn": "markUniformsLightsNeedsUpdate chunk-URRDWL2E.js:41478",
+              "ms": 5
+            },
+            {
+              "fn": "copyArray chunk-URRDWL2E.js:34565",
+              "ms": 4
+            },
+            {
+              "fn": "upload chunk-URRDWL2E.js:35173",
+              "ms": 4
+            },
+            {
+              "fn": "bindVertexArray :-1",
+              "ms": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-room",
+        "seconds": 3.25,
+        "fps": 59.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.7,
+        "framesOver33ms": 1,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 30.3,
+        "heapMbDelta": -3.8,
+        "cpu": {
+          "gcMs": 1,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 31
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 10
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 5
+            },
+            {
+              "fn": "upload chunk-URRDWL2E.js:35173",
+              "ms": 5
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 5
+            },
+            {
+              "fn": "multiplyMatrices chunk-URRDWL2E.js:7082",
+              "ms": 5
+            },
+            {
+              "fn": "refreshUniformsCommon chunk-URRDWL2E.js:39908",
+              "ms": 4
+            },
+            {
+              "fn": "intersectsSphere chunk-URRDWL2E.js:15358",
+              "ms": 4
+            }
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "name": "load-layout",
+        "seconds": 2.14,
+        "fps": 25.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 150,
+        "framesOver33ms": 13,
+        "longTasks": 4,
+        "longestTaskMs": 156,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 19.4,
+        "heapMbDelta": 4.1,
+        "cpu": {
+          "gcMs": 63,
+          "top": [
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 825
+            },
+            {
+              "fn": "(anonymous) three_examples_jsm_loaders_GLTFLoader__js.js:1879",
+              "ms": 52
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 49
+            },
+            {
+              "fn": "toDataURL :-1",
+              "ms": 41
+            },
+            {
+              "fn": "run :-1",
+              "ms": 38
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 34
+            },
+            {
+              "fn": "(anonymous) chunk-URRDWL2E.js:23912",
+              "ms": 34
+            },
+            {
+              "fn": "getProgramInfoLog :-1",
+              "ms": 25
+            }
+          ]
+        }
+      },
+      {
+        "name": "switch-to-studio",
+        "seconds": 2.2,
+        "fps": 49.6,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 3,
+        "longTasks": 2,
+        "longestTaskMs": 223,
+        "largestCameraStepCm": 1688,
+        "renderedFrames": null,
+        "heapMbAfter": 30.5,
+        "heapMbDelta": 11.1,
+        "cpu": {
+          "gcMs": 5,
+          "top": [
+            {
+              "fn": "WebGLRenderer.setSize chunk-URRDWL2E.js:40556",
+              "ms": 220
+            },
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 119
+            },
+            {
+              "fn": "getProgramInfoLog :-1",
+              "ms": 50
+            },
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 27
+            },
+            {
+              "fn": "clear :-1",
+              "ms": 14
+            },
+            {
+              "fn": "setProgram chunk-URRDWL2E.js:41285",
+              "ms": 9
+            },
+            {
+              "fn": "refreshMaterialUniforms chunk-URRDWL2E.js:39865",
+              "ms": 8
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 7
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-house",
+        "seconds": 3.25,
+        "fps": 59.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 25,
+        "heapMbDelta": 1.3,
+        "cpu": {
+          "gcMs": 0,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 43
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 12
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 9
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 9
+            },
+            {
+              "fn": "setProgram chunk-URRDWL2E.js:41285",
+              "ms": 6
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 6
+            },
+            {
+              "fn": "upload chunk-URRDWL2E.js:35173",
+              "ms": 5
+            },
+            {
+              "fn": "flatten chunk-URRDWL2E.js:34540",
+              "ms": 5
+            }
+          ]
+        }
+      },
+      {
+        "name": "orbit-drag",
+        "seconds": 6.23,
+        "fps": 59.9,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 34,
+        "renderedFrames": null,
+        "heapMbAfter": 27.6,
+        "heapMbDelta": 2.6,
+        "cpu": {
+          "gcMs": 11,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 85
+            },
+            {
+              "fn": "intersectTriangle chunk-URRDWL2E.js:6584",
+              "ms": 34
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 23
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 19
+            },
+            {
+              "fn": "fromBufferAttribute chunk-URRDWL2E.js:3216",
+              "ms": 15
+            },
+            {
+              "fn": "(anonymous) @react-three_drei.js:528",
+              "ms": 13
+            },
+            {
+              "fn": "copyArray chunk-URRDWL2E.js:34565",
+              "ms": 10
+            },
+            {
+              "fn": "multiplyMatrices chunk-URRDWL2E.js:7082",
+              "ms": 10
+            }
+          ]
+        }
+      },
+      {
+        "name": "focus-room",
+        "seconds": 2.21,
+        "fps": 58.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 1,
+        "longTasks": 1,
+        "longestTaskMs": 52,
+        "largestCameraStepCm": 1731,
+        "renderedFrames": null,
+        "heapMbAfter": 25.3,
+        "heapMbDelta": -2.3,
+        "cpu": {
+          "gcMs": 3,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 18
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 12
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 9
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 5
+            },
+            {
+              "fn": "get chunk-URRDWL2E.js:36363",
+              "ms": 5
+            },
+            {
+              "fn": "drawBuffers chunk-URRDWL2E.js:37476",
+              "ms": 4
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 4
+            },
+            {
+              "fn": "renderObject chunk-URRDWL2E.js:37130",
+              "ms": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "wheel-zoom",
+        "seconds": 3.27,
+        "fps": 59.6,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.7,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 46,
+        "renderedFrames": null,
+        "heapMbAfter": 33.1,
+        "heapMbDelta": 7.8,
+        "cpu": {
+          "gcMs": 0,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 30
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 7
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 7
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 6
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 5
+            },
+            {
+              "fn": "setProgram chunk-URRDWL2E.js:41285",
+              "ms": 5
+            },
+            {
+              "fn": "copyArray chunk-URRDWL2E.js:34565",
+              "ms": 4
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-room",
+        "seconds": 3.25,
+        "fps": 59.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 29.2,
+        "heapMbDelta": -3.9,
+        "cpu": {
+          "gcMs": 0,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 26
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 18
+            },
+            {
+              "fn": "setProgram chunk-URRDWL2E.js:41285",
+              "ms": 6
+            },
+            {
+              "fn": "multiplyMatrices chunk-URRDWL2E.js:7082",
+              "ms": 5
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 5
+            },
+            {
+              "fn": "setValueM4 chunk-URRDWL2E.js:34667",
+              "ms": 3
+            },
+            {
+              "fn": "renderObject chunk-URRDWL2E.js:37130",
+              "ms": 3
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 3
+            }
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "name": "load-layout",
+        "seconds": 1.97,
+        "fps": 25.9,
+        "frameMsP50": 16.7,
+        "frameMsP95": 133.3,
+        "framesOver33ms": 12,
+        "longTasks": 4,
+        "longestTaskMs": 202,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 19.4,
+        "heapMbDelta": 4.3,
+        "cpu": {
+          "gcMs": 57,
+          "top": [
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 795
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 53
+            },
+            {
+              "fn": "exports.jsxDEV react_jsx-dev-runtime.js:238",
+              "ms": 51
+            },
+            {
+              "fn": "(anonymous) three_examples_jsm_loaders_GLTFLoader__js.js:1879",
+              "ms": 43
+            },
+            {
+              "fn": "run :-1",
+              "ms": 39
+            },
+            {
+              "fn": "toDataURL :-1",
+              "ms": 38
+            },
+            {
+              "fn": "prepareFreshStack chunk-RMQKLT5B.js:12094",
+              "ms": 31
+            },
+            {
+              "fn": "(anonymous) chunk-URRDWL2E.js:23912",
+              "ms": 31
+            }
+          ]
+        }
+      },
+      {
+        "name": "switch-to-studio",
+        "seconds": 2.21,
+        "fps": 50.7,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 4,
+        "longTasks": 2,
+        "longestTaskMs": 192,
+        "largestCameraStepCm": 1688,
+        "renderedFrames": null,
+        "heapMbAfter": 30.7,
+        "heapMbDelta": 11.3,
+        "cpu": {
+          "gcMs": 2,
+          "top": [
+            {
+              "fn": "WebGLRenderer.setSize chunk-URRDWL2E.js:40556",
+              "ms": 190
+            },
+            {
+              "fn": "texSubImage2D :-1",
+              "ms": 95
+            },
+            {
+              "fn": "getProgramInfoLog :-1",
+              "ms": 60
+            },
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 36
+            },
+            {
+              "fn": "clear :-1",
+              "ms": 12
+            },
+            {
+              "fn": "setProgram chunk-URRDWL2E.js:41285",
+              "ms": 11
+            },
+            {
+              "fn": "multiplyMatrices chunk-URRDWL2E.js:7082",
+              "ms": 7
+            },
+            {
+              "fn": "run :-1",
+              "ms": 7
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-house",
+        "seconds": 3.27,
+        "fps": 60,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.7,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 25.2,
+        "heapMbDelta": 1.4,
+        "cpu": {
+          "gcMs": 3,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 58
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 12
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 12
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 9
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 9
+            },
+            {
+              "fn": "setValueM4 chunk-URRDWL2E.js:34667",
+              "ms": 8
+            },
+            {
+              "fn": "refreshUniformsStandard chunk-URRDWL2E.js:40042",
+              "ms": 8
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 7
+            }
+          ]
+        }
+      },
+      {
+        "name": "orbit-drag",
+        "seconds": 6.55,
+        "fps": 60,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 33,
+        "renderedFrames": null,
+        "heapMbAfter": 27.3,
+        "heapMbDelta": 2,
+        "cpu": {
+          "gcMs": 15,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 154
+            },
+            {
+              "fn": "intersectTriangle chunk-URRDWL2E.js:6584",
+              "ms": 35
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 33
+            },
+            {
+              "fn": "bindVertexArray :-1",
+              "ms": 18
+            },
+            {
+              "fn": "(anonymous) @react-three_drei.js:528",
+              "ms": 16
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 12
+            },
+            {
+              "fn": "getVertexPosition chunk-URRDWL2E.js:12170",
+              "ms": 11
+            },
+            {
+              "fn": "flatten chunk-URRDWL2E.js:34540",
+              "ms": 10
+            }
+          ]
+        }
+      },
+      {
+        "name": "focus-room",
+        "seconds": 2.23,
+        "fps": 59.1,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 1,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 1731,
+        "renderedFrames": null,
+        "heapMbAfter": 25,
+        "heapMbDelta": -2.2,
+        "cpu": {
+          "gcMs": 1,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 26
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 8
+            },
+            {
+              "fn": "copyArray chunk-URRDWL2E.js:34565",
+              "ms": 5
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 5
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 5
+            },
+            {
+              "fn": "bindVertexArray :-1",
+              "ms": 4
+            },
+            {
+              "fn": "setValue chunk-URRDWL2E.js:35120",
+              "ms": 4
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 3
+            }
+          ]
+        }
+      },
+      {
+        "name": "wheel-zoom",
+        "seconds": 3.28,
+        "fps": 59.8,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.7,
+        "framesOver33ms": 1,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 46,
+        "renderedFrames": null,
+        "heapMbAfter": 32.9,
+        "heapMbDelta": 7.9,
+        "cpu": {
+          "gcMs": 0,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 41
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 10
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 10
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 4
+            },
+            {
+              "fn": "drawElements :-1",
+              "ms": 4
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 4
+            },
+            {
+              "fn": "update chunk-URRDWL2E.js:31899",
+              "ms": 4
+            },
+            {
+              "fn": "WebGLProgram.getAttributes chunk-URRDWL2E.js:35797",
+              "ms": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "idle-room",
+        "seconds": 3.26,
+        "fps": 59.6,
+        "frameMsP50": 16.7,
+        "frameMsP95": 16.8,
+        "framesOver33ms": 0,
+        "longTasks": 0,
+        "longestTaskMs": 0,
+        "largestCameraStepCm": 0,
+        "renderedFrames": null,
+        "heapMbAfter": 29,
+        "heapMbDelta": -3.9,
+        "cpu": {
+          "gcMs": 4,
+          "top": [
+            {
+              "fn": "needsUpdate chunk-URRDWL2E.js:32900",
+              "ms": 30
+            },
+            {
+              "fn": "WebGLRenderer.renderBufferDirect chunk-URRDWL2E.js:40744",
+              "ms": 13
+            },
+            {
+              "fn": "setup chunk-URRDWL2E.js:32830",
+              "ms": 9
+            },
+            {
+              "fn": "projectObject chunk-URRDWL2E.js:41023",
+              "ms": 6
+            },
+            {
+              "fn": "updateMatrixWorld chunk-URRDWL2E.js:8755",
+              "ms": 6
+            },
+            {
+              "fn": "bindVertexArray :-1",
+              "ms": 4
+            },
+            {
+              "fn": "get chunk-URRDWL2E.js:36363",
+              "ms": 4
+            },
+            {
+              "fn": "loop chunk-TK7WHPHW.js:14152",
+              "ms": 4
+            }
+          ]
+        }
+      }
+    ]
+  ]
+}

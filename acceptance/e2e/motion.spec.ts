@@ -247,3 +247,16 @@ test('AC-122 nothing renders while idle, and an edit renders a frame', async ({ 
   await page.waitForTimeout(500)
   expect(await page.evaluate(() => window.roomfit.renderStats().frames)).toBeGreaterThan(before)
 })
+
+test('AC-124 wheel zoom works anywhere over the 3D view, including over a room label', async ({ page }) => {
+  await page.evaluate(() => window.roomfit.focusZone('bedroom'))
+  await settled(page)
+  const label = page.getByRole('button', { name: /^Bedroom · / })
+  await label.hover()
+  const before = await page.evaluate(() => window.roomfit.cameraFrame())
+  for (let tick = 0; tick < 5; tick += 1) await page.mouse.wheel(0, -120)
+  await settled(page)
+  const after = await page.evaluate(() => window.roomfit.cameraFrame())
+  const reach = (pose: Pose) => Math.hypot(pose.position.x - pose.target.x, pose.position.y - pose.target.y, pose.position.z - pose.target.z)
+  expect(reach(after)).toBeLessThan(reach(before) - 50)
+})

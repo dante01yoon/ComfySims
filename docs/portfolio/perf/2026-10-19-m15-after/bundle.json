@@ -1,0 +1,111 @@
+{
+  "files": [
+    {
+      "file": "index-zjQrLN8I.js",
+      "kb": 1590,
+      "gzipKb": 489
+    }
+  ],
+  "packages": [
+    {
+      "name": "three",
+      "kb": 729
+    },
+    {
+      "name": "react-dom",
+      "kb": 178
+    },
+    {
+      "name": "n8ao",
+      "kb": 137
+    },
+    {
+      "name": "app code",
+      "kb": 129
+    },
+    {
+      "name": "react-reconciler",
+      "kb": 110
+    },
+    {
+      "name": "zod",
+      "kb": 96
+    },
+    {
+      "name": "@gltf-transform/core",
+      "kb": 63
+    },
+    {
+      "name": "postprocessing",
+      "kb": 53
+    },
+    {
+      "name": "@react-three/fiber",
+      "kb": 29
+    },
+    {
+      "name": "three-stdlib",
+      "kb": 14
+    },
+    {
+      "name": "@react-three/drei",
+      "kb": 8
+    },
+    {
+      "name": "react",
+      "kb": 8
+    },
+    {
+      "name": "scheduler",
+      "kb": 7
+    },
+    {
+      "name": "property-graph",
+      "kb": 6
+    },
+    {
+      "name": "[EOLs]",
+      "kb": 5
+    },
+    {
+      "name": "[unmapped]",
+      "kb": 4
+    },
+    {
+      "name": "react-use-measure",
+      "kb": 3
+    },
+    {
+      "name": "@react-three/postprocessing",
+      "kb": 3
+    },
+    {
+      "name": "maath",
+      "kb": 2
+    },
+    {
+      "name": "use-sync-external-store",
+      "kb": 2
+    },
+    {
+      "name": "its-fine",
+      "kb": 1
+    },
+    {
+      "name": "suspend-react",
+      "kb": 1
+    },
+    {
+      "name": "zustand",
+      "kb": 1
+    },
+    {
+      "name": "@babel/runtime",
+      "kb": 0
+    },
+    {
+      "name": "[sourceMappingURL]",
+      "kb": 0
+    }
+  ]
+}
