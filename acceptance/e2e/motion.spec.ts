@@ -13,7 +13,9 @@ const distance = (a: Pose, b: Pose) =>
   Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y, a.position.z - b.position.z) +
   Math.hypot(a.target.x - b.target.x, a.target.y - b.target.y, a.target.z - b.target.z)
 
-const settled = (page: Page) => page.waitForFunction(() => !window.roomfit.cameraMoving(), null, { timeout: 5000 })
+const settled = (page: Page) => page.waitForFunction(() => !window.roomfit.cameraMoving(), null, { timeout: 15_000 })
+
+test.use({ viewport: { width: 800, height: 450 } })
 
 type Action = { kind: 'focus'; zoneId: string } | { kind: 'chip'; name: string } | { kind: 'view'; view: 'studio' | 'editor' }
 

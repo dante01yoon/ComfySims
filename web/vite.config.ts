@@ -155,6 +155,7 @@ export default defineConfig(({ mode }) => {
       bridge({ tokenFile: resolve(repoRoot, '.harness/bridge-token') })
     ],
     server: { host: '127.0.0.1' },
+    optimizeDeps: { include: ['@gltf-transform/core', '@gltf-transform/extensions', '@gltf-transform/functions', 'meshoptimizer'] },
     build: { rollupOptions: { output: { manualChunks: vendorChunk } } }
   }
 })

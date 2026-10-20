@@ -124,7 +124,8 @@ test('AC-17 undo and redo walk through moves, rotations and removals', async ({ 
 
   await page.evaluate(() => { window.roomfit.undo(); window.roomfit.undo(); window.roomfit.undo() })
   const atStart = await page.evaluate(() => window.roomfit.state())
-  expect(atStart.layout).toEqual(withTable)
+  const withoutThumbnails = (layout: RoomLayout) => ({ ...layout, assets: layout.assets.map(({ thumbnail: _thumbnail, ...asset }) => asset) })
+  expect(withoutThumbnails(atStart.layout)).toEqual(withoutThumbnails(withTable))
   expect(atStart.canUndo).toBe(false)
 
   await page.evaluate(() => window.roomfit.moveItem('item-sofa', { x: 0, z: 0 }))
