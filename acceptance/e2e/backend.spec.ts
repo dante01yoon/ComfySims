@@ -50,7 +50,7 @@ test('AC-70 the backend switch sends new jobs to the chosen ComfyUI without a re
 
 test('AC-70 a running job keeps polling the backend it started on after a switch', async ({ page }) => {
   const running = page.evaluate((imageBase64) => window.roomfit.addProductFromPhoto({ fileName: 'slow-lamp.png', imageBase64, name: 'Slow lamp', dimensions: { width: 30, depth: 30, height: 150 }, zoneId: 'garage' }), PHOTO)
-  await expect(card(page, '3D model · Slow lamp')).toContainText('generating', { timeout: 5_000 })
+  await expect(card(page, '3D model · Slow lamp')).toContainText('generating', { timeout: 30_000 })
   await page.evaluate(() => window.roomfit.setBackend({ kind: 'local' }))
   const cloudPollsAtSwitch = (await requestsOf(CLOUD)).filter((entry) => entry.url.startsWith('/api/jobs/')).length
   const localPollsAtSwitch = (await requestsOf(LOCAL)).filter((entry) => entry.url.startsWith('/api/jobs/')).length

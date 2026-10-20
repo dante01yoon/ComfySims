@@ -115,8 +115,8 @@ describe('AC-113 the CI workflow', () => {
   const scripts = Object.keys(JSON.parse(readFileSync('package.json', 'utf8')).scripts)
   const steps: { run?: string }[] = Object.values(workflow.jobs as Record<string, { steps: { run?: string }[] }>).flatMap((job) => job.steps)
 
-  it('AC-113 runs static, unit, e2e and python jobs on pushes and pull requests with read-only permissions', () => {
-    expect(Object.keys(workflow.jobs).sort()).toEqual(['e2e', 'python', 'static', 'unit'])
+  it('AC-113 runs static, unit, e2e, e2e-gpu and python jobs on pushes and pull requests with read-only permissions', () => {
+    expect(Object.keys(workflow.jobs).sort()).toEqual(['e2e', 'e2e-gpu', 'python', 'static', 'unit'])
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(workflow.on).toHaveProperty('push')
     expect(workflow.on).toHaveProperty('pull_request')

@@ -4,6 +4,7 @@ export const FAKE_COMFY_KEY = 'test-key-123'
 
 export default defineConfig({
   testDir: 'acceptance/e2e',
+  testIgnore: process.env.E2E_EXCLUDE ? new RegExp(process.env.E2E_EXCLUDE) : undefined,
   outputDir: '.harness/e2e-output',
   reporter: [['json', { outputFile: '.harness/e2e.json' }], ['line']],
   workers: 1,
@@ -13,7 +14,7 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }
+    launchOptions: { args: process.env.E2E_ANGLE === 'metal' ? ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--mute-audio'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--mute-audio'] }
   },
   webServer: [
     {

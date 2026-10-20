@@ -79,7 +79,7 @@ No changes.
 | AC-110 | active | `pnpm lint` passes on the repo, and the oxlint config rejects a planted inline `type` import, a focused test and an explicit `any` |
 | AC-111 | active | `pnpm knip` and `pnpm deps:check` pass on the repo, and dependency-cruiser rejects a planted `packages/` → `web/src` import |
 | AC-112 | active | `check:static` passes on the repo, and each of its checks (json, secrets, action-pins, spec-ids, adrs, suppressions) reports a planted violation without printing secret values |
-| AC-113 | active | `.github/workflows/ci.yaml` has the static, unit, e2e and python jobs with read-only permissions and SHA-pinned actions, and every `pnpm` script it runs exists |
+| AC-113 | active | `.github/workflows/ci.yaml` has the static, unit, e2e, e2e-gpu and python jobs with read-only permissions and SHA-pinned actions, and every `pnpm` script it runs exists |
 | AC-114 | active | `pnpm verify` runs the lint, knip, deps and static gates |
 | AC-115 | manual | The CI workflow runs green on GitHub for main (evidence 2026-10-19: https://github.com/dante01yoon/ComfySims/actions/runs/39340481962) |
 
@@ -98,5 +98,7 @@ No changes.
 - React effect rules (`set-state-in-effect`, `immutability`) flag reset-on-prop-change effects; the implementation session fixes them without changing behaviour (key-based reset or derived state).
 
 ## Change log
+
+- 2026-10-20 **`e2e-gpu` job added (macOS arm64 runner, Chromium on Metal) for the camera-motion tests.** On the Ubuntu runner the software renderer drew the studio at ~3 fps, so even the first frame of a 0.8 s glide took longer than the glide. A smooth-motion property cannot be observed there by construction. The Ubuntu `e2e` job excludes `motion.spec` (`E2E_EXCLUDE`); everything else still runs on SwiftShader. Public repositories get macOS runners free.
 
 - 2026-10-19 Written and approved in one step: Dante asked for exactly this ("oxlint랑 CI 만들어주고 … 필요한 정적 체크 만들어줘"), and every open choice above follows ComfyUI_frontend's settled practice.
