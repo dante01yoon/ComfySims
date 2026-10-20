@@ -1,0 +1,1 @@
+spec/M15-smooth-camera-and-walk.md 의 새 AC-124(빨강)를 초록으로 만들어줘. 방에 포커스하면 화면 가운데 방 이름표 버튼 위에서 휠을 굴려도 줌이 안 돼: web/src/camera-rig.tsx의 useSmoothZoom이 캔버스에만 wheel 리스너를 붙여서, 캔버스 위에 겹친 HTML(방 이름표 등)에서 굴린 휠을 못 받아. 예전 drei OrbitControls처럼 r3f 이벤트 소스(캔버스를 감싼 요소) 기준으로 받게 고치되, 사이드 패널이나 다이얼로그 같은 3D 뷰 밖의 스크롤은 건드리지 마. AGENTS.md 규칙을 따르고 끝나면 pnpm verify 결과와 함께 짧게 알려줘.
