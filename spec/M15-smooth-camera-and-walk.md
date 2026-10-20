@@ -55,7 +55,7 @@ Non-goals (M15)
 - **Bottom bar:**
   - A **Walk** button, enabled when a plan room is focused (title "Focus a room to walk in it" otherwise).
   - In walk mode it becomes **Exit walk**, and a hint reads "WASD / arrows to move · Shift to run · drag to look · Esc to exit".
-- **Room chips:** while walking, they highlight the room you are in.
+- **Room chips:** hidden while walking (pressing one would end the walk anyway, and on narrow windows the dock would cover the view). They return when you leave walk mode.
 - No other UI changes.
 
 ## 5. Behaviour rules
@@ -91,7 +91,7 @@ Non-goals (M15)
   - **Blocked moves** slide along the obstacle when possible. Otherwise the walker stops touching it.
   - `walkStep({ forward, right })` moves by that many centimetres in the eye's frame, applies collision, and returns how far it moved and whether it was blocked.
   - `look({ yawDeg, pitchDeg })` turns relative to the current direction.
-  - `state().navigation.zoneId` is the zone containing the eye. Room chips and `focusedZone` follow it.
+  - `state().navigation.zoneId` is the zone containing the eye. `focusedZone` follows it, so leaving walk mode focuses the room you are in.
   - `stopWalking()` (or Esc, or **Exit walk**) returns to orbit, focused on the zone the walker is in, with a transition.
 - **Render on demand:**
   - The main canvas renders a frame only when something changed: layout, selection, view, lighting fade, transition, inertia, walking, a loaded mesh or a resize.
@@ -150,6 +150,8 @@ Existing tests that read `camera()` right after `focusZone`/`setView` stay valid
 - Implementation choice: drei `CameraControls` (camera-controls) has smooth transitions and damping built in. OrbitControls with damping plus our own tween also works. The session picks, and the ADR records the choice.
 
 ## Change log
+
+- 2026-10-20 Dante decided: room chips stay hidden while walking (implemented in impl-37 to keep the dock off the centre of the view on narrow windows).
 
 - 2026-10-20 First CI run of the M15 tests (GitHub runner, SwiftShader at ~3 fps with the demo house):
   - Glide tests saw only 2–3 rendered poses.
