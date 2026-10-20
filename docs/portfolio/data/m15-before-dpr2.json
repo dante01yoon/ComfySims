@@ -1,0 +1,87 @@
+{
+  "at": "2026-10-20T00:15:12.864Z",
+  "info": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "dpr": 2,
+    "items": 17
+  },
+  "results": [
+    {
+      "name": "load-layout",
+      "seconds": 2.37,
+      "fps": 13.9,
+      "frameMsP50": 50.7,
+      "frameMsP95": 211.2,
+      "framesOver33ms": 21,
+      "longTasks": 6,
+      "longestTaskMs": 148,
+      "largestCameraStepCm": 0
+    },
+    {
+      "name": "switch-to-studio",
+      "seconds": 2.06,
+      "fps": 45.2,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.7,
+      "framesOver33ms": 4,
+      "longTasks": 2,
+      "longestTaskMs": 243,
+      "largestCameraStepCm": 1688
+    },
+    {
+      "name": "idle-house",
+      "seconds": 3.19,
+      "fps": 59.9,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.6,
+      "framesOver33ms": 1,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 0
+    },
+    {
+      "name": "orbit-drag",
+      "seconds": 5.02,
+      "fps": 57.2,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.6,
+      "framesOver33ms": 3,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 34
+    },
+    {
+      "name": "focus-room",
+      "seconds": 2.11,
+      "fps": 58.7,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.5,
+      "framesOver33ms": 1,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 1750
+    },
+    {
+      "name": "wheel-zoom",
+      "seconds": 2.07,
+      "fps": 59.3,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.5,
+      "framesOver33ms": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 46
+    },
+    {
+      "name": "idle-room",
+      "seconds": 3.06,
+      "fps": 59.4,
+      "frameMsP50": 16.7,
+      "frameMsP95": 17.5,
+      "framesOver33ms": 1,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "largestCameraStepCm": 0
+    }
+  ]
+}

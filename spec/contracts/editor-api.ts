@@ -33,7 +33,11 @@ export type EditorState = {
   agentConnected: boolean
   wallCutCm: number
   lastRenderCamera: { position: Vec3; target: Vec3 } | null
+  navigation: Navigation
 }
+
+/** Orbit around the house or a room, or walk at eye height. Walk yaw 0 looks at +Z, +90 at +X, normalised to [0, 360); pitch is clamped to ±60. */
+export type Navigation = { mode: 'orbit' } | { mode: 'walk'; eye: Vec3; yawDeg: number; pitchDeg: number; zoneId: string | null }
 
 /** The open 360° viewer. Yaw 0 looks at +Z, +90 at +X; pitch is clamped to ±80, field of view to 40–100. */
 export type Viewer360 = { jobId: string; zoneId: string; yawDegrees: number; pitchDegrees: number; fovDegrees: number; stale: boolean }
@@ -157,6 +161,15 @@ export type RoomfitEditorApi = {
   addCustomWorkflow(kind: JobKind, name: string, graph: unknown): { ok: true; id: string } | { ok: false; missingTags: string[]; message: string }
   setRenderStyle(style: 'lived-in' | 'as-built'): void
   bookmarklet(): string
+  /** The pose rendered right now; `camera()` is the resting pose a running transition ends at. */
+  cameraFrame(): { position: Vec3; target: Vec3 }
+  cameraMoving(): boolean
+  walk(start?: { x: number; z: number; yawDeg?: number }): { ok: true } | { ok: false; reason: 'not-a-plan' | 'no-room' | 'blocked' }
+  stopWalking(): void
+  /** Moves the walker in centimetres in its own frame (forward along the view, right to the side), stopping at walls and furniture ≥ 50 cm tall. */
+  walkStep(move: { forward: number; right: number }): { moved: number; blocked: boolean }
+  look(turn: { yawDeg: number; pitchDeg: number }): void
+  renderStats(): { frames: number }
 }
 
 declare global {
