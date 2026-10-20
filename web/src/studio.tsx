@@ -331,10 +331,10 @@ export function StudioShadersAhead({ layout, meshes }: { layout: RoomLayout; mes
   return null
 }
 
-/** One chip per zone above the preset bar; pressing the active chip returns to the whole house. */
+/** One chip per zone above the preset bar, hidden while walking; pressing the active chip returns to the whole house. */
 export function ZoneChips({ room }: { room: Room }) {
-  const { focusedZone } = useSyncExternalStore(subscribe, snapshot)
-  if (room.kind !== 'plan') return null
+  const { focusedZone, walking } = useSyncExternalStore(subscribe, snapshot)
+  if (room.kind !== 'plan' || walking) return null
   return (
     <nav className="zone-chips" aria-label="Rooms">
       {room.zones.map((zone) => (
@@ -353,47 +353,47 @@ export function PresetBar({ room }: { room: Room }) {
   const noRender = cannotRun(backend, 'render')
   const noPanorama = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'pano360')
   return (
-    <nav className="preset-bar" aria-label="Scene presets">
-      {PRESET_BUTTONS.map(({ preset, label, dot }) => (
-        <button key={preset} aria-pressed={scene === preset} onClick={() => api.setScene(preset)}>
-          <span className="dot" style={{ background: dot }} />
-          {label}
+    <>
+      <nav className="preset-bar" aria-label="Scene presets">
+        {PRESET_BUTTONS.map(({ preset, label, dot }) => (
+          <button key={preset} aria-pressed={scene === preset} onClick={() => api.setScene(preset)}>
+            <span className="dot" style={{ background: dot }} />
+            {label}
+          </button>
+        ))}
+        <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: currentScenePrompt(focusedZone).positive })}>
+          Render this view
         </button>
-      ))}
-      <button disabled={noRender !== undefined} title={noRender} onClick={() => api.renderInComfy({ prompt: currentScenePrompt(focusedZone).positive })}>
-        Render this view
-      </button>
-      <select aria-label="Render style" value={history.present.renderStyle ?? 'lived-in'} onChange={(event) => api.setRenderStyle(event.target.value === 'as-built' ? 'as-built' : 'lived-in')}>
-        <option value="lived-in">Lived-in</option>
-        <option value="as-built">As built</option>
-      </select>
-      <button
-        disabled={noRender !== undefined}
-        title={noRender ?? 'Photoreal exterior renders of the house on its site, from the air and from the street'}
-        onClick={() => {
-          void api.renderExterior('aerial')
-          void api.renderExterior('street')
-        }}
-      >
-        Render exterior
-      </button>
-      <button
-        disabled={noPanorama !== undefined}
-        title={noPanorama ?? `A photoreal view all around ${zoneName}, about ${Math.round(expectedSeconds(jobs, 'pano360'))} s on ComfyUI`}
-        onClick={() => void api.view360()}
-      >
-        360° view
-      </button>
-      {walking ? (
-        <>
+        <select aria-label="Render style" value={history.present.renderStyle ?? 'lived-in'} onChange={(event) => api.setRenderStyle(event.target.value === 'as-built' ? 'as-built' : 'lived-in')}>
+          <option value="lived-in">Lived-in</option>
+          <option value="as-built">As built</option>
+        </select>
+        <button
+          disabled={noRender !== undefined}
+          title={noRender ?? 'Photoreal exterior renders of the house on its site, from the air and from the street'}
+          onClick={() => {
+            void api.renderExterior('aerial')
+            void api.renderExterior('street')
+          }}
+        >
+          Render exterior
+        </button>
+        <button
+          disabled={noPanorama !== undefined}
+          title={noPanorama ?? `A photoreal view all around ${zoneName}, about ${Math.round(expectedSeconds(jobs, 'pano360'))} s on ComfyUI`}
+          onClick={() => void api.view360()}
+        >
+          360° view
+        </button>
+        {walking ? (
           <button aria-pressed onClick={api.stopWalking}>Exit walk</button>
-          <span className="walk-hint">WASD / arrows to move · Shift to run · drag to look · Esc to exit</span>
-        </>
-      ) : (
-        <button disabled={zoneName === undefined} title={zoneName === undefined ? 'Focus a room to walk in it' : `Walk around ${zoneName} at eye height`} onClick={() => api.walk()}>
-          Walk
-        </button>
-      )}
-    </nav>
+        ) : (
+          <button disabled={zoneName === undefined} title={zoneName === undefined ? 'Focus a room to walk in it' : `Walk around ${zoneName} at eye height`} onClick={() => api.walk()}>
+            Walk
+          </button>
+        )}
+      </nav>
+      {walking && <span className="walk-hint">WASD / arrows to move · Shift to run · drag to look · Esc to exit</span>}
+    </>
   )
 }

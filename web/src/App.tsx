@@ -730,8 +730,12 @@ export function App() {
           })}
           <RoomLabels />
         </Canvas>
-        {studio && <ZoneChips room={layout.room} />}
-        {studio && <PresetBar room={layout.room} />}
+        {studio && (
+          <div className="studio-dock">
+            <ZoneChips room={layout.room} />
+            <PresetBar room={layout.room} />
+          </div>
+        )}
         {studio && <SelectedItem asset={selectedAsset(layout, editor.selectedId)} />}
         <div className="view-toggles">
           <button aria-pressed={railOpen} onClick={() => setRailOpen(!railOpen)}>Workspace</button>
