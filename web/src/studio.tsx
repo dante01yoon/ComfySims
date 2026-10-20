@@ -16,6 +16,8 @@ import type { Bounds } from './framing.ts'
 type Levels = Omit<Lighting, 'preset'>
 
 const LIGHT_RESPONSE_PER_SECOND = 5
+const LIGHT_SETTLED = 0.01
+const LEVEL_KEYS = ['sunElevationDeg', 'sunAzimuthDeg', 'sunKelvin', 'sunIntensity', 'interiorKelvin', 'interiorIntensity'] as const
 const SUN_DISTANCE_CM = 4000
 const SHADOW_HALF_EXTENT_CM = 1300
 const INTERIOR_LIGHT_BELOW_CEILING_CM = 40
@@ -60,6 +62,10 @@ function approach(current: Levels, target: Levels, step: number): Levels {
   }
 }
 
+function settled(current: Levels, target: Levels): boolean {
+  return LEVEL_KEYS.every((key) => Math.abs(current[key] - target[key]) < LIGHT_SETTLED)
+}
+
 function daylight({ sunIntensity, sunElevationDeg }: Levels): number {
   return Math.min(1, (sunIntensity / 3) * Math.sin((Math.max(0, sunElevationDeg) * Math.PI) / 180) * 1.25)
 }
@@ -81,9 +87,11 @@ function Lights({ room, bounds }: { room: Room; bounds: Bounds }) {
   const zones = room.kind === 'plan' ? room.zones.map(zoneLight) : []
   const ceiling = room.kind === 'plan' ? room.wallHeight : room.height
 
-  useFrame((_, delta) => {
+  useFrame(({ invalidate }, delta) => {
     const step = 1 - Math.exp(-Math.min(delta, 0.25) * LIGHT_RESPONSE_PER_SECOND)
-    const current = (levels.current = approach(levels.current, api.lighting(), step))
+    const goal = api.lighting()
+    const current = (levels.current = settled(levels.current, goal) ? goal : approach(levels.current, goal, step))
+    if (current !== goal) invalidate()
     const day = daylight(current)
     if (sun.current) {
       const direction = compassDirection(current.sunAzimuthDeg, current.sunElevationDeg)
@@ -293,7 +301,7 @@ export function ZoneChips({ room }: { room: Room }) {
 
 /** Pill bar of scene presets over the studio view, with a button that renders the current view. */
 export function PresetBar({ room }: { room: Room }) {
-  const { scene, focusedZone, jobs, backend, history } = useSyncExternalStore(subscribe, snapshot)
+  const { scene, focusedZone, jobs, backend, history, walking } = useSyncExternalStore(subscribe, snapshot)
   const zoneName = room.kind === 'plan' ? room.zones.find(({ id }) => id === focusedZone)?.name : undefined
   const noRender = cannotRun(backend, 'render')
   const noPanorama = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'pano360')
@@ -329,6 +337,16 @@ export function PresetBar({ room }: { room: Room }) {
       >
         360° view
       </button>
+      {walking ? (
+        <>
+          <button aria-pressed onClick={api.stopWalking}>Exit walk</button>
+          <span className="walk-hint">WASD / arrows to move · Shift to run · drag to look · Esc to exit</span>
+        </>
+      ) : (
+        <button disabled={zoneName === undefined} title={zoneName === undefined ? 'Focus a room to walk in it' : `Walk around ${zoneName} at eye height`} onClick={() => api.walk()}>
+          Walk
+        </button>
+      )}
     </nav>
   )
 }

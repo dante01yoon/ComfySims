@@ -35,6 +35,15 @@ Further rules:
 - **First-person controls from three's examples (PointerLockControls):** pointer lock needs a user gesture, hides the cursor and can't be driven from tests or agents. A walker driven by `walkStep`/`look`, with keys and drag on top, is testable and works in an iframe. Chosen.
 - **Physics engine for collision (Rapier):** a 25 cm circle against wall segments and furniture rectangles is a few lines of 2D geometry, and it already exists in `packages/placement` in another form. Rejected as unnecessary weight.
 
+## Implementation choice (M15 implementation session)
+
+The existing drei `OrbitControls` (three-stdlib) is kept, with damping made frame-rate independent and our own ease-in-out glide, wheel-zoom smoothing and walker on top (`web/src/camera.ts`). We did not use drei `CameraControls`:
+- Its transitions use smoothDamp, so it cannot promise the fixed 0.6–1.0 s ease-in-out duration.
+- Walk mode would have to keep a second controller's internal state in sync.
+- `camera-controls` is not a direct dependency.
+
+Walker collision is `walkerStep`/`walkObstacles` in `packages/placement`, built from `solidStretches` and the listed-size footprints.
+
 ## Consequences
 
 - Existing tests and agents keep working unchanged.

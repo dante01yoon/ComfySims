@@ -1,7 +1,7 @@
 import type { BoxRoom, Dimensions, FindSpotOutcome, Opening, PlacedItem, PlanRoom, Room, RoomLayout, Site, Wall } from '../../schema/src/index.ts'
 
 type Point = { x: number; z: number }
-type Footprint = { id: string; corners: Point[]; top: number }
+type Footprint = { id: string; corners: Point[]; top: number; height: number }
 type Vec3 = { x: number; y: number; z: number }
 
 const TOUCH_TOLERANCE_CM = 0.001
@@ -24,7 +24,8 @@ function footprint(item: PlacedItem, dimensions: Dimensions): Footprint {
       x: item.position.x + x * cos + z * sin,
       z: item.position.z - x * sin + z * cos
     })),
-    top: item.position.y + dimensions.height
+    top: item.position.y + dimensions.height,
+    height: dimensions.height
   }
 }
 
@@ -158,6 +159,84 @@ export function outOfBounds(layout: RoomLayout): { itemId: string; reason: OutOf
     ]
     return reasons.map((reason) => ({ itemId: item.id, reason }))
   })
+}
+
+const WALKER_BLOCKING_HEIGHT_CM = 50
+const WALKER_SEARCH_STEPS = 24
+
+/** Floor rectangles a walker cannot enter: solid wall stretches (windows included, doors open) and items listed at least 50 cm tall. */
+export function walkObstacles(layout: RoomLayout): Point[][] {
+  const furniture = footprints(layout)
+    .filter(({ height }) => height >= WALKER_BLOCKING_HEIGHT_CM)
+    .map(({ corners }) => corners)
+  const { room } = layout
+  if (room.kind !== 'plan') return furniture
+  const walls = room.walls.flatMap((wall) => solidStretches(wall, room.openings).map((stretch) => wallRectangle(wall, stretch, room.wallThickness)))
+  return [...walls, ...furniture]
+}
+
+function closestOnSegment(point: Point, a: Point, b: Point): Point {
+  const dx = b.x - a.x
+  const dz = b.z - a.z
+  const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / (dx * dx + dz * dz || 1)))
+  return { x: a.x + t * dx, z: a.z + t * dz }
+}
+
+function nearestOn(polygon: readonly Point[], point: Point): { at: Point; distance: number } {
+  if (inPolygon(point, polygon)) return { at: point, distance: 0 }
+  return polygon
+    .map((corner, index) => closestOnSegment(point, corner, polygon[(index + 1) % polygon.length]!))
+    .map((at) => ({ at, distance: Math.hypot(point.x - at.x, point.z - at.z) }))
+    .reduce((best, candidate) => (candidate.distance < best.distance ? candidate : best))
+}
+
+/** Whether a walker circle of the given radius at the point overlaps an obstacle. */
+export function walkerBlocked(obstacles: readonly (readonly Point[])[], at: Point, radius: number): boolean {
+  return obstacles.some((obstacle) => nearestOn(obstacle, at).distance < radius)
+}
+
+function plus(a: Point, b: Point, scale = 1): Point {
+  return { x: a.x + b.x * scale, z: a.z + b.z * scale }
+}
+
+/** Moves a walker circle by `move`, stopping where it touches an obstacle and sliding along it; it never goes deeper into one it already overlaps. */
+export function walkerStep(obstacles: readonly (readonly Point[])[], from: Point, move: Point, radius: number): { to: Point; moved: number; blocked: boolean } {
+  const allowed = (a: Point, b: Point) =>
+    obstacles.every((obstacle) => {
+      const after = nearestOn(obstacle, b).distance
+      return after >= radius || after >= nearestOn(obstacle, a).distance
+    })
+  const farthest = (at: Point, delta: Point) => {
+    let reachable = 0
+    let unreachable = 1
+    for (let step = 0; step < WALKER_SEARCH_STEPS; step += 1) {
+      const middle = (reachable + unreachable) / 2
+      if (allowed(at, plus(at, delta, middle))) reachable = middle
+      else unreachable = middle
+    }
+    return { at: plus(at, delta, reachable), left: 1 - reachable }
+  }
+  const slide = (at: Point, rest: Point) => {
+    const touching = obstacles.map((obstacle) => nearestOn(obstacle, at)).reduce((best, candidate) => (candidate.distance < best.distance ? candidate : best))
+    if (touching.distance === 0) return at
+    const normal = { x: (at.x - touching.at.x) / touching.distance, z: (at.z - touching.at.z) / touching.distance }
+    const into = rest.x * normal.x + rest.z * normal.z
+    return into < 0 ? farthest(at, plus(rest, normal, -into)).at : at
+  }
+  const pieces = Math.max(1, Math.ceil(Math.hypot(move.x, move.z) / (radius / 2)))
+  const piece = { x: move.x / pieces, z: move.z / pieces }
+  let at = from
+  let blocked = false
+  for (let index = 0; index < pieces; index += 1) {
+    if (allowed(at, plus(at, piece))) {
+      at = plus(at, piece)
+      continue
+    }
+    blocked = true
+    const reached = farthest(at, piece)
+    at = slide(reached.at, { x: piece.x * reached.left, z: piece.z * reached.left })
+  }
+  return { to: at, moved: Math.hypot(at.x - from.x, at.z - from.z), blocked }
 }
 
 type Enclosure = { walls: readonly Wall[]; openings: readonly Opening[]; thickness: number; zone: readonly Point[] }

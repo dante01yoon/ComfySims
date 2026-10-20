@@ -10,9 +10,10 @@ import { collisions, houseExtent, outOfBounds, solidStretches } from '../../pack
 import { AssetLabels, FitMode, ProductUrl, serializeLayout } from '../../packages/schema/src/index.ts'
 import type { Asset, Blueprint, BoxRoom, Job, JobKind, JobStep, PlacedItem, PlanRoom, Room, Zone } from '../../packages/schema/src/index.ts'
 import type { ImportedProduct, RoomfitEditorApi } from '../../spec/contracts/editor-api.ts'
+import { attachControls } from './camera.ts'
+import { CameraRig } from './camera-rig.tsx'
 import {
   api,
-  attachControls,
   attachThree,
   beginDrag,
   blueprintImage,
@@ -210,15 +211,19 @@ type ItemProps = { item: PlacedItem; asset: Asset; mesh: Object3D | null | undef
 function Item({ item, asset, mesh, emphasis }: ItemProps) {
   const model = useMemo(() => (mesh ? itemModel(mesh) : null), [mesh])
   const grabOffset = useRef({ x: 0, z: 0 })
+  const invalidate = useThree((three) => three.invalidate)
   const { width, depth, height } = asset.dimensions
 
   useEffect(() => {
-    if (model) paint(model, emphasis)
-  }, [model, emphasis])
+    if (!model) return
+    paint(model, emphasis)
+    invalidate()
+  }, [model, emphasis, invalidate])
 
   const floorPoint = (event: ThreeEvent<PointerEvent>) => event.ray.intersectPlane(floorPlane, new Vector3())
 
   const onPointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (snapshot().walking) return
     event.stopPropagation()
     const point = floorPoint(event)
     if (!point) return
@@ -688,8 +693,9 @@ export function App() {
   return (
     <>
       <main className={studio ? 'viewport studio' : 'viewport'}>
-        <Canvas shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
+        <Canvas frameloop="demand" shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
           <Bridge revision={editor.revision} />
+          <CameraRig />
           {layout.blueprint && <BlueprintUnderlay blueprint={layout.blueprint} visible={!studio && !editor.blueprintHidden} opacity={editor.blueprintOpacity} />}
           {studio ? (
             <StudioScene layout={layout} />
@@ -699,7 +705,7 @@ export function App() {
               <directionalLight position={[200, 400, 300]} intensity={1.5} />
             </>
           )}
-          <OrbitControls makeDefault ref={attachControls} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />
+          <OrbitControls makeDefault ref={attachControls} enableZoom={false} maxPolarAngle={studio ? Math.PI * 0.45 : Math.PI} />
           <RoomView room={layout.room} cut={wallCutCm(editor)} />
           {layout.items.map((item) => {
             const asset = assets.get(item.assetId)

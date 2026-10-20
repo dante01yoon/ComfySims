@@ -1,6 +1,4 @@
-import type { OrbitControls } from '@react-three/drei'
 import type { RootState } from '@react-three/fiber'
-import type { ComponentRef } from 'react'
 import { Box3 } from 'three'
 import type { Object3D, PerspectiveCamera, Scene } from 'three'
 
@@ -10,7 +8,7 @@ import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
 import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, scenePrompt } from '../../packages/comfy/src/index.ts'
 import type { RenderStyle } from '../../packages/comfy/src/index.ts'
 import { fitGlbBytes } from '../../packages/fit/src/index.ts'
-import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, zoneAt } from '../../packages/placement/src/index.ts'
+import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, walkerBlocked, walkerStep, walkObstacles, zoneAt } from '../../packages/placement/src/index.ts'
 import { ApiGraph, AssetLabels, AssetProduct, Dimensions, MAX_CONCURRENT_JOBS, parseLayout } from '../../packages/schema/src/index.ts'
 import type { Asset, BackendKind, Blueprint, FitReport, GenerationChoice, Job, JobKind, JobStep, Photo3dSource, PlacedItem, PlanRoom, RoomLayout, Site, Zone } from '../../packages/schema/src/index.ts'
 import type {
@@ -25,19 +23,21 @@ import type {
   Issues,
   JobWorkflow,
   Lighting,
+  Navigation,
   ProductRequest,
   RenderPasses,
   RenderRequest,
   RoomfitEditorApi,
   SceneItem,
   ScenePreset,
-  Vec3,
   Viewer360,
   WorkflowChoice
 } from '../../spec/contracts/editor-api.ts'
 import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed } from './comfy.ts'
 import type { ComfyInput, ComfyRun } from './comfy.ts'
 import { bookmarkletFor } from './bookmarklet.ts'
+import { attachCameraThree, cameraFrame, cameraGliding, finishGlide, glideTo, holdForItemDrag, invalidate, jumpTo, renderedFrames, restingPose, retarget, setWalking } from './camera.ts'
+import type { CameraPose } from './camera.ts'
 import * as edits from './edits.ts'
 import { amend, commit, fresh, labels, redo, undo } from './history.ts'
 import type { History } from './history.ts'
@@ -48,9 +48,9 @@ import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unava
 import type { Catalog } from './workflows.ts'
 
 type Gesture = 'none' | 'started' | 'editing'
-type OrbitControlsImpl = ComponentRef<typeof OrbitControls>
 type Size = { width: number; height: number }
-type CameraPose = { position: Vec3; target: Vec3 }
+type FloorPoint = { x: number; z: number }
+type Walker = { eye: FloorPoint; yawDeg: number; pitchDeg: number }
 type PhotoViewer = EditorState['photoViewer']
 type PanoramaViewer = Omit<Viewer360, 'stale'>
 
@@ -74,6 +74,22 @@ const ROOF_ABOVE_WALLS_CM = 20
 const EXTERIOR_SIZE: Size = { width: 1024, height: 576 }
 const EXTERIOR_FOV_DEG = 50
 const EXTERIOR_TITLES: Record<ExteriorView, string> = { aerial: 'Exterior render · Aerial', street: 'Exterior render · Street' }
+const WALKER_RADIUS_CM = 25
+const WALK_PITCH_LIMIT_DEG = 60
+const WALK_LOOK_AHEAD_CM = 100
+const WALK_SPEED_CM_PER_S = { walk: 140, run: 280 }
+const SCREENSHOT_SETTLE_MS = 1500
+const WALK_KEYS: Record<string, { forward: number; right: number }> = {
+  KeyW: { forward: 1, right: 0 },
+  ArrowUp: { forward: 1, right: 0 },
+  KeyS: { forward: -1, right: 0 },
+  ArrowDown: { forward: -1, right: 0 },
+  KeyD: { forward: 0, right: 1 },
+  ArrowRight: { forward: 0, right: 1 },
+  KeyA: { forward: 0, right: -1 },
+  ArrowLeft: { forward: 0, right: -1 }
+}
+const RUN_KEYS = ['ShiftLeft', 'ShiftRight']
 const GROUND_WORDS: Record<Site['ground'], string> = { grass: 'green lawn', gravel: 'gravel yard', paving: 'paved courtyard', soil: 'bare soil garden' }
 
 export type Editor = {
@@ -100,6 +116,7 @@ export type Editor = {
   blueprintHidden: boolean
   exterior: ExteriorShot | null
   pendingImport: ImportedProduct | null
+  walking: boolean
   revision: number
 }
 
@@ -144,6 +161,7 @@ let editor: Editor = {
   blueprintHidden: false,
   exterior: null,
   pendingImport: null,
+  walking: false,
   revision: 0
 }
 const listeners = new Set<() => void>()
@@ -154,7 +172,6 @@ const threeReady = new Promise<void>((resolve) => {
   threeAttached = resolve
 })
 let committedRevision = -1
-let controls: OrbitControlsImpl | null = null
 let actionLabel: string | null = null
 
 function currentLabel(): string {
@@ -260,15 +277,12 @@ export function snapshot(): Editor {
 
 export function attachThree(get: () => RootState): void {
   getThree = get
+  attachCameraThree(get)
   threeAttached()
 }
 
 export function markCommitted(revision: number): void {
   committedRevision = Math.max(committedRevision, revision)
-}
-
-export function attachControls(instance: OrbitControlsImpl | null): void {
-  controls = instance
 }
 
 /** Whether an MCP agent is attached to the bridge; shown as a badge in the workspace rail. */
@@ -281,19 +295,22 @@ export function select(id: string | null): void {
 }
 
 export function beginDrag(id: string): void {
-  if (controls) controls.enabled = false
+  holdForItemDrag(true)
   update({ selectedId: id, gesture: 'started' })
 }
 
 export function endDrag(): void {
-  if (controls) controls.enabled = true
+  holdForItemDrag(false)
   if (editor.gesture !== 'none') update({ gesture: 'none' })
 }
 
 export async function loadUnknown(input: unknown): ReturnType<RoomfitEditorApi['load']> {
   const parsed = parseLayout(input)
   if (!parsed.ok) return { ok: false, issues: parsed.issues }
-  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null, libraryFilter: null })
+  const wasWalking = editor.walking
+  leaveWalk()
+  update({ history: fresh(parsed.layout), selectedId: null, gesture: 'none', focusedZone: null, libraryFilter: null, walking: false })
+  if (wasWalking) glideTo(focusFrame())
   requestMeshes(parsed.layout)
   return { ok: true }
 }
@@ -323,7 +340,8 @@ function state(): EditorState {
     renderStyle: renderStyleOf(history.present),
     site: siteOf(history.present),
     blueprintOpacity: editor.blueprintOpacity,
-    pendingImport: editor.pendingImport
+    pendingImport: editor.pendingImport,
+    navigation: navigation()
   }
 }
 
@@ -440,10 +458,10 @@ function renderExterior(view: ExteriorView): Promise<Started<{ image: string }>>
 }
 
 /** Height above which walls are not drawn: a dollhouse cutaway while a room is focused, except during its eye-level shot. */
-export function wallCutCm({ history, focusedZone, shootingEyeLevel }: Editor): number {
+export function wallCutCm({ history, focusedZone, shootingEyeLevel, walking }: Editor): number {
   const { room } = history.present
   const full = room.kind === 'plan' ? room.wallHeight : room.height
-  return focusedZone !== null && !shootingEyeLevel ? Math.min(FOCUSED_WALL_CUT_CM, full) : full
+  return focusedZone !== null && !shootingEyeLevel && !walking ? Math.min(FOCUSED_WALL_CUT_CM, full) : full
 }
 
 function zoneById(zoneId: string | null): Zone | undefined {
@@ -455,9 +473,13 @@ function focusedZone(): Zone | undefined {
   return zoneById(editor.focusedZone)
 }
 
+function houseFrame(): CameraPose {
+  return studioCamera(roomBounds(editor.history.present.room))
+}
+
 function focusFrame(): CameraPose {
   const zone = focusedZone()
-  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : studioCamera(roomBounds(editor.history.present.room))
+  return zone ? studioCamera(polygonBounds(zone.polygon), 'room') : houseFrame()
 }
 
 function eyeLevelShot(zone: Zone): CameraPose {
@@ -510,8 +532,131 @@ async function depthPanoramaOf(zone: Zone): Promise<DepthPanorama> {
 function focusZone(zoneId: string | null): void {
   const { room } = editor.history.present
   if (zoneId !== null && (room.kind !== 'plan' || !room.zones.some(({ id }) => id === zoneId))) return
-  update({ focusedZone: zoneId })
-  api.setCamera(focusFrame())
+  leaveWalk()
+  update({ focusedZone: zoneId, walking: false })
+  glideTo(focusFrame())
+}
+
+let walker: Walker = { eye: { x: 0, z: 0 }, yawDeg: 0, pitchDeg: 0 }
+const heldWalkKeys = new Set<string>()
+let walkClock = 0
+
+function radians(degrees: number): number {
+  return (degrees * Math.PI) / 180
+}
+
+function wrappedYaw(degrees: number): number {
+  return (((degrees % 360) + 360) % 360) + 0
+}
+
+function walkerPose({ eye, yawDeg, pitchDeg }: Walker): CameraPose {
+  const yaw = radians(yawDeg)
+  const pitch = radians(pitchDeg)
+  return {
+    position: { x: eye.x, y: EYE_HEIGHT_CM, z: eye.z },
+    target: {
+      x: eye.x + Math.sin(yaw) * Math.cos(pitch) * WALK_LOOK_AHEAD_CM,
+      y: EYE_HEIGHT_CM + Math.sin(pitch) * WALK_LOOK_AHEAD_CM,
+      z: eye.z + Math.cos(yaw) * Math.cos(pitch) * WALK_LOOK_AHEAD_CM
+    }
+  }
+}
+
+function navigation(): Navigation {
+  if (!editor.walking) return { mode: 'orbit' }
+  const { eye, yawDeg, pitchDeg } = walker
+  return { mode: 'walk', eye: { x: eye.x, y: EYE_HEIGHT_CM, z: eye.z }, yawDeg, pitchDeg, zoneId: zoneAt(editor.history.present, eye) }
+}
+
+function yawAcross(zone: Zone, from: FloorPoint): number {
+  const far = zone.polygon.reduce((best, vertex) => (Math.hypot(vertex.x - from.x, vertex.z - from.z) > Math.hypot(best.x - from.x, best.z - from.z) ? vertex : best))
+  return (Math.atan2(far.x - from.x, far.z - from.z) * 180) / Math.PI
+}
+
+function walk(start?: { x: number; z: number; yawDeg?: number }): ReturnType<RoomfitEditorApi['walk']> {
+  const layout = editor.history.present
+  if (layout.room.kind !== 'plan') return { ok: false, reason: 'not-a-plan' }
+  const zone = focusedZone()
+  const eye = start ? { x: start.x, z: start.z } : zone && standingPointIn(zone)
+  if (!eye) return { ok: false, reason: 'no-room' }
+  if (walkerBlocked(walkObstacles(layout), eye, WALKER_RADIUS_CM)) return { ok: false, reason: 'blocked' }
+  walker = { eye, yawDeg: wrappedYaw(start?.yawDeg ?? (zone ? yawAcross(zone, eye) : 0)), pitchDeg: 0 }
+  heldWalkKeys.clear()
+  setWalking(true)
+  update({ walking: true, focusedZone: zoneAt(layout, eye) })
+  glideTo(walkerPose(walker))
+  return { ok: true }
+}
+
+function leaveWalk(): void {
+  heldWalkKeys.clear()
+  setWalking(false)
+}
+
+function stopWalking(): void {
+  if (!editor.walking) return
+  leaveWalk()
+  update({ walking: false })
+  glideTo(focusFrame())
+}
+
+function moveWalker(next: Walker): void {
+  walker = next
+  retarget(walkerPose(walker))
+  const zoneId = zoneAt(editor.history.present, walker.eye)
+  if (zoneId !== editor.focusedZone) update({ focusedZone: zoneId })
+}
+
+function walkStep({ forward, right }: { forward: number; right: number }): ReturnType<RoomfitEditorApi['walkStep']> {
+  if (!editor.walking) return { moved: 0, blocked: false }
+  const yaw = radians(walker.yawDeg)
+  const move = { x: Math.sin(yaw) * forward - Math.cos(yaw) * right, z: Math.cos(yaw) * forward + Math.sin(yaw) * right }
+  const step = walkerStep(walkObstacles(editor.history.present), walker.eye, move, WALKER_RADIUS_CM)
+  moveWalker({ ...walker, eye: step.to })
+  return { moved: step.moved, blocked: step.blocked }
+}
+
+function look({ yawDeg, pitchDeg }: { yawDeg: number; pitchDeg: number }): void {
+  if (!editor.walking) return
+  moveWalker({ ...walker, yawDeg: wrappedYaw(walker.yawDeg + yawDeg), pitchDeg: clamped(walker.pitchDeg + pitchDeg, WALK_PITCH_LIMIT_DEG) })
+}
+
+function heldDirection(): { forward: number; right: number } | null {
+  const held = [...heldWalkKeys].flatMap((code) => WALK_KEYS[code] ?? [])
+  if (held.length === 0) return null
+  const forward = held.reduce((sum, key) => sum + key.forward, 0)
+  const right = held.reduce((sum, key) => sum + key.right, 0)
+  const length = Math.hypot(forward, right) || 1
+  return { forward: forward / length, right: right / length }
+}
+
+/** Whether a key code moves the walker or makes it run. */
+export function isWalkKey(code: string): boolean {
+  return code in WALK_KEYS || RUN_KEYS.includes(code)
+}
+
+/** Presses or releases a walk key; the walker first covers the time the previous keys were held. */
+export function holdWalkKey(code: string, held: boolean): void {
+  advanceWalk(performance.now())
+  if (held) heldWalkKeys.add(code)
+  else heldWalkKeys.delete(code)
+  invalidate()
+}
+
+/** Releases every walk key, as when the window loses focus. */
+export function releaseWalkKeys(): void {
+  heldWalkKeys.clear()
+}
+
+/** Walks the walker for the time since the last advance, at walking or running speed. */
+export function advanceWalk(now: number): void {
+  const seconds = (now - walkClock) / 1000
+  walkClock = now
+  const direction = editor.walking ? heldDirection() : null
+  if (!direction) return
+  const speed = RUN_KEYS.some((code) => heldWalkKeys.has(code)) ? WALK_SPEED_CM_PER_S.run : WALK_SPEED_CM_PER_S.walk
+  walkStep({ forward: direction.forward * speed * seconds, right: direction.right * speed * seconds })
+  invalidate()
 }
 
 type Step = (status: JobStep) => void
@@ -782,6 +927,7 @@ async function renderDepth(request: RenderRequest, run: JobRun, shot: CameraPose
   if (!isPassSize(size)) return rejection(`the render size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
   const seed = request.seed ?? randomSeed()
   update({ lastRenderCamera: shot })
+  finishGlide()
   const passes = await oneAtATime(() => passesAt(size))
   const depth = await blobAt(passes.depth)
   const generated = await generate(run, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
@@ -1135,7 +1281,13 @@ function jobWorkflow(jobId: string): JobWorkflow | null {
   return ran ? { file: ran.file, backend: ran.backend, submitted: ran.submitted } : null
 }
 
+function cameraMoving(): boolean {
+  return cameraGliding() || (editor.walking && heldDirection() !== null)
+}
+
 async function screenshot(): Promise<string> {
+  const deadline = performance.now() + SCREENSHOT_SETTLE_MS
+  while (cameraMoving() && performance.now() < deadline) await nextFrame()
   const { gl, scene, camera } = await rendered()
   gl.render(scene, camera)
   return gl.domElement.toDataURL('image/png')
@@ -1153,16 +1305,10 @@ export const api: RoomfitEditorApi = {
   removeItem: (id) => edit(edits.removeItem(editor.history.present, id)),
   undo: () => setHistory(undo(editor.history), 'none'),
   redo: () => setHistory(redo(editor.history), 'none'),
-  setCamera: ({ position, target }) => {
-    if (!getThree) return
-    const { camera } = getThree()
-    camera.position.set(position.x, position.y, position.z)
-    camera.lookAt(target.x, target.y, target.z)
-    controls?.target.set(target.x, target.y, target.z)
-    controls?.update()
-  },
+  setCamera: jumpTo,
   exportPasses: async (size) => {
     if (!isPassSize(size)) throw new RangeError(`pass size must be whole pixels between 1 and ${MAX_PASS_SIZE}`)
+    finishGlide()
     const { gl, scene, camera } = await rendered()
     return exportPasses(gl, scene, camera, size)
   },
@@ -1175,16 +1321,13 @@ export const api: RoomfitEditorApi = {
   openPhoto3d,
   closePhoto3d: () => update({ photoViewer: null }),
   setView: (view) => {
-    update({ view })
-    if (view === 'studio') api.setCamera(focusFrame())
+    if (view === 'editor') leaveWalk()
+    update({ view, walking: editor.walking && view === 'studio' })
+    if (!editor.walking) glideTo(view === 'studio' ? focusFrame() : houseFrame())
   },
   setScene: (scene) => update({ scene }),
   lighting: () => ({ preset: editor.scene, ...SCENE_LIGHTING[editor.scene] }),
-  camera: () => {
-    const position = getThree?.().camera.position ?? { x: 0, y: 0, z: 0 }
-    const target = controls?.target ?? { x: 0, y: 0, z: 0 }
-    return { position: { x: position.x, y: position.y, z: position.z }, target: { x: target.x, y: target.y, z: target.z } }
-  },
+  camera: () => (editor.walking ? walkerPose(walker) : restingPose()),
   focusZone,
   screenshot,
   depthPanorama: (zoneId) => {
@@ -1219,7 +1362,14 @@ export const api: RoomfitEditorApi = {
   setActionLabel: (label) => {
     actionLabel = label
   },
-  bookmarklet: () => bookmarkletFor(location.origin)
+  bookmarklet: () => bookmarkletFor(location.origin),
+  cameraFrame,
+  cameraMoving,
+  walk,
+  stopWalking,
+  walkStep,
+  look,
+  renderStats: () => ({ frames: renderedFrames() })
 }
 
 const ImportedSize = z.number().positive().nullable()

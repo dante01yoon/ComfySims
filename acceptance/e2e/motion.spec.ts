@@ -104,10 +104,10 @@ test('AC-117 exporting mid-transition uses the destination, and screenshot waits
 
 test('AC-118 orbiting has inertia and comes to rest', async ({ page }) => {
   const box = (await page.locator('canvas').first().boundingBox())!
-  const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  await page.mouse.move(centre.x - 150, centre.y)
+  const empty = { x: box.x + 100, y: box.y + 50 }
+  await page.mouse.move(empty.x, empty.y)
   await page.mouse.down()
-  for (let step = 1; step <= 10; step += 1) await page.mouse.move(centre.x - 150 + step * 30, centre.y, { steps: 2 })
+  for (let step = 1; step <= 10; step += 1) await page.mouse.move(empty.x + step * 30, empty.y, { steps: 2 })
   await page.mouse.up()
   const motion = await page.evaluate(
     () =>
@@ -122,6 +122,7 @@ test('AC-118 orbiting has inertia and comes to rest', async ({ page }) => {
         }, 120)
       })
   )
+  expect(await page.evaluate(() => window.roomfit.state().selectedId)).toBeNull()
   expect(motion.moved).toBeGreaterThan(0.5)
   expect(motion.settleSeconds).toBeLessThanOrEqual(1.5)
 })
