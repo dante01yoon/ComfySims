@@ -233,3 +233,8 @@ The same load after M16: the main thread is idle most of the 5.3 s window while 
   - **Derived data vs undo.** Thumbnails written in the background landed in the layout, so "undo back to the loaded layout" no longer compared equal. The test now ignores derived thumbnails.
   - **Frame-rate-dependent settling.** Inertia counted as "moving" until the per-frame step fell below a fixed distance. At 3 fps each frame steps further, so the camera "moved" for 4.5 s after it looked still. Renders and screenshots wait on that flag. It is now judged by speed (impl-36).
   - **Glide sampling.** At 3 fps a 0.8 s glide shows only 2–3 frames. The motion tests now run at 800 × 450 so the software renderer keeps up.
+- 2026-10-20 — Three more CI rounds; the last ([run 39410337837](https://github.com/dante01yoon/ComfySims/actions/runs/39410337837)) is green on all five jobs.
+  - **Narrow window.** Shrinking the motion tests to 800 × 450 exposed the Walk button under the Workspace panel: overlays were centred on the whole canvas. AC-135 now keeps the bar and chips in the uncovered area (impl-37).
+  - **Glides on a 3 fps renderer.** Counting rendered poses replaced with "a pose seen mid-glide lies between start and destination". Even that failed: the first frame alone took longer than the glide.
+  - **Conclusion:** smooth motion cannot be observed on a software renderer, so the camera-motion tests moved to a new `e2e-gpu` job on a macOS arm64 runner with Chromium on Metal. The rest of e2e stays on Ubuntu with SwiftShader.
+  - **Lesson for the portfolio:** choose the test environment for the property being tested. Correctness runs anywhere; perceived smoothness needs a GPU.
