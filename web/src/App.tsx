@@ -38,6 +38,7 @@ import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedA
 
 const PanoramaViewer = lazy(async () => ({ default: (await import('./panorama-viewer.tsx')).PanoramaViewer }))
 const PhotoViewer = lazy(async () => ({ default: (await import('./photo-viewer.tsx')).PhotoViewer }))
+const WalkthroughViewer = lazy(async () => ({ default: (await import('./walkthrough-viewer.tsx')).WalkthroughViewer }))
 
 const METERS_TO_CM = 100
 const ROTATE_STEP_DEGREES = 15
@@ -398,6 +399,14 @@ const STEP_LABELS: Record<JobKind, Partial<Record<JobStep, string>>> = {
     queued: 'Queued on ComfyUI',
     generating: 'Generating the 360° view on ComfyUI',
     downloading: 'Downloading the 360° view'
+  },
+  walkthrough: {
+    path: 'Rendering the depth video',
+    'first-frame': 'Rendering the first frame on ComfyUI',
+    uploading: 'Uploading the first frame and depth video',
+    queued: 'Queued on ComfyUI',
+    generating: 'Generating the walkthrough on ComfyUI',
+    downloading: 'Downloading the walkthrough'
   }
 }
 
@@ -748,6 +757,7 @@ export function App() {
       <Suspense fallback={null}>
         {editor.photoViewer && <PhotoViewer />}
         {editor.viewer360 && <PanoramaViewer />}
+        {editor.walkthroughViewer && <WalkthroughViewer />}
       </Suspense>
     </>
   )

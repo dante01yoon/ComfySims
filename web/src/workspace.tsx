@@ -14,6 +14,7 @@ import {
   hasLabel,
   isFinished,
   isStalePanorama,
+  isStaleWalkthrough,
   labelsInUse,
   libraryAssetOf,
   openRender,
@@ -26,7 +27,7 @@ import { polygonCentroid } from './framing.ts'
 import { JOB_KINDS, workflowChoiceOf } from './workflows.ts'
 
 const CLOCK_TICK_MS = 250
-const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open', pano360: 'Open' } as const
+const ACTION_LABELS = { product: 'Show', render: 'Open', photo3d: 'Open', pano360: 'Open', walkthrough: 'Open' } as const
 
 export async function base64Of(file: Blob): Promise<string> {
   return (await dataUrlOf(file)).split(',')[1] ?? ''
@@ -83,6 +84,7 @@ function runAction(job: Job): void {
   if (job.kind === 'render' && image) return openRender(image, job.title)
   if (job.kind === 'photo3d') api.openPhoto3d(job.id)
   if (job.kind === 'pano360') api.open360(job.id)
+  if (job.kind === 'walkthrough') api.openWalkthrough(job.id)
 }
 
 const BACKEND_NAMES: Record<BackendKind, string> = { local: 'Local', cloud: 'Cloud' }
@@ -259,6 +261,7 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
         <div className="job-result">
           {image && <img src={image} alt={job.title} />}
           {job.kind === 'pano360' && isStalePanorama(job.id) && <div className="problem">Layout changed since this view</div>}
+          {job.kind === 'walkthrough' && isStaleWalkthrough(job.id) && <div className="problem">Layout changed since this video</div>}
           <div className="button-row">
             <button onClick={() => runAction(job)}>{actionLabel(job)}</button>
             {job.kind === 'render' && (
@@ -266,7 +269,7 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
                 View as 3D photo
               </button>
             )}
-            {job.kind === 'pano360' && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
+            {(job.kind === 'pano360' || job.kind === 'walkthrough') && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
           </div>
         </div>
       )}
@@ -490,7 +493,7 @@ function LibrarySection() {
   )
 }
 
-const KIND_NAMES: Record<JobKind, string> = { product: 'Product → 3D', render: 'Room render', photo3d: '3D photo', pano360: '360° view' }
+const KIND_NAMES: Record<JobKind, string> = { product: 'Product → 3D', render: 'Room render', photo3d: '3D photo', pano360: '360° view', walkthrough: 'Walkthrough video' }
 
 function optionText({ label, available, missing }: WorkflowOption): string {
   return available ? label : `${label} (unavailable: ${missing.join(', ')})`

@@ -113,18 +113,51 @@ function depthToGray(depth: Float32Array, fixed?: DepthRange): Uint8ClampedArray
   return gray
 }
 
-function toPng(pixels: Uint8Array | Uint8ClampedArray, { width, height }: Size): string {
+function upright(pixels: Uint8Array | Uint8ClampedArray, { width, height }: Size): ImageData {
   const rowBytes = width * 4
   const image = new ImageData(width, height)
   for (let row = 0; row < height; row++) {
     image.data.set(pixels.subarray(row * rowBytes, (row + 1) * rowBytes), (height - 1 - row) * rowBytes)
   }
   for (let alpha = 3; alpha < image.data.length; alpha += 4) image.data[alpha] = 255
+  return image
+}
+
+/** An image as a PNG data URL. */
+export function pngOf(image: ImageData): string {
   const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
+  canvas.width = image.width
+  canvas.height = image.height
   canvas.getContext('2d')!.putImageData(image, 0, 0)
   return canvas.toDataURL('image/png')
+}
+
+function toPng(pixels: Uint8Array | Uint8ClampedArray, size: Size): string {
+  return pngOf(upright(pixels, size))
+}
+
+function onClearedTarget<T>(renderer: WebGLRenderer, scene: Scene, render: () => T): T {
+  const previous = { target: renderer.getRenderTarget(), clearColor: renderer.getClearColor(new Color()), clearAlpha: renderer.getClearAlpha(), background: scene.background }
+  renderer.setClearColor(0x000000, 0)
+  scene.background = null
+  try {
+    return render()
+  } finally {
+    renderer.setRenderTarget(previous.target)
+    renderer.setClearColor(previous.clearColor, previous.clearAlpha)
+    scene.background = previous.background
+  }
+}
+
+/** Renders only the depth pass, over a fixed range, as upright grey pixels from the given camera without its view offset. */
+export function exportDepthFrame(renderer: WebGLRenderer, scene: Scene, camera: Camera, size: Size, depthRange: DepthRange): ImageData {
+  const target = new WebGLRenderTarget(size.width, size.height, { type: FloatType })
+  try {
+    const depth = onClearedTarget(renderer, scene, () => renderPass(renderer, scene, passCamera(camera, size), target, new Float32Array(size.width * size.height * 4), () => viewDepthMaterial))
+    return upright(depthToGray(depth, depthRange), size)
+  } finally {
+    target.dispose()
+  }
 }
 
 /** Renders depth (over the covered range, or a fixed one), camera-space normal and item mask PNGs from the given camera at the requested size. */
@@ -133,20 +166,16 @@ export function exportPasses(renderer: WebGLRenderer, scene: Scene, camera: Came
   const colorTarget = new WebGLRenderTarget(size.width, size.height)
   const floatTarget = new WebGLRenderTarget(size.width, size.height, { type: FloatType })
   const pixelCount = size.width * size.height * 4
-  const previous = { target: renderer.getRenderTarget(), clearColor: renderer.getClearColor(new Color()), clearAlpha: renderer.getClearAlpha(), background: scene.background }
-  renderer.setClearColor(0x000000, 0)
-  scene.background = null
   try {
-    const depth = renderPass(renderer, scene, view, floatTarget, new Float32Array(pixelCount), () => viewDepthMaterial)
-    const normal = renderPass(renderer, scene, view, colorTarget, new Uint8Array(pixelCount), () => normalMaterial)
-    const mask = renderPass(renderer, scene, view, colorTarget, new Uint8Array(pixelCount), (mesh) =>
-      isItemPart(mesh) ? itemMaskMaterial : backgroundMaskMaterial
-    )
-    return { depth: toPng(depthToGray(depth, depthRange), size), normal: toPng(normal, size), mask: toPng(mask, size) }
+    return onClearedTarget(renderer, scene, () => {
+      const depth = renderPass(renderer, scene, view, floatTarget, new Float32Array(pixelCount), () => viewDepthMaterial)
+      const normal = renderPass(renderer, scene, view, colorTarget, new Uint8Array(pixelCount), () => normalMaterial)
+      const mask = renderPass(renderer, scene, view, colorTarget, new Uint8Array(pixelCount), (mesh) =>
+        isItemPart(mesh) ? itemMaskMaterial : backgroundMaskMaterial
+      )
+      return { depth: toPng(depthToGray(depth, depthRange), size), normal: toPng(normal, size), mask: toPng(mask, size) }
+    })
   } finally {
-    renderer.setRenderTarget(previous.target)
-    renderer.setClearColor(previous.clearColor, previous.clearAlpha)
-    scene.background = previous.background
     colorTarget.dispose()
     floatTarget.dispose()
   }

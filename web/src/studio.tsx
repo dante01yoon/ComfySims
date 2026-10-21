@@ -352,6 +352,7 @@ export function PresetBar({ room }: { room: Room }) {
   const zoneName = room.kind === 'plan' ? room.zones.find(({ id }) => id === focusedZone)?.name : undefined
   const noRender = cannotRun(backend, 'render')
   const noPanorama = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'pano360')
+  const noWalkthrough = zoneName === undefined ? 'Focus a room first' : cannotRun(backend, 'walkthrough')
   return (
     <>
       <nav className="preset-bar" aria-label="Scene presets">
@@ -384,6 +385,13 @@ export function PresetBar({ room }: { room: Room }) {
           onClick={() => void api.view360()}
         >
           360° view
+        </button>
+        <button
+          disabled={noWalkthrough !== undefined}
+          title={noWalkthrough ?? `A photoreal ~5 s walk into ${zoneName}, about ${Math.round(expectedSeconds(jobs, 'walkthrough'))} s on ComfyUI`}
+          onClick={() => void api.walkthrough()}
+        >
+          Walkthrough video
         </button>
         {walking ? (
           <button aria-pressed onClick={api.stopWalking}>Exit walk</button>

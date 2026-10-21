@@ -119,6 +119,16 @@ export function buildRenderPrompt(
   })
 }
 
+/** Fills the tagged inputs of a walkthrough (first frame + control video) workflow; the template is never mutated. */
+export function buildWalkthroughPrompt(workflow: ApiWorkflow, input: { firstFrameName: string; videoName: string; prompt: string; seed: number }): PromptOutcome {
+  return wireTaggedInputs(workflow, {
+    'roomfit:first-frame': { image: input.firstFrameName },
+    'roomfit:control-video': { file: input.videoName },
+    'roomfit:positive': { text: input.prompt },
+    'roomfit:seed': { seed: input.seed }
+  })
+}
+
 const InputSpecs = z.record(z.string(), z.unknown())
 const CatalogNode = z.object({ input: z.object({ required: InputSpecs.optional(), optional: InputSpecs.optional() }).optional() })
 

@@ -6,7 +6,8 @@ import type { Object3D, PerspectiveCamera, Scene } from 'three'
 import { z } from 'zod'
 
 import type { ApiWorkflow } from '../../harness/tools/lint-workflow.ts'
-import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, scenePrompt } from '../../packages/comfy/src/index.ts'
+import { buildPhotoTo3dPrompt, buildProductPrompt, buildRenderPrompt, buildRoomPhotoPrompt, buildWalkthroughPrompt, scenePrompt } from '../../packages/comfy/src/index.ts'
+import { walkthroughPath } from '../../packages/motion/src/index.ts'
 import type { RenderStyle } from '../../packages/comfy/src/index.ts'
 import { collisions, defaultSite, findSpot, frontDoor, houseExtent, itemsInZone, outOfBounds, walkerBlocked, walkerStep, walkObstacles, zoneAt } from '../../packages/placement/src/index.ts'
 import { ApiGraph, AssetLabels, AssetProduct, Dimensions, MAX_CONCURRENT_JOBS, parseLayout } from '../../packages/schema/src/index.ts'
@@ -31,6 +32,8 @@ import type {
   SceneItem,
   ScenePreset,
   Viewer360,
+  WalkthroughPath,
+  WalkthroughViewer,
   WorkflowChoice
 } from '../../spec/contracts/editor-api.ts'
 import { catalogUrl, comfyOn, comfyOutputUri, generate, randomSeed } from './comfy.ts'
@@ -44,7 +47,7 @@ import type { History } from './history.ts'
 import { attachRenderer, clearAssetCache, glbStatsOf, loadMesh, meshKey, processedFresh, texturesIn } from './meshes.ts'
 import { thumbnailOf } from './thumbnails.ts'
 import { aerialCamera, boundsCenter, boxCorners, exteriorDepthRange, eyeLevelCamera, polygonBounds, roomBounds, standingPoint, streetCamera, studioCamera } from './framing.ts'
-import { exportDepthPanorama, exportPasses } from './passes.ts'
+import { exportDepthFrame, exportDepthPanorama, exportPasses, pngOf } from './passes.ts'
 import { chosenWorkflow, CUSTOM_PREFIX, MAX_CUSTOM_WORKFLOWS, missingTags, unavailableJobs, workflowChoiceOf, workflowKindOf } from './workflows.ts'
 import type { Catalog } from './workflows.ts'
 
@@ -54,6 +57,7 @@ type FloorPoint = { x: number; z: number }
 type Walker = { eye: FloorPoint; yawDeg: number; pitchDeg: number }
 type PhotoViewer = EditorState['photoViewer']
 type PanoramaViewer = Omit<Viewer360, 'stale'>
+type ClipViewer = Omit<WalkthroughViewer, 'stale'>
 
 const MAX_PASS_SIZE = 8192
 const DEFAULT_RENDER_SIZE: Size = { width: 1152, height: 896 }
@@ -75,6 +79,10 @@ const ROOF_ABOVE_WALLS_CM = 20
 const EXTERIOR_SIZE: Size = { width: 1024, height: 576 }
 const EXTERIOR_FOV_DEG = 50
 const EXTERIOR_TITLES: Record<ExteriorView, string> = { aerial: 'Exterior render · Aerial', street: 'Exterior render · Street' }
+const WALKTHROUGH_SIZE: Size = { width: 1280, height: 704 }
+const WALKTHROUGH_FOV_DEG = 50
+const WALKTHROUGH_FPS = 25
+const WALKTHROUGH_DEPTH_RANGE = { nearCm: 40, farCm: 900 }
 const WALKER_RADIUS_CM = 25
 const WALK_PITCH_LIMIT_DEG = 60
 const WALK_LOOK_AHEAD_CM = 100
@@ -103,6 +111,7 @@ export type Editor = {
   openedRender: { image: string; caption: string } | null
   photoViewer: PhotoViewer
   viewer360: PanoramaViewer | null
+  walkthroughViewer: ClipViewer | null
   view: EditorView
   scene: ScenePreset
   focusedZone: string | null
@@ -148,6 +157,7 @@ let editor: Editor = {
   openedRender: null,
   photoViewer: null,
   viewer360: null,
+  walkthroughViewer: null,
   view: 'editor',
   scene: 'work',
   focusedZone: null,
@@ -366,6 +376,7 @@ function state(): EditorState {
     focusedZone: editor.focusedZone,
     photoViewer: editor.photoViewer,
     viewer360: editor.viewer360 && { ...editor.viewer360, stale: isStalePanorama(editor.viewer360.jobId) },
+    walkthroughViewer: editor.walkthroughViewer && { ...editor.walkthroughViewer, stale: isStaleWalkthrough(editor.walkthroughViewer.jobId) },
     wallCutCm: wallCutCm(editor),
     lastRenderCamera: editor.lastRenderCamera,
     undoLabels: labels(history),
@@ -1140,6 +1151,119 @@ export function zoom360(fovDegrees: number): void {
   update({ viewer360: { ...viewer, fovDegrees: Math.min(VIEWER_FOV_DEG.max, Math.max(VIEWER_FOV_DEG.min, viewer.fovDegrees + fovDegrees)) } })
 }
 
+type Clip = { zoneId: string; itemsWhenTaken: string; extension?: string }
+
+const clips = new Map<string, Clip>()
+
+/** Whether items in the room of a walkthrough changed since its depth video was rendered. */
+export function isStaleWalkthrough(jobId: string): boolean {
+  const clip = clips.get(jobId)
+  return clip !== undefined && itemsSignature(editor.history.present, clip.zoneId) !== clip.itemsWhenTaken
+}
+
+/** The name a walkthrough clip downloads as: `comfysims-walkthrough-<room>.<extension the backend saved>`. */
+export function walkthroughFileName(jobId: string): string {
+  const clip = clips.get(jobId)
+  return `comfysims-walkthrough-${clip?.zoneId ?? 'room'}.${clip?.extension ?? 'mp4'}`
+}
+
+function walkthroughPathIn(zone: Zone): WalkthroughPath {
+  const layout = editor.history.present
+  const obstacles = walkObstacles(layout)
+  return walkthroughPath(eyeLevelShot(zone), (eye) => zoneAt(layout, eye) !== zone.id || walkerBlocked(obstacles, eye, WALKER_RADIUS_CM))
+}
+
+async function depthVideoOf(zone: Zone): Promise<{ video: Blob; firstDepth: Blob; frames: number }> {
+  const { poses } = walkthroughPathIn(zone)
+  const { webmOf } = await import('./depth-video.ts')
+  update({ shootingEyeLevel: true })
+  try {
+    const { gl, scene, camera } = await rendered()
+    const lens = camera.clone() as PerspectiveCamera
+    lens.fov = WALKTHROUGH_FOV_DEG
+    const depthAt = (index: number) => {
+      const { position, target } = poses[index]!
+      lens.position.set(position.x, position.y, position.z)
+      lens.lookAt(target.x, target.y, target.z)
+      lens.updateMatrixWorld()
+      return exportDepthFrame(gl, scene, lens, WALKTHROUGH_SIZE, WALKTHROUGH_DEPTH_RANGE)
+    }
+    const first = depthAt(0)
+    const video = await webmOf(WALKTHROUGH_SIZE, WALKTHROUGH_FPS, poses.length,(index) => (index === 0 ? first : depthAt(index)))
+    return { video, firstDepth: await blobAt(pngOf(first)), frames: poses.length }
+  } finally {
+    update({ shootingEyeLevel: false })
+  }
+}
+
+function walkthroughPrompt(zone: Zone, prompt: string | undefined): string {
+  return `A slow, steady camera walkthrough of ${prompt ?? `${zone.name}, ${currentScenePrompt(zone.id).positive}`}. The camera dollies forward and pans gently. The room stays still; no people.`
+}
+
+type WalkthroughRequest = { prompt?: string; seed?: number }
+
+async function firstFrameOf(depth: Blob, zone: Zone, seed: number, run: JobRun): Promise<{ ok: true; frame: Blob } | ComfyFailure> {
+  const { graph } = chosenWorkflow(editor.history.present, run.backend, 'render')
+  if (!graph) return rejection('there is no render workflow for the first frame')
+  const { positive, negative } = currentScenePrompt(zone.id)
+  const quiet = { comfy: run.comfy, step: () => {}, submitted: () => {} }
+  const made = await generate(quiet, { file: depth, fileName: 'roomfit-depth.png' }, (depthImageName) =>
+    buildRenderPrompt(graph, { depthImageName, prompt: positive, negativePrompt: negative, seed })
+  )
+  return made.ok ? { ok: true, frame: new Blob([new Uint8Array(made.bytes)], { type: 'image/png' }) } : made
+}
+
+async function walkthroughClip(zone: Zone, { prompt, seed = randomSeed() }: WalkthroughRequest, run: JobRun): Promise<Finished<{ video: string; firstFrame: string }> | ComfyFailure> {
+  run.step('path')
+  const depth = await oneAtATime(() => {
+    clips.set(run.id, { zoneId: zone.id, itemsWhenTaken: itemsSignature(editor.history.present, zone.id) })
+    return depthVideoOf(zone)
+  })
+  run.step('first-frame')
+  const first = await firstFrameOf(depth.firstDepth, zone, seed, run)
+  if (!first.ok) return first
+  run.step('uploading')
+  const frameName = await run.comfy.upload(first.frame, 'roomfit-first-frame.png')
+  if (!frameName.ok) return frameName
+  const generated = await generate(run, { file: depth.video, fileName: 'roomfit-depth.webm' }, (videoName) =>
+    buildWalkthroughPrompt(run.workflow, { firstFrameName: frameName.name, videoName, prompt: walkthroughPrompt(zone, prompt), seed })
+  )
+  if (!generated.ok) return generated
+  const extension = generated.file.filename.split('.').pop()?.toLowerCase() ?? 'mp4'
+  clips.set(run.id, { ...clips.get(run.id)!, extension })
+  const video = URL.createObjectURL(new Blob([new Uint8Array(generated.bytes)], { type: `video/${extension}` }))
+  const firstFrame = URL.createObjectURL(first.frame)
+  return { ok: true, value: { video, firstFrame }, result: { video, image: firstFrame } }
+}
+
+async function walkthroughOf(zoneId: string, request: WalkthroughRequest): Promise<Started<{ video: string; firstFrame: string }>> {
+  const zone = zoneById(zoneId)
+  if (!zone) return rejection(`there is no room called ${zoneId}`)
+  const title = `Walkthrough · ${zone.name}`
+  if (editor.jobs.some((job) => job.kind === 'walkthrough' && job.title === title && !isFinished(job))) return rejection(`a walkthrough of ${zone.name} is already being made`)
+  const outcome = await runJob('walkthrough', title, (run) => walkthroughClip(zone, request, run), () => walkthroughOf(zoneId, request))
+  if (outcome.ok) openWalkthrough(outcome.jobId)
+  return outcome
+}
+
+function walkthrough({ zoneId, ...request }: { zoneId?: string; prompt?: string; seed?: number } = {}): ReturnType<RoomfitEditorApi['walkthrough']> {
+  const target = zoneId ?? editor.focusedZone
+  return target === null ? Promise.resolve({ ok: false, reason: 'no-room' }) : walkthroughOf(target, request)
+}
+
+function openWalkthrough(jobId: string): void {
+  const job = editor.jobs.find(({ id, kind }) => id === jobId && kind === 'walkthrough')
+  const clip = clips.get(jobId)
+  if (job?.result?.video && clip) update({ walkthroughViewer: { jobId, zoneId: clip.zoneId } })
+}
+
+async function walkthroughDepthVideo(zoneId: string): ReturnType<RoomfitEditorApi['walkthroughDepthVideo']> {
+  const zone = zoneById(zoneId)
+  if (!zone) return { ok: false, reason: 'unknown-zone' }
+  const { video, frames } = await oneAtATime(() => depthVideoOf(zone))
+  return { video: URL.createObjectURL(video), frames, ...WALKTHROUGH_SIZE, fps: WALKTHROUGH_FPS }
+}
+
 /** The caption of a job's source: the render's room and scene, or the uploaded file name. */
 export function captionOf(jobId: string): string {
   return captions.get(jobId) ?? ''
@@ -1378,6 +1502,14 @@ export const api: RoomfitEditorApi = {
   view360,
   open360,
   close360: () => update({ viewer360: null }),
+  walkthroughPath: (zoneId) => {
+    const zone = zoneById(zoneId)
+    return zone ? walkthroughPathIn(zone) : { ok: false, reason: 'unknown-zone' }
+  },
+  walkthroughDepthVideo,
+  walkthrough,
+  openWalkthrough,
+  closeWalkthrough: () => update({ walkthroughViewer: null }),
   backend: () => editor.backend,
   setBackend,
   checkBackend,

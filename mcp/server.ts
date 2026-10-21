@@ -18,7 +18,8 @@ import type { BridgedApi } from './editor.ts'
 const SCENE_PRESETS = ['reading', 'work', 'movie', 'evening'] as const satisfies readonly ScenePreset[]
 const VIEWS = ['editor', 'studio'] as const satisfies readonly EditorView[]
 const EXTERIOR_VIEWS = ['aerial', 'street'] as const satisfies readonly ExteriorView[]
-const JOB_KINDS = ['product', 'render', 'photo3d', 'pano360'] as const satisfies readonly JobKind[]
+const JOB_KINDS = ['product', 'render', 'photo3d', 'pano360', 'walkthrough'] as const satisfies readonly JobKind[]
+const WEBM_MAGIC = '1a45dfa3'
 const BLUEPRINT_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
 const RENDERS_DIR = fileURLToPath(new URL('../.harness/renders/', import.meta.url))
 
@@ -94,11 +95,15 @@ async function imageOf(image: ProductImage, name: string): Promise<Pick<ProductR
   return { fileName: `${name.replace(/[^a-z0-9]+/gi, '-') || 'product'}.png`, imageBase64: image.base64 }
 }
 
-async function saveRender(jobId: string, base64: string): Promise<string> {
+async function saveRender(jobId: string, base64: string, extension = 'png'): Promise<string> {
   await mkdir(RENDERS_DIR, { recursive: true })
-  const path = join(RENDERS_DIR, `${jobId}.png`)
+  const path = join(RENDERS_DIR, `${jobId}.${extension}`)
   await writeFile(path, Buffer.from(base64, 'base64'))
   return path
+}
+
+function videoExtension(base64: string): string {
+  return Buffer.from(base64.slice(0, 8), 'base64').toString('hex').startsWith(WEBM_MAGIC) ? 'webm' : 'mp4'
 }
 
 const room = z.string().min(1).describe('A room id or name, case-insensitive, e.g. "bedroom" or "Living room"')
@@ -251,6 +256,24 @@ server.registerTool(
     const { jobId, image } = succeeded(await editor('view360', { zoneId, prompt }))
     const data = await editor('base64At', image)
     return { content: [...json({ jobId, path: await saveRender(jobId, data) }).content, { type: 'image', data, mimeType: 'image/png' }] }
+  }
+)
+
+server.registerTool(
+  'walkthrough_video',
+  {
+    description:
+      'Generate a ~5 s photoreal walkthrough clip of a room: the camera dollies in from its eye-level shot and pans, conditioned on a depth video of the layout, and opens it in the editor\'s viewer. A prompt replaces the room description. Waits for the job (a few minutes); returns the path of the saved clip and the first frame as an image.',
+    inputSchema: { room, prompt: z.string().min(1).optional(), preset: z.enum(SCENE_PRESETS).optional(), seed: z.number().nonnegative().optional() }
+  },
+  async ({ room, prompt, preset, seed }) => {
+    const editor = editorFor('walkthrough_video')
+    const zoneId = zoneIdOf((await editor('state')).layout, room)
+    if (preset !== undefined) await editor('setScene', preset)
+    const { jobId, video, firstFrame } = succeeded(await editor('walkthrough', { zoneId, prompt, seed }))
+    const clip = await editor('base64At', video)
+    const data = await editor('base64At', firstFrame)
+    return { content: [...json({ jobId, path: await saveRender(jobId, clip, videoExtension(clip)) }).content, { type: 'image', data, mimeType: 'image/png' }] }
   }
 )
 

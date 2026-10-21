@@ -5,7 +5,9 @@ import type { BackendState, ModelSlot, WorkflowChoice, WorkflowOption } from '..
 import cloudPanorama from '../../workflows/cloud/pano360-from-depth.json'
 import cloudPhoto from '../../workflows/cloud/photo-to-3d-moge.json'
 import cloudProduct from '../../workflows/cloud/product-to-glb-pixal3d.json'
+import cloudWalkthrough from '../../workflows/cloud/walkthrough-ltx23-ic-lora.json'
 import localPhoto from '../../workflows/local/photo-to-3d-moge.json'
+import localWalkthrough from '../../workflows/local/walkthrough-ltx23-ic-lora.json'
 import localProduct from '../../workflows/product-to-glb.json'
 import renderWorkflow from '../../workflows/render-from-depth.json'
 import workflowSets from '../../workflows/sets.json'
@@ -13,7 +15,7 @@ import workflowSets from '../../workflows/sets.json'
 export type Catalog = Record<string, unknown>
 export type ChosenWorkflow = { id: string; graph: ApiWorkflow | undefined }
 
-export const JOB_KINDS: readonly JobKind[] = ['product', 'render', 'photo3d', 'pano360']
+export const JOB_KINDS: readonly JobKind[] = ['product', 'render', 'photo3d', 'pano360', 'walkthrough']
 export const MAX_CUSTOM_WORKFLOWS = 10
 export const CUSTOM_PREFIX = 'custom:'
 
@@ -21,7 +23,9 @@ const BUILTIN_WORKFLOWS: Record<string, ApiWorkflow> = {
   'cloud/pano360-from-depth.json': cloudPanorama,
   'cloud/photo-to-3d-moge.json': cloudPhoto,
   'cloud/product-to-glb-pixal3d.json': cloudProduct,
+  'cloud/walkthrough-ltx23-ic-lora.json': cloudWalkthrough,
   'local/photo-to-3d-moge.json': localPhoto,
+  'local/walkthrough-ltx23-ic-lora.json': localWalkthrough,
   'product-to-glb.json': localProduct,
   'render-from-depth.json': renderWorkflow
 }
@@ -30,7 +34,8 @@ const REQUIRED_TAGS: Record<JobKind, readonly string[]> = {
   product: ['roomfit:product-image', 'roomfit:save'],
   photo3d: ['roomfit:photo', 'roomfit:save'],
   render: DEPTH_RENDER_TAGS,
-  pano360: DEPTH_RENDER_TAGS
+  pano360: DEPTH_RENDER_TAGS,
+  walkthrough: ['roomfit:first-frame', 'roomfit:control-video', 'roomfit:positive', 'roomfit:seed', 'roomfit:save']
 }
 
 function builtinIds(kind: JobKind): string[] {
