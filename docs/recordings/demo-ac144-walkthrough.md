@@ -1,6 +1,6 @@
 # AC-144: walkthroughs of the living room and the bedroom on real Comfy Cloud (2026-10-20)
 
-**Video:** [media/roomfit-walkthrough.mp4](media/roomfit-walkthrough.mp4) (58 s). The Cloud waits play at 12×.
+**Video:** [media/m17-walkthrough-recording.mp4](media/m17-walkthrough-recording.mp4) (58 s). The Cloud waits play at 12×.
 
 **Clips as downloaded:**
 - [media/m17-walkthrough-living.mp4](media/m17-walkthrough-living.mp4)
