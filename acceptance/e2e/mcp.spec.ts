@@ -110,6 +110,19 @@ test('AC-67 view_360 returns the panorama as PNG image content and saves the fil
   expect(state.undoLabels.filter((label) => label === 'mcp:view_360')).toHaveLength(0)
 })
 
+test('AC-141 walkthrough_video returns the first frame as PNG image content and saves the clip', async ({ page }) => {
+  const result = await call('walkthrough_video', { room: 'Living', seed: 5 })
+  expect(result.isError).toBe(false)
+  expect(result.content.find((part) => part.type === 'image')?.mimeType).toBe('image/png')
+  const { jobId, path } = json(result.content)
+  expect(existsSync(path)).toBe(true)
+  expect(path).toMatch(/\.(webm|mp4)$/)
+  const state = await page.evaluate(() => window.roomfit.state())
+  expect(state.jobs.find((job) => job.id === jobId)?.kind).toBe('walkthrough')
+  expect(state.undoLabels.filter((label) => label === 'mcp:walkthrough_video')).toHaveLength(0)
+  expect((await call('walkthrough_video', { room: 'Nowhere' })).isError).toBe(true)
+})
+
 test('AC-74 get_backend reports the backend the editor uses and what it cannot run', async () => {
   await expect.poll(async () => json((await call('get_backend')).content), { timeout: 15_000 }).toEqual({ kind: 'cloud', url: 'http://127.0.0.1:8199', ready: true, unavailable: [] })
 })

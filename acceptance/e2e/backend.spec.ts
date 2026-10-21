@@ -83,7 +83,8 @@ test('AC-72 readiness names the missing nodes and models, and disables what cann
   const missing = Object.fromEntries(state.unavailable.map(({ kind, missing: names }) => [kind, [...names].sort()]))
   expect(missing).toEqual({
     photo3d: ['MoGePointMapToMesh'],
-    pano360: ['Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors']
+    pano360: ['Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors'],
+    walkthrough: expect.arrayContaining(['ltx-2.3-22b-distilled-fp8.safetensors'])
   })
 
   const outcome = await render(page)
@@ -99,6 +100,18 @@ test('AC-72 readiness names the missing nodes and models, and disables what cann
   const unreachable = await page.evaluate(() => window.roomfit.setBackend({ kind: 'local', url: 'http://127.0.0.1:8190' }))
   expect(unreachable.status).toBe('unreachable')
   await expect(chip(page)).toHaveAccessibleName('Local · unreachable')
+})
+
+test('AC-143 a backend without the LTX-2.3 models names them and disables "Walkthrough video"', async ({ page }) => {
+  const state = await page.evaluate(() => window.roomfit.setBackend({ kind: 'local' }))
+  expect(state.unavailable.find((entry) => entry.kind === 'walkthrough')?.missing).toEqual(expect.arrayContaining(['ltx-2.3-22b-distilled-fp8.safetensors']))
+  await page.evaluate(() => window.roomfit.focusZone('living'))
+  const button = page.getByRole('button', { name: 'Walkthrough video' })
+  await expect(button).toBeDisabled()
+  await expect(button).toHaveAttribute('title', /ltx-2\.3-22b-distilled-fp8\.safetensors/)
+
+  await page.evaluate(() => window.roomfit.setBackend({ kind: 'cloud' }))
+  await expect(button).toBeEnabled()
 })
 
 test('AC-73 every job opens the workflow it ran, and Download JSON is exactly what was submitted', async ({ page, context }) => {

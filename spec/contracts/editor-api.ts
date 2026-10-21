@@ -23,6 +23,7 @@ export type EditorState = {
   focusedZone: string | null
   photoViewer: { jobId: string; yawDegrees: number; pitchDegrees: number } | null
   viewer360: Viewer360 | null
+  walkthroughViewer: WalkthroughViewer | null
   backend: BackendState
   libraryFilter: string | null
   renderStyle: 'lived-in' | 'as-built'
@@ -41,6 +42,12 @@ export type Navigation = { mode: 'orbit' } | { mode: 'walk'; eye: Vec3; yawDeg: 
 
 /** The open 360° viewer. Yaw 0 looks at +Z, +90 at +X; pitch is clamped to ±80, field of view to 40–100. */
 export type Viewer360 = { jobId: string; zoneId: string; yawDegrees: number; pitchDegrees: number; fovDegrees: number; stale: boolean }
+
+/** The open walkthrough viewer. */
+export type WalkthroughViewer = { jobId: string; zoneId: string; stale: boolean }
+
+/** A room's walkthrough camera path: 121 poses at 25 fps from its eye-level shot; `dollyCm` is how far the eye travels after shortening for walls and furniture. */
+export type WalkthroughPath = { poses: { position: Vec3; target: Vec3 }[]; dollyCm: number }
 
 /** An equirectangular depth panorama from a room's standing point: column 0 is yaw −180, the centre column yaw 0 (+Z); row 0 is pitch +90. */
 export type DepthPanorama = { image: string; width: number; height: number; standingPoint: { x: number; z: number }; eyeHeightCm: number }
@@ -141,6 +148,12 @@ export type RoomfitEditorApi = {
   view360(request?: { zoneId?: string; prompt?: string }): Promise<{ ok: true; jobId: string; image: string } | { ok: false; reason: 'no-room' } | ComfyFailure>
   open360(jobId: string): void
   close360(): void
+  walkthroughPath(zoneId: string): WalkthroughPath | { ok: false; reason: 'unknown-zone' }
+  /** The depth video a walkthrough of the room would upload: VP9 WebM, 121 frames, 1280 × 704, 25 fps, depth over a fixed 40–900 cm. */
+  walkthroughDepthVideo(zoneId: string): Promise<{ video: string; frames: number; width: number; height: number; fps: number } | { ok: false; reason: 'unknown-zone' }>
+  walkthrough(request?: { zoneId?: string; prompt?: string; seed?: number }): Promise<{ ok: true; jobId: string; video: string; firstFrame: string } | { ok: false; reason: 'no-room' } | ComfyFailure>
+  openWalkthrough(jobId: string): void
+  closeWalkthrough(): void
   backend(): BackendState
   setBackend(choice: { kind: BackendKind; url?: string }): Promise<BackendState>
   checkBackend(): Promise<BackendState>

@@ -5,8 +5,10 @@ const glbFixture = (name) => readFileSync(new URL(`../../fixtures/glb/${name}`, 
 const DEFAULT_PRODUCT_GLB = 'generated-offset-box.glb'
 const PHOTO3D_GLB = readFileSync(new URL('../../fixtures/glb/photo3d-plane.glb', import.meta.url))
 const PANORAMA = readFileSync(new URL('../../fixtures/images/pano-bedroom.png', import.meta.url))
+const WALKTHROUGH = readFileSync(new URL('../../fixtures/videos/walkthrough-living.webm', import.meta.url))
 const snapshotAt = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'))
 const LOCAL_WITHOUT = ['MoGePointMapToMesh']
+const LOCAL_WITHOUT_MODELS = ['ltx-2.3-22b-distilled-fp8.safetensors', 'ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors']
 
 /** Every (node class, input, string value) the repo's workflows use: the fakes offer exactly these options, so their models count as installed. */
 function optionValuesUsedByWorkflows() {
@@ -23,14 +25,14 @@ const optionListOf = (spec) => {
   return null
 }
 
-/** /api/object_info as a backend would serve it, with the workflows' model files installed: `cloud` from the Cloud snapshot; `local` from the local snapshot without the MoGe point-map-to-mesh node and with only an SDXL ControlNet installed. */
+/** /api/object_info as a backend would serve it, with the workflows' model files installed: `cloud` from the Cloud snapshot; `local` from the local snapshot without the MoGe point-map-to-mesh node, without the LTX-2.3 checkpoint and IC-LoRA, and with only an SDXL ControlNet installed. */
 function catalogOf(kind) {
   const snapshot = snapshotAt(kind === 'local' ? 'spec/contracts/comfyui-object-info.json' : 'spec/contracts/comfy-cloud-object-info.json')
   const classes = snapshot.classes.filter((name) => kind !== 'local' || !LOCAL_WITHOUT.includes(name))
   const catalog = Object.fromEntries(classes.map((name) => [name, structuredClone(snapshot.nodes[name] ?? { input: { required: {} }, output: [] })]))
   for (const [className, inputName, value] of optionValuesUsedByWorkflows()) {
     const options = optionListOf(catalog[className]?.input?.required?.[inputName] ?? catalog[className]?.input?.optional?.[inputName])
-    if (options && !options.includes(value)) options.push(value)
+    if (options && !options.includes(value) && !(kind === 'local' && LOCAL_WITHOUT_MODELS.includes(value))) options.push(value)
   }
   if (kind === 'local') {
     catalog.ControlNetLoader = structuredClone(catalog.ControlNetLoader)
@@ -43,6 +45,16 @@ const PNG = Buffer.from(
   'base64'
 )
 
+/** The first file part of a multipart/form-data body: its bytes and content type. */
+function multipartFile(body) {
+  const text = body.toString('latin1')
+  const headerEnd = text.indexOf('\r\n\r\n', text.indexOf('filename="'))
+  const boundary = text.slice(0, text.indexOf('\r\n'))
+  const end = text.indexOf(`\r\n${boundary}`, headerEnd)
+  const type = text.slice(text.indexOf('filename="'), headerEnd).match(/Content-Type: ([^\r\n]+)/i)?.[1] ?? 'application/octet-stream'
+  return { type, bytes: body.subarray(headerEnd + 4, end) }
+}
+
 /** A ComfyUI/Comfy Cloud stand-in for the harness: records every request and answers like Cloud's v1 API. */
 export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = false, requireKey = null, catalog = 'cloud' } = {}) {
   const objectInfo = catalogOf(catalog)
@@ -50,6 +62,7 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
   const requests = []
   const prompts = new Map()
   const uploadNames = new Map()
+  const uploadBodies = new Map()
   let uploads = 0
   let productGlb = glbFixture(DEFAULT_PRODUCT_GLB)
   let jobs = 0
@@ -57,8 +70,9 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
   const storage = createServer((request, response) => {
     requests.push({ server: 'storage', method: request.method, url: request.url, headers: request.headers })
     const isGlb = request.url.includes('.glb')
-    response.setHeader('Content-Type', isGlb ? 'model/gltf-binary' : 'image/png')
-    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : productGlb) : request.url.includes('pano360') ? PANORAMA : PNG)
+    const isVideo = request.url.includes('.webm')
+    response.setHeader('Content-Type', isGlb ? 'model/gltf-binary' : isVideo ? 'video/webm' : 'image/png')
+    response.end(isGlb ? (request.url.includes('photo3d') ? PHOTO3D_GLB : productGlb) : isVideo ? WALKTHROUGH : request.url.includes('pano360') ? PANORAMA : PNG)
   })
 
   const api = createServer(async (request, response) => {
@@ -74,8 +88,15 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     }
 
     if (url.pathname === '/__requests') return json(200, requests.filter((entry) => entry.url !== '/__requests').map(({ body: _body, ...entry }) => entry))
-    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null, negative: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:negative')?.inputs.text ?? null })))
+    if (url.pathname === '/__prompts') return json(200, [...prompts.entries()].map(([id, entry]) => ({ id, images: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadImage').map((node) => node.inputs.image), videos: Object.values(entry.prompt).filter((node) => node.class_type === 'LoadVideo').map((node) => node.inputs.file), savePrefix: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:save')?.inputs.filename_prefix ?? null, positive: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:positive')?.inputs.text ?? null, negative: Object.values(entry.prompt).find((node) => node._meta?.title === 'roomfit:negative')?.inputs.text ?? null })))
     if (url.pathname === '/__last-prompt') return json(200, lastPrompt)
+    const uploaded = url.pathname.match(/^\/__uploads\/([^/]+)$/)
+    if (uploaded) {
+      const file = uploadBodies.get(uploaded[1])
+      if (!file) return json(404, { error: 'no such upload' })
+      response.setHeader('Content-Type', file.type)
+      return response.end(file.bytes)
+    }
     if (url.pathname === '/__product-glb') {
       const fixture = url.searchParams.get('fixture') ?? DEFAULT_PRODUCT_GLB
       if (!/^[a-z0-9-]+\.glb$/.test(fixture)) return json(400, { error: 'fixture must be a file name in fixtures/glb' })
@@ -88,8 +109,10 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
     if (request.method === 'POST' && url.pathname === '/api/upload/image') {
       uploads += 1
       const original = body.toString('latin1').match(/filename="([^"]+)"/)?.[1] ?? ''
-      const name = `${original.includes('fail') ? 'fail-' : original.includes('slow') ? 'slow-' : ''}upload-${uploads}.png`
+      const extension = original.match(/\.(webm|mp4)$/i)?.[1]?.toLowerCase() ?? 'png'
+      const name = `${original.includes('fail') ? 'fail-' : original.includes('slow') ? 'slow-' : ''}upload-${uploads}.${extension}`
       uploadNames.set(name, original)
+      uploadBodies.set(name, multipartFile(body))
       return json(200, { name, subfolder: '', type: 'input' })
     }
     if (request.method === 'POST' && url.pathname === '/api/prompt') {
@@ -114,8 +137,9 @@ export function startFakeComfy({ port = 8199, storagePort = 8197, failJobs = fal
       const isGlb = saveNode.class_type === 'SaveGLB'
       const isPhoto3d = String(saveNode.inputs?.filename_prefix ?? '').includes('photo3d')
       const isPanorama = String(saveNode.inputs?.filename_prefix ?? '').includes('pano360')
-      const file = { filename: isGlb ? (isPhoto3d ? 'photo3d_00001_.glb' : 'product_00001_.glb') : isPanorama ? 'pano360_00001_.png' : 'render_00001_.png', subfolder: 'roomfit', type: 'output' }
-      return json(200, { id: job[1], status: 'completed', create_time: 0, update_time: 0, outputs: { [saveId]: isGlb ? { '3d': [file] } : { images: [file] } } })
+      const isVideo = saveNode.class_type === 'SaveVideo'
+      const file = { filename: isGlb ? (isPhoto3d ? 'photo3d_00001_.glb' : 'product_00001_.glb') : isVideo ? 'walkthrough_00001_.webm' : isPanorama ? 'pano360_00001_.png' : 'render_00001_.png', subfolder: 'roomfit', type: 'output' }
+      return json(200, { id: job[1], status: 'completed', create_time: 0, update_time: 0, outputs: { [saveId]: isGlb ? { '3d': [file] } : isVideo ? { images: [file], animated: [true] } : { images: [file] } } })
     }
     if (request.method === 'GET' && url.pathname === '/api/view') {
       response.statusCode = 302

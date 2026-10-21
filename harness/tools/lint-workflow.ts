@@ -12,8 +12,12 @@ export type ApiWorkflow = Record<string, ApiNode>
 const isLink = (value: unknown): value is [string, number] =>
   Array.isArray(value) && value.length === 2 && typeof value[0] === 'string' && typeof value[1] === 'number'
 
+const isMatchType = (type: string) => type.startsWith('COMFY_MATCHTYPE')
+
 const accepts = (inputType: string, outputType: string) =>
-  inputType === '*' || outputType === '*' || inputType.split(',').includes(outputType)
+  inputType === '*' || outputType === '*' || isMatchType(inputType) || isMatchType(outputType) || inputType.split(',').includes(outputType)
+
+const parentInput = (name: string) => name.split('.')[0]!
 
 export function loadSnapshot(path = 'spec/contracts/comfyui-object-info.json'): Snapshot {
   return JSON.parse(readFileSync(path, 'utf8'))
@@ -27,11 +31,11 @@ export function lintWorkflow(workflow: ApiWorkflow, snapshot: Snapshot): string[
     if (!spec) return []
     const declared = { ...spec.input.required, ...spec.input.optional }
     const missing = Object.keys(spec.input.required ?? {})
-      .filter((name) => !(name in node.inputs))
+      .filter((name) => !(name in node.inputs) && !Object.keys(node.inputs).some((input) => parentInput(input) === name))
       .map((name) => `${id} (${node.class_type}): missing required input "${name}"`)
     const checked = Object.entries(node.inputs).flatMap(([name, value]) => {
       const inputSpec = declared[name]
-      if (!inputSpec) return [`${id} (${node.class_type}): unknown input "${name}"`]
+      if (!inputSpec) return declared[parentInput(name)] ? [] : [`${id} (${node.class_type}): unknown input "${name}"`]
       const [type] = inputSpec
       if (isLink(value)) {
         const [sourceId, outputIndex] = value

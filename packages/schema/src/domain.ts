@@ -26,10 +26,10 @@ export type FindSpotOutcome =
   | { ok: false; reason: 'unknown-zone' | 'no-space' }
 
 /** Kinds of ComfyUI work the editor runs. */
-export type JobKind = 'product' | 'render' | 'photo3d' | 'pano360'
+export type JobKind = 'product' | 'render' | 'photo3d' | 'pano360' | 'walkthrough'
 
 /** Steps a ComfyUI job goes through, in order; it ends in `done` or `failed`. */
-export type JobStep = 'uploading' | 'queued' | 'generating' | 'downloading' | 'optimising' | 'fitting' | 'meshing' | 'done' | 'failed'
+export type JobStep = 'path' | 'first-frame' | 'uploading' | 'queued' | 'generating' | 'downloading' | 'optimising' | 'fitting' | 'meshing' | 'done' | 'failed'
 
 /** Source image for a 3D photo: a finished render job or an uploaded photo. */
 export type Photo3dSource = { kind: 'render'; jobId: string } | { kind: 'upload'; fileName: string; imageBase64: string }
@@ -45,11 +45,11 @@ export type Job = {
   backend?: BackendKind
   steps: { status: JobStep; at: number }[]
   message?: string
-  result?: { image?: string; glb?: string; itemId?: string }
+  result?: { image?: string; glb?: string; itemId?: string; video?: string }
 }
 
 /** At most this many jobs run at once; more wait as `queued`. */
 export const MAX_CONCURRENT_JOBS = 3
 
 /** Expected seconds before any job of a kind has finished in this session. */
-export const DEFAULT_EXPECTED_SECONDS: Record<JobKind, number> = { product: 60, render: 15, photo3d: 30, pano360: 60 }
+export const DEFAULT_EXPECTED_SECONDS: Record<JobKind, number> = { product: 60, render: 15, photo3d: 30, pano360: 60, walkthrough: 120 }

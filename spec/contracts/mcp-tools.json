@@ -17,6 +17,7 @@
   "screenshot": { "required": [], "properties": {} },
   "get_jobs": { "required": [], "properties": {} },
   "view_360": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string" } },
+  "walkthrough_video": { "required": ["room"], "properties": { "room": "string", "prompt": "string", "preset": "string", "seed": "number" } },
   "get_backend": { "required": [], "properties": {} },
   "set_asset_labels": { "required": ["assetId", "labels"], "properties": { "assetId": "string", "labels": "array" } },
   "set_house_plan": { "required": ["room"], "properties": { "room": "object" } },

@@ -26,4 +26,26 @@ describe('harness workflow linter', () => {
     change(workflow)
     expect(lintWorkflow(workflow, snapshot).join('\n')).toMatch(match)
   })
+  describe('ComfyUI V3 nodes (Cloud catalog)', () => {
+    const cloud = loadSnapshot('spec/contracts/comfy-cloud-object-info.json')
+    const video: ApiWorkflow = {
+      '1': { class_type: 'LoadVideo', inputs: { file: 'roomfit-depth.webm' } },
+      '2': { class_type: 'GetVideoComponents', inputs: { video: ['1', 0] } },
+      '3': { class_type: 'ComfySwitchNode', inputs: { switch: true, on_true: ['2', 0], on_false: ['2', 0] } },
+      '4': { class_type: 'PrimitiveInt', inputs: { value: 25 } },
+      '5': { class_type: 'ComfyMathExpression', inputs: { expression: 'a', 'values.a': ['4', 0] } },
+      '6': { class_type: 'CreateVideo', inputs: { images: ['3', 0], fps: ['5', 0] } },
+      '7': { class_type: 'SaveVideo', inputs: { video: ['6', 0], filename_prefix: 'roomfit/walkthrough', format: 'auto', 'format.codec': 'auto', codec: 'auto' } }
+    }
+
+    it('accepts dynamic sub-inputs of a declared input and match-type links', () => {
+      expect(lintWorkflow(video, cloud)).toEqual([])
+    })
+
+    it('rejects a dotted input whose parent is not declared', () => {
+      const workflow = structuredClone(video)
+      workflow['7']!.inputs['quality.level'] = 3
+      expect(lintWorkflow(workflow, cloud).join('\n')).toMatch(/unknown input "quality.level"/)
+    })
+  })
 })

@@ -9,8 +9,8 @@ const entries = (['local', 'cloud'] as const).flatMap((backend) => Object.entrie
 
 describe('AC-75 each backend has a complete workflow set that its catalog accepts', () => {
   it('AC-75 both sets cover every job kind', () => {
-    expect(Object.keys(sets.local).sort()).toEqual(['pano360', 'photo3d', 'product', 'render'])
-    expect(Object.keys(sets.cloud).sort()).toEqual(['pano360', 'photo3d', 'product', 'render'])
+    expect(Object.keys(sets.local).sort()).toEqual(['pano360', 'photo3d', 'product', 'render', 'walkthrough'])
+    expect(Object.keys(sets.cloud).sort()).toEqual(['pano360', 'photo3d', 'product', 'render', 'walkthrough'])
   })
 
   it.for(entries)('AC-75 $backend $kind ($file) lints against the $backend catalog snapshot', ({ backend, file }) => {
