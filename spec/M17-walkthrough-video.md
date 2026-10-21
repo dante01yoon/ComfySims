@@ -152,7 +152,7 @@ The demo furnished house (`demo/out/house/furnished-layout.json`, 17 generated p
 | AC-141 | active | The `walkthrough_video` MCP tool returns the saved clip path and the first frame as image content, and is listed in `mcp-tools.json` |
 | AC-142 | active | `walkthrough-ltx23-ic-lora.json` lints against the Cloud catalog snapshot and carries every `roomfit:` tag in §7 |
 | AC-143 | active | A backend without the LTX-2.3 models reports them in `backend.unavailable`, and the button is disabled with that message; on Cloud it is enabled |
-| AC-144 | manual | Recording on real Comfy Cloud: a walkthrough of the demo living room and bedroom, played in the viewer. Evidence goes in `docs/recordings/` |
+| AC-144 | manual | Recording on real Comfy Cloud: a walkthrough of the demo living room and bedroom, played in the viewer (evidence 2026-10-20: [`docs/recordings/demo-ac144-walkthrough.md`](../docs/recordings/demo-ac144-walkthrough.md); found: no H.264 playback in Playwright's Chromium leaves the viewer black, windows read as dark glass) |
 
 ## 9. Test plan
 
@@ -185,3 +185,4 @@ Open questions: settled 2026-10-20 on the recommended answers (Dante: "권장안
 - 2026-10-20 Draft from Dante's choice of the walkthrough video as M17. Spike run the same day (3 Cloud jobs), PASS on the second attempt. In review.
 - 2026-10-20 Approved on the recommended answers. Spec session: pinned Cloud and local workflows (Cloud jobs 19ba4310, 06709909), Cloud catalog snapshot, linter support for V3 dynamic inputs, schema and contracts, fake ComfyUI video support and fixture, tests for AC-136~143. The depth video changed from H.264 mp4 to VP9 WebM after measuring (ADR-0015). ACs active.
 - 2026-10-20 impl-38 BLOCKED on three spec-session slips: `JobKindName` in the layout schema lacked `walkthrough`, the e2e test used `findLast` (above the ES2022 target), and AC-70 still expected 2 unavailable local workflows. Fixed in the spec session.
+- 2026-10-20 impl-38 done (12.5 min, $4.63; Stop hook sent it back twice). VERIFY PASS. AC-144 recorded on real Cloud: living 132 s (cold start), bedroom 70 s. Two defects found by the recording, listed in the evidence; both need a spec item.

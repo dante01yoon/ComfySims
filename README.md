@@ -13,7 +13,8 @@
 | The store page you are viewing | the **Send to ComfySims** bookmarklet reads the photo, size, brand and link (JSON-LD, Amazon, Open Graph) and opens the editor with them filled ([evidence](docs/recordings/demo-ac109-import.md)) | ✅ |
 | Your ComfyUI: local, Comfy Cloud or both | picks a workflow per backend and job, shows what each backend can run | ✅ |
 | A render | room photos, 360° view, aerial and street exteriors from the layout's depth; **Lived-in** style keeps rooms from looking white and empty | ✅ |
-| Your own workflows and models (e.g. VideoHelperSuite walkthrough videos) | pick the workflow and model per job in the editor or over MCP, or add your own API-format workflow; a video walkthrough job | ✅ choice · 🧪 video planned |
+| Your own workflows and models | pick the workflow and model per job in the editor or over MCP, or add your own API-format workflow | ✅ |
+| A room you want to walk into | a ~5 s photoreal walkthrough clip that moves through your layout: the editor renders a depth video along a path through the room, LTX-2.3 IC-LoRA on Comfy Cloud follows it ([evidence](docs/recordings/demo-ac144-walkthrough.md)) | ✅ |
 
 <p align="center"><a href="docs/recordings/media/roomfit-reel.mp4"><img src="docs/recordings/media/gif/place.gif" alt="Make a chair from a photo, drag it into place, render the room" width="760"></a><br><sub>Click any animation for the full video · <a href="docs/recordings/media/roomfit-reel.mp4">7-minute demo reel</a></sub></p>
 
