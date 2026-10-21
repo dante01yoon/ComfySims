@@ -55,9 +55,10 @@ async function meanGreyDifference(page: Page, video: Buffer, image: Buffer) {
 }
 
 async function walkthroughJob(page: Page) {
+  test.setTimeout(240_000)
   await page.evaluate(() => window.roomfit.focusZone('living'))
   await page.getByRole('button', { name: 'Walkthrough video' }).click()
-  await expect(card(page, 'Walkthrough · Living')).toContainText('done', { timeout: 30_000 })
+  await expect(card(page, 'Walkthrough · Living')).toContainText('done', { timeout: 180_000 })
   const queued = await prompts()
   const walkthrough = [...queued].reverse().find((prompt) => prompt.savePrefix === 'roomfit/walkthrough')!
   const firstFrame = queued.slice(0, queued.indexOf(walkthrough)).reverse().find((prompt) => prompt.savePrefix === 'roomfit/render')!

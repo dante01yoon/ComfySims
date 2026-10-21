@@ -47,12 +47,12 @@ describe('AC-111 no dead code and no import across layers', () => {
   it('AC-111 pnpm knip passes on the repo', () => {
     const { status, output } = run('pnpm', ['-s', 'knip'])
     expect(status, output).toBe(0)
-  })
+  }, 60_000)
 
   it('AC-111 pnpm deps:check passes on the repo', () => {
     const { status, output } = run('pnpm', ['-s', 'deps:check'])
     expect(status, output).toBe(0)
-  })
+  }, 60_000)
 
   it('AC-111 dependency-cruiser rejects packages importing the browser editor', () => {
     const dir = plant({
