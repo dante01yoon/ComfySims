@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { ALL_FORMATS, BufferSource, Input } from 'mediabunny'
+import { ALL_FORMATS, BufferSource, EncodedPacketSink, Input } from 'mediabunny'
 
 import type { RoomLayout } from '../../packages/schema/src/index.ts'
 import type {} from '../../spec/contracts/editor-api.ts'
@@ -31,15 +31,24 @@ async function videoTrack(bytes: Buffer) {
   return { mimeType: await input.getMimeType(), codec: track.codec, width: track.displayWidth, height: track.displayHeight, ...(await track.computePacketStats()) }
 }
 
+async function firstFrameOf(video: Buffer) {
+  const input = new Input({ source: new BufferSource(video), formats: ALL_FORMATS })
+  const track = await input.getPrimaryVideoTrack()
+  const packet = track && (await new EncodedPacketSink(track).getFirstPacket())
+  if (!track || !packet) throw new Error('no first frame')
+  const { codec, codedWidth, codedHeight } = await track.getDecoderConfig() ?? {}
+  return { codec: codec!, codedWidth: codedWidth!, codedHeight: codedHeight!, data: Buffer.from(packet.data).toString('base64') }
+}
+
 async function meanGreyDifference(page: Page, video: Buffer, image: Buffer) {
-  return page.evaluate(async ({ video, image }) => {
+  return page.evaluate(async ({ frame, image }) => {
     const bytes = (base64: string) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0))
-    const element = document.createElement('video')
-    element.muted = true
-    element.src = URL.createObjectURL(new Blob([bytes(video)], { type: 'video/webm' }))
-    await new Promise((resolve, reject) => { element.onloadeddata = resolve; element.onerror = reject })
-    element.currentTime = 0
-    await new Promise((resolve) => { element.onseeked = resolve })
+    const decoded = await new Promise<VideoFrame>((resolve, reject) => {
+      const decoder = new VideoDecoder({ output: resolve, error: reject })
+      decoder.configure({ codec: frame.codec, codedWidth: frame.codedWidth, codedHeight: frame.codedHeight })
+      decoder.decode(new EncodedVideoChunk({ type: 'key', timestamp: 0, data: bytes(frame.data) }))
+      void decoder.flush()
+    })
     const still = await createImageBitmap(new Blob([bytes(image)], { type: 'image/png' }))
     const grey = (source: CanvasImageSource) => {
       const canvas = new OffscreenCanvas(still.width, still.height)
@@ -48,10 +57,11 @@ async function meanGreyDifference(page: Page, video: Buffer, image: Buffer) {
       const data = context.getImageData(0, 0, still.width, still.height).data
       return Array.from({ length: data.length / 4 }, (_, pixel) => data[pixel * 4]!)
     }
-    const a = grey(element)
+    const a = grey(decoded)
+    decoded.close()
     const b = grey(still)
     return a.reduce((sum, value, index) => sum + Math.abs(value - b[index]!), 0) / a.length
-  }, { video: video.toString('base64'), image: image.toString('base64') })
+  }, { frame: await firstFrameOf(video), image: image.toString('base64') })
 }
 
 async function walkthroughJob(page: Page) {
