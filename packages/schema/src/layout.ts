@@ -132,7 +132,7 @@ export const Blueprint = z.strictObject({
   origin: Point
 })
 
-export const JobKindName = z.enum(['product', 'render', 'photo3d', 'pano360'])
+export const JobKindName = z.enum(['product', 'render', 'photo3d', 'pano360', 'walkthrough'])
 
 /** An API-format ComfyUI graph: node id → class and inputs. */
 export const ApiGraph = z.record(z.string(), z.object({ class_type: z.string().min(1), inputs: z.record(z.string(), z.unknown()), _meta: z.object({ title: z.string().optional() }).optional() }))

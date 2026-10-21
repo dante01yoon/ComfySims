@@ -169,7 +169,7 @@ The demo furnished house (`demo/out/house/furnished-layout.json`, 17 generated p
 ## 10. Risks and open questions
 
 Risks
-- **Encoding in the browser.** WebCodecs VP9 encoding is in Chrome, Edge and Firefox, and in Safari 17+. Where `VideoEncoder` is missing, the button is disabled with "This browser cannot encode video".
+- **Encoding in the browser.** WebCodecs VP9 encoding is in Chrome, Edge and Firefox, and in Safari 17+. Disabling the button where `VideoEncoder` is missing is a follow-up (not built in M17).
 - **Runtime and cost.** One LTX 22B run per clip. It is opt-in and labelled stale, as with M5, and the job card shows the expected time.
 - **Items leaving the frame drift** (spike found). The path pans only 25° to limit how much leaves the view.
 - **The template can change.** Cloud templates are re-published, so the workflow is pinned as our own API-format file (§7), not a template reference.
@@ -184,3 +184,4 @@ Open questions: settled 2026-10-20 on the recommended answers (Dante: "권장안
 
 - 2026-10-20 Draft from Dante's choice of the walkthrough video as M17. Spike run the same day (3 Cloud jobs), PASS on the second attempt. In review.
 - 2026-10-20 Approved on the recommended answers. Spec session: pinned Cloud and local workflows (Cloud jobs 19ba4310, 06709909), Cloud catalog snapshot, linter support for V3 dynamic inputs, schema and contracts, fake ComfyUI video support and fixture, tests for AC-136~143. The depth video changed from H.264 mp4 to VP9 WebM after measuring (ADR-0015). ACs active.
+- 2026-10-20 impl-38 BLOCKED on three spec-session slips: `JobKindName` in the layout schema lacked `walkthrough`, the e2e test used `findLast` (above the ES2022 target), and AC-70 still expected 2 unavailable local workflows. Fixed in the spec session.

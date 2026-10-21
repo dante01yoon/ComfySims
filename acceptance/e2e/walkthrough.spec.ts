@@ -59,8 +59,8 @@ async function walkthroughJob(page: Page) {
   await page.getByRole('button', { name: 'Walkthrough video' }).click()
   await expect(card(page, 'Walkthrough · Living')).toContainText('done', { timeout: 30_000 })
   const queued = await prompts()
-  const walkthrough = queued.findLast((prompt) => prompt.savePrefix === 'roomfit/walkthrough')!
-  const firstFrame = queued.slice(0, queued.indexOf(walkthrough)).findLast((prompt) => prompt.savePrefix === 'roomfit/render')!
+  const walkthrough = [...queued].reverse().find((prompt) => prompt.savePrefix === 'roomfit/walkthrough')!
+  const firstFrame = queued.slice(0, queued.indexOf(walkthrough)).reverse().find((prompt) => prompt.savePrefix === 'roomfit/render')!
   return { walkthrough, firstFrame }
 }
 

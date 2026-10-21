@@ -38,7 +38,7 @@ test('AC-70 the backend switch sends new jobs to the chosen ComfyUI without a re
 
   await chip(page).click()
   await page.getByRole('button', { name: 'Use Local' }).click()
-  await expect(chip(page)).toHaveAccessibleName('Local · 2 workflows unavailable')
+  await expect(chip(page)).toHaveAccessibleName('Local · 3 workflows unavailable')
   const [cloudBefore, localBefore] = [await promptsQueued(CLOUD), await promptsQueued(LOCAL)]
   const outcome = await render(page)
   if (!outcome.ok) throw new Error(outcome.message)

@@ -613,7 +613,8 @@
           "product",
           "render",
           "photo3d",
-          "pano360"
+          "pano360",
+          "walkthrough"
         ]
       },
       "additionalProperties": {
@@ -662,7 +663,8 @@
               "product",
               "render",
               "photo3d",
-              "pano360"
+              "pano360",
+              "walkthrough"
             ]
           },
           "graph": {
