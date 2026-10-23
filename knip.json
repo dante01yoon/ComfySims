@@ -10,5 +10,5 @@
     "acceptance/contract-types.ts"
   ],
   "project": ["web/**/*.{ts,tsx}", "mcp/**/*.ts", "packages/*/src/**/*.ts", "packages/*/scripts/*.ts", "harness/**/*.{mjs,ts}", "acceptance/**/*.ts", "demo/*.{mjs,ts}"],
-  "ignoreBinaries": ["ffmpeg", "ffprobe", "uvx"]
+  "ignoreBinaries": ["ffmpeg", "ffprobe", "uvx", "java"]
 }
