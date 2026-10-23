@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { holdVerifyLock } from './tools/verify-lock.mjs'
+
 const STATE_DIR = '.harness'
 const VITEST_REPORT = join(STATE_DIR, 'vitest.json')
 const E2E_REPORT = join(STATE_DIR, 'e2e.json')
@@ -93,6 +95,7 @@ function judge(criterion, counts) {
   return { mark: 'PASS', ok: true }
 }
 
+await holdVerifyLock({ onWait: (port) => console.log(`Another pnpm verify holds port ${port} (PID ${portHolder(port).join(', ')}). Waiting for it to finish.`) })
 mkdirSync(STATE_DIR, { recursive: true })
 rmSync(E2E_REPORT, { force: true })
 rmSync(PYTHON_REPORT, { force: true })

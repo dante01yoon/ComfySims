@@ -8,7 +8,7 @@ The harness is the working environment agents run in. It keeps the definition of
 | --- | --- | --- |
 | Tell | `AGENTS.md` (loaded through `CLAUDE.md`) | Specs are the definition of done; spec vs implementation sessions; the `BLOCKED:` hand-off |
 | Block | PreToolUse hook `harness/hooks/guard.mjs` | Denies edits to `spec/`, `packages/schema/`, `acceptance/`, `fixtures/`, `harness/`, `.claude/`, `vitest.config.ts`, `playwright.config.ts`, `package.json` unless `ROOMFIT_SPEC_SESSION=1` |
-| Check | Stop hook `harness/hooks/stop-verify.mjs` → `pnpm verify` | Runs every gate below and maps test results back to acceptance criteria. On failure the agent is sent back with the report |
+| Check | Stop hook `harness/hooks/stop-verify.mjs` → `pnpm verify` (timeout 1800 s) | Runs every gate below and maps test results back to acceptance criteria. On failure the agent is sent back with the report |
 | Stop | Retry limit in the Stop hook | After 3 failed attempts, or a reply starting with `BLOCKED:`, the agent may stop; the report stays in `.harness/last-verify.json`. A clean working tree skips verify |
 | Measure | `harness/tools/measure-glb.ts`, `harness/tools/lint-workflow.ts` | "Is this the right size?" and "will ComfyUI accept this workflow?" as numbers and lists an agent can read |
 | See | Playwright e2e, `pnpm see` | Editor behavior through `window.roomfit`; `pnpm see --layout=… --view=… --focus=… --scene=…` screenshots its own editor to `.harness/see/` with console errors and a state summary |
@@ -18,6 +18,7 @@ The harness is the working environment agents run in. It keeps the definition of
 
 | Gate | Command |
 | --- | --- |
+| one at a time | holds 127.0.0.1:8194 for the whole run; a second verify waits for the first (ADR-0018) |
 | port check | 5179, 8199, 8197, 8196, 8195 must be free (a leftover dev server would make e2e test the wrong code) |
 | contract drift | `packages/schema` → `spec/contracts/room-layout.schema.json` must match |
 | typecheck | `tsc --noEmit`, including `acceptance/contract-types.ts`, which asserts that implementation types equal contract types |
