@@ -6,9 +6,10 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const TLA_TOOLS = {
-  version: '1.8.0',
-  url: 'https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar',
-  sha256: '5bd7b64db99ae4c6c35f290de5e809c0ee41af43f8699cf696099ffb6452b1e2'
+  // v1.7.4 is the latest stable release; v1.8.0 is a prerelease that is rebuilt in place, so its sha256 changes
+  version: '1.7.4',
+  url: 'https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar',
+  sha256: '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88'
 }
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -93,7 +94,7 @@ function tlc(source, cfg) {
     writeFileSync(join(dir, `${cfg}.cfg`), readFileSync(join(here, `${cfg}.cfg`), 'utf8'))
     const run = spawnSync(
       'java',
-      ['-XX:+UseParallelGC', '-cp', jar, 'tlc2.TLC', '-deadlock', '-workers', 'auto', '-noGenerateSpecTE', '-metadir', join(dir, 'states'), '-config', `${cfg}.cfg`, 'JobQueue.tla'],
+      ['-XX:+UseParallelGC', '-cp', jar, 'tlc2.TLC', '-deadlock', '-workers', 'auto', '-metadir', join(dir, 'states'), '-config', `${cfg}.cfg`, 'JobQueue.tla'],
       { cwd: dir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }
     )
     const output = `${run.stdout}${run.stderr}`

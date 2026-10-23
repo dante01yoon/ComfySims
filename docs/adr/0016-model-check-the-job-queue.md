@@ -13,7 +13,7 @@ M3 (ADR-0008) runs up to `MAX_CONCURRENT_JOBS` jobs at once and lets a card retr
 ## Decision
 
 - **Two rules, model-checked.** (1) At most `MAX_CONCURRENT_JOBS` jobs hold a slot, and `runningJobs` counts them. (2) A job and its retries never hold a slot at once.
-- **TLA+ with TLC 1.8.0.** The question is about event orders, which suits a model checker. TLC needs only Java; `pnpm formal:jobs` downloads the pinned `tla2tools.jar` into `.harness/tools/` and checks its sha256. A run takes about 10 s.
+- **TLA+ with TLC 1.7.4 (the latest stable release; the v1.8.0 prerelease is rebuilt in place, so it cannot be pinned by sha256).** The question is about event orders, which suits a model checker. TLC needs only Java; `pnpm formal:jobs` downloads the pinned `tla2tools.jar` into `.harness/tools/` and checks its sha256. A run takes about 10 s.
 - **One model action per stretch of code without an `await`.** The model, its configs and the mutants live in `harness/formal/job-queue/`. The project skill `.claude/skills/verify-job-queue` maps every action to code and records the commit the mapping was last confirmed at.
 - **Every check has a mutant that must fail.** `check.mjs` runs broken variants (off-by-one in `takeSlot`, a decrement on hand-off, a lost hand-off, a missing room guard) and fails if one survives.
 - **Known findings are expectations, not passes.** A check that fails on today's code is recorded with its counterexample. `check.mjs` reports when the finding stops reproducing.

@@ -20,7 +20,7 @@ pnpm formal:jobs --traces     # also print the counterexample of the known findi
 pnpm formal:jobs --no-mutants # checks only
 ```
 
-Needs Java 11+ (`java -version`). The script downloads TLC `tla2tools.jar` v1.8.0 once into `.harness/tools/` and checks its sha256. It ends with `FORMAL JOB-QUEUE OK` (exit 0) when every result matches its expectation, `FORMAL JOB-QUEUE MISMATCH` (exit 1) otherwise, `FORMAL ERROR` (exit 2) when the tool cannot run.
+Needs Java 11+ (`java -version`). The script downloads TLC `tla2tools.jar` v1.7.4 (stable; v1.8.0 is a prerelease that is rebuilt in place) once into `.harness/tools/` and checks its sha256. It ends with `FORMAL JOB-QUEUE OK` (exit 0) when every result matches its expectation, `FORMAL JOB-QUEUE MISMATCH` (exit 1) otherwise, `FORMAL ERROR` (exit 2) when the tool cannot run.
 
 Expected output today:
 
