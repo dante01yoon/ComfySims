@@ -43,7 +43,7 @@ These paths are spec-session paths (`harness/`, `.claude/`, `package.json`). In 
 
 ## Coverage and sync
 
-Last confirmed that the model describes the code at commit **`7fdbe1a` with the ADR-0017 change on top** (2026-10-23). Replace this with the commit that lands ADR-0017.
+Last confirmed that the model describes the code at commit **`014ed8c`**, the commit that lands ADR-0017 (2026-10-23).
 
 | Code (with ADR-0017) | Model |
 | --- | --- |
@@ -65,7 +65,7 @@ A model `req` stands for one request; for guarded kinds it stands for one title 
 ### Does a change touch this?
 
 ```
-git diff 7fdbe1a -- web/src/editor.ts web/src/workspace.tsx packages/schema/src/domain.ts | grep -nE 'runJob|takeSlot|releaseSlot|retryJob|retries|retried|markRetried|waitingForSlot|runningJobs|startedJobs|settled|MAX_CONCURRENT_JOBS|already being made|isFinished|api.retryJob'
+git diff 014ed8c -- web/src/editor.ts web/src/workspace.tsx packages/schema/src/domain.ts | grep -nE 'runJob|takeSlot|releaseSlot|retryJob|retries|retried|markRetried|waitingForSlot|runningJobs|startedJobs|settled|MAX_CONCURRENT_JOBS|already being made|isFinished|api.retryJob'
 ```
 
 Any hit, a new caller of `runJob`, a new `await` inside `runJob` before `takeSlot` or between `settled` and `releaseSlot`, or a new guard means: re-read the rows above against the new code before trusting the result.
@@ -90,7 +90,7 @@ Any hit, a new caller of `runJob`, a new `await` inside `runJob` before `takeSlo
 
 ## Findings
 
-**F1 — Retry can run the same render twice at once.** (`card-retries`, found at `54aa384`, fixed by ADR-0017: a job is retried once, after it finished. `card-retries` and `api-retries` pass, and the mutants that drop either half of `RetryAllowed` fail.)
+**F1 — Retry can run the same render twice at once.** (`card-retries`, found at `4a80d56`, fixed by ADR-0017: a job is retried once, after it finished. `card-retries` and `api-retries` pass, and the mutants that drop either half of `RetryAllowed` fail.)
 
 1. `renderInComfy` starts job `render-1`; it takes a slot, runs, and fails.
 2. The failed card shows **Retry**. The user clicks it: `retryJob('render-1')` calls `renderZone(request, zone)` → `runJob` → job `render-2` takes a slot.

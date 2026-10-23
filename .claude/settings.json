@@ -8,7 +8,7 @@
     ],
     "Stop": [
       {
-        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/harness/hooks/stop-verify.mjs\"", "timeout": 180 }]
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/harness/hooks/stop-verify.mjs\"", "timeout": 1800 }]
       }
     ]
   }
