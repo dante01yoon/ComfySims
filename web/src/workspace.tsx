@@ -253,7 +253,7 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
         <>
           <div className="problem">{job.message}</div>
           <div className="button-row">
-            <button onClick={() => void api.retryJob(job.id)}>Retry</button>
+            {!job.retried && <button onClick={() => void api.retryJob(job.id)}>Retry</button>}
           </div>
         </>
       )}
@@ -269,7 +269,7 @@ function JobCard({ job, jobs, now }: { job: Job; jobs: readonly Job[]; now: numb
                 View as 3D photo
               </button>
             )}
-            {(job.kind === 'pano360' || job.kind === 'walkthrough') && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
+            {(job.kind === 'pano360' || job.kind === 'walkthrough') && !job.retried && <button onClick={() => void api.retryJob(job.id)}>Regenerate</button>}
           </div>
         </div>
       )}

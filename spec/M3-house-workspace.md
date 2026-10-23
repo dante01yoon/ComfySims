@@ -92,6 +92,7 @@ Library section (heading "Library (n)")
 - Each status change appends `{ status, at }` to the job's `steps` (ms since epoch); elapsed = now − first step; finished jobs stop the clock.
 - Expected seconds = median duration of earlier finished (done) jobs of the same kind in this session; defaults before any: product 60, render 15, photo3d 30.
 - Retry creates a new job with the same request; the failed card stays until cleared.
+- A job can be retried once, and only after it finished (Retry on a failed card, Regenerate on a done `pano360` / `walkthrough` card, `retryJob` from the API or MCP). Its card then hides the button and the new job's card carries the next retry. `retryJob` on an unfinished or already retried job is rejected and starts nothing. A retry rejected before it starts a job (no workflow, missing nodes, the room's view already being made) leaves the button in place. (ADR-0017)
 - Product jobs place the item at the end (as today); if placement fails (`no-space`), the job ends `failed` with "No space in <room>" and the layout is unchanged.
 - `placeAsset(assetId, zoneId?)`: zone = argument ?? focused zone ?? the zone containing the room centre; uses `findSpot`; creates one undo step; selects the new item; fails with `unknown-asset`, `unknown-zone` or `no-space` and changes nothing.
 - `renameZone(zoneId, name)`: trims; empty names are rejected; one undo step; layout contract unchanged (zones already have `name`).
@@ -151,6 +152,7 @@ Verified on Comfy Cloud 2026-10-18: job `17f5c779-5840-4bde-a98b-4e9367f35926`, 
 | AC-53 | active | A finished render or an uploaded room photo becomes a 3D photo job through the MoGe workflow and opens in the viewer; the viewer limits turning to ±20° yaw and ±10° pitch and closes with Back |
 | AC-54 | active | `workflows/cloud/photo-to-3d-moge.json` lints against the pinned Comfy Cloud catalog (`spec/contracts/comfy-cloud-object-info.json`, taken through the comfy-cloud MCP) and tags its input and save nodes |
 | AC-62 | active | A 3D photo opens from the photo's camera with a field of view taken from the mesh's angular extent, so the photo fills the viewer (cover, like the original image cropped to the viewer) |
+| AC-154 | active | A finished job can be retried once: pressing Retry twice on a failed card starts one new job and the old card hides Retry; `retryJob` on an unfinished or already retried job is rejected; a retry rejected before it starts a job keeps its button |
 | AC-55 | manual | Recording on real Comfy Cloud: two jobs in parallel in the panel, an asset placed from the library, a room renamed, a render opened as a 3D photo, and a real room photo opened as a 3D photo (evidence 2026-10-18: `docs/recordings/demo-ac55-workspace.md`) |
 
 ## 9. Test plan
@@ -158,6 +160,7 @@ Verified on Comfy Cloud 2026-10-18: job `17f5c779-5840-4bde-a98b-4e9367f35926`, 
 | AC | Level |
 | --- | --- |
 | AC-47, AC-48 | e2e with the fake ComfyUI (gains a per-job delay knob so two jobs overlap; a failing upload name already exists) |
+| AC-154 | e2e (two clicks on the same failed card's Retry; `retryJob` twice at once and on a running job; a Regenerate rejected by the room guard) + `pnpm formal:jobs` (`card-retries`, `api-retries`) |
 | AC-49 | unit test of a pure `expectedSeconds(jobs, kind)` |
 | AC-50 | unit test of point-in-polygon counts + e2e for labels and focus |
 | AC-51, AC-52 | e2e through the API and the rail's labelled controls; `placeAsset` reuses `findSpot` (AC-39) |

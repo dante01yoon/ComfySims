@@ -1276,9 +1276,19 @@ export function libraryAssetOf(jobId: string): string | undefined {
 
 async function retryJob(jobId: string): ReturnType<RoomfitEditorApi['retryJob']> {
   const retry = retries.get(jobId)
-  if (!retry) return rejection(`there is no job ${jobId}`)
+  const job = editor.jobs.find(({ id }) => id === jobId)
+  if (!retry || !job) return rejection(`there is no job ${jobId}`)
+  if (!isFinished(job)) return rejection(`job ${jobId} is still running`)
+  if (job.retried) return rejection(`job ${jobId} was already retried`)
+  markRetried(jobId, true)
   const outcome = await retry()
-  return outcome.ok ? { ok: true, jobId: outcome.jobId } : outcome
+  if (outcome.ok) return { ok: true, jobId: outcome.jobId }
+  if (outcome.jobId === undefined) markRetried(jobId, false)
+  return outcome
+}
+
+function markRetried(jobId: string, retried: boolean): void {
+  update({ jobs: editor.jobs.map((job) => (job.id === jobId ? { ...job, retried } : job)) })
 }
 
 function placeAsset(assetId: string, zoneId?: string): ReturnType<RoomfitEditorApi['placeAsset']> {

@@ -25,5 +25,5 @@ M3 (ADR-0008) runs up to `MAX_CONCURRENT_JOBS` jobs at once and lets a card retr
 
 ## Consequences
 
-- The first run found F1. Retrying a `render`, `product` or `photo3d` job twice (two clicks on a failed card's Retry, or the API/MCP while the job runs) runs the same request twice at once. `pano360` and `walkthrough` are safe. The product code is unchanged; a fix needs a spec decision.
+- The first run found F1. Retrying a `render`, `product` or `photo3d` job twice (two clicks on a failed card's Retry, or the API/MCP while the job runs) runs the same request twice at once. `pano360` and `walkthrough` are safe. The product code is unchanged; a fix needs a spec decision. Fixed by ADR-0017 (2026-10-23).
 - The model covers safety only. A slot leaked by a throw between `takeSlot` and `settled` is not checked.

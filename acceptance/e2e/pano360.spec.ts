@@ -164,3 +164,27 @@ test('AC-66 moving furniture in the room marks its view stale; only Regenerate m
   await card(page, '360° view · Bedroom').getByRole('button', { name: 'Regenerate' }).click()
   await expect(jobs(page).getByRole('article', { name: '360° view · Bedroom' })).toHaveCount(2)
 })
+
+test('AC-154 a Regenerate the room guard rejects leaves the button on its card', async ({ page }) => {
+  await open(page, house)
+  const first = await page.evaluate(() => window.roomfit.view360({ zoneId: 'bedroom' }))
+  if (!first.ok) throw new Error('view360 failed')
+  await page.evaluate(() => window.roomfit.close360())
+
+  const rejected = await page.evaluate(async (jobId) => {
+    const second = window.roomfit.view360({ zoneId: 'bedroom' })
+    const regenerated = await window.roomfit.retryJob(jobId)
+    await second
+    return regenerated
+  }, first.jobId)
+  expect(rejected).toMatchObject({ ok: false, message: 'a 360° view of Bedroom is already being made' })
+  await page.evaluate(() => window.roomfit.close360())
+
+  await expect(card(page, '360° view · Bedroom')).toHaveCount(2)
+  await expect(card(page, '360° view · Bedroom').getByRole('button', { name: 'Regenerate' })).toHaveCount(2)
+  const regenerated = await page.evaluate((jobId) => window.roomfit.retryJob(jobId), first.jobId)
+  expect(regenerated.ok).toBe(true)
+  await page.evaluate(() => window.roomfit.close360())
+  await expect(card(page, '360° view · Bedroom')).toHaveCount(3)
+  await expect(card(page, '360° view · Bedroom').getByRole('button', { name: 'Regenerate' })).toHaveCount(2)
+})

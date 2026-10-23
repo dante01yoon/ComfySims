@@ -46,6 +46,7 @@ export type Job = {
   steps: { status: JobStep; at: number }[]
   message?: string
   result?: { image?: string; glb?: string; itemId?: string; video?: string }
+  retried?: boolean
 }
 
 /** At most this many jobs run at once; more wait as `queued`. */

@@ -29,7 +29,7 @@ Ids == DOMAIN jobs
 TypeOK ==
     /\ startedJobs \in 0..MaxJobs
     /\ Ids = 1..startedJobs
-    /\ \A j \in Ids : jobs[j].req \in Requests /\ jobs[j].lineage \in Ids /\ jobs[j].phase \in Phases
+    /\ \A j \in Ids : jobs[j].req \in Requests /\ jobs[j].lineage \in Ids /\ jobs[j].phase \in Phases /\ jobs[j].retried \in BOOLEAN
     /\ runningJobs \in 0..MaxConcurrentJobs + 1
     /\ waitingForSlot \in Seq(Ids)
 
@@ -43,24 +43,31 @@ Unfinished(r) == \E j \in Ids : jobs[j].req = r /\ jobs[j].phase \notin Finished
 
 EntryRejects(r) == r \in GuardedRequests /\ Unfinished(r)
 
-RunJob(r, lineage) ==
-    LET id == startedJobs + 1 IN
+RunJob(r, lineage, retried) ==
+    LET id == startedJobs + 1
+        added(phase) == [j \in 1..id |-> IF j = id THEN [req |-> r, lineage |-> lineage, phase |-> phase, retried |-> FALSE]
+                                          ELSE IF j = retried THEN [jobs[j] EXCEPT !.retried = TRUE]
+                                          ELSE jobs[j]]
+    IN
     /\ startedJobs < MaxJobs
     /\ ~EntryRejects(r)
     /\ startedJobs' = id
     /\ IF runningJobs < MaxConcurrentJobs
        THEN /\ runningJobs' = runningJobs + 1
-            /\ jobs' = [j \in 1..id |-> IF j = id THEN [req |-> r, lineage |-> lineage, phase |-> "granted"] ELSE jobs[j]]
+            /\ jobs' = added("granted")
             /\ UNCHANGED waitingForSlot
        ELSE /\ waitingForSlot' = Append(waitingForSlot, id)
-            /\ jobs' = [j \in 1..id |-> IF j = id THEN [req |-> r, lineage |-> lineage, phase |-> "queued"] ELSE jobs[j]]
+            /\ jobs' = added("queued")
             /\ UNCHANGED runningJobs
 
-Start(r) == RunJob(r, startedJobs + 1)
+Start(r) == RunJob(r, startedJobs + 1, 0)
+
+RetryAllowed(j) == jobs[j].phase \in Finished /\ ~jobs[j].retried
 
 Retry(j) ==
     /\ jobs[j].phase \in RetryFrom
-    /\ RunJob(jobs[j].req, jobs[j].lineage)
+    /\ RetryAllowed(j)
+    /\ RunJob(jobs[j].req, jobs[j].lineage, j)
 
 Resume(j) ==
     /\ jobs[j].phase = "granted"
@@ -98,4 +105,7 @@ SlotCountMatches == runningJobs = Cardinality(Holders)
 
 NoJobRunsTwice ==
     \A a, b \in Holders : a /= b => jobs[a].lineage /= jobs[b].lineage
+
+OneUnfinishedPerRoom ==
+    \A r \in GuardedRequests : Cardinality({j \in Ids : jobs[j].req = r /\ jobs[j].phase \notin Finished}) <= 1
 =============================================================================

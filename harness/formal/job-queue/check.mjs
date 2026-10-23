@@ -18,13 +18,9 @@ const model = readFileSync(join(here, 'JobQueue.tla'), 'utf8')
 
 const CHECKS = [
   { cfg: 'slots', rule: 'At most MAX_CONCURRENT_JOBS jobs hold a slot, and runningJobs counts them', expect: 'pass' },
-  { cfg: 'guarded-retries', rule: 'A pano360 / walkthrough job and its retries never run at once', expect: 'pass' },
-  {
-    cfg: 'card-retries',
-    rule: 'A render / product / photo3d job and its retries never run at once',
-    expect: 'NoJobRunsTwice',
-    finding: 'F1: pressing Retry twice on one failed card starts the same request twice, both holding slots'
-  }
+  { cfg: 'guarded-retries', rule: 'A pano360 / walkthrough job and its retries never run at once, and a room has at most one unfinished job of each', expect: 'pass' },
+  { cfg: 'card-retries', rule: 'A render / product / photo3d job and its retries never run at once (Retry on a card)', expect: 'pass' },
+  { cfg: 'api-retries', rule: 'A render / product / photo3d job and its retries never run at once (retryJob from the API / MCP)', expect: 'pass' }
 ]
 
 const MUTANTS = [
@@ -54,6 +50,20 @@ const MUTANTS = [
     cfg: 'guarded-retries',
     from: 'EntryRejects(r) == r \\in GuardedRequests /\\ Unfinished(r)',
     to: 'EntryRejects(r) == FALSE',
+    killedBy: ['OneUnfinishedPerRoom']
+  },
+  {
+    name: 'retryJob lets one job be retried more than once',
+    cfg: 'card-retries',
+    from: 'RetryAllowed(j) == jobs[j].phase \\in Finished /\\ ~jobs[j].retried',
+    to: 'RetryAllowed(j) == jobs[j].phase \\in Finished',
+    killedBy: ['NoJobRunsTwice']
+  },
+  {
+    name: 'retryJob retries a job that is still unfinished',
+    cfg: 'api-retries',
+    from: 'RetryAllowed(j) == jobs[j].phase \\in Finished /\\ ~jobs[j].retried',
+    to: 'RetryAllowed(j) == ~jobs[j].retried',
     killedBy: ['NoJobRunsTwice']
   }
 ]

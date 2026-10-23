@@ -51,6 +51,37 @@ test('AC-47 a failed job shows the ComfyUI message and Retry starts a new job', 
   await expect(jobs(page).getByRole('article', { name: '3D model · Broken' })).toHaveCount(2)
 })
 
+test('AC-154 pressing Retry twice on a failed card starts one new job, and the old card no longer offers Retry', async ({ page }) => {
+  await page.evaluate((request) => window.roomfit.addProductFromPhoto(request), lamp('Broken', 'please-fail.png'))
+  await expect(card(page, '3D model · Broken')).toContainText('out of memory')
+
+  await card(page, '3D model · Broken').getByRole('button', { name: 'Retry' }).evaluate((retry: HTMLButtonElement) => {
+    retry.click()
+    retry.click()
+  })
+
+  await expect(card(page, '3D model · Broken')).toHaveCount(2)
+  await expect(card(page, '3D model · Broken').getByRole('button', { name: 'Retry' })).toHaveCount(1)
+})
+
+test('AC-154 retryJob runs a finished job once and never while it is unfinished', async ({ page }) => {
+  const failed = await page.evaluate((request) => window.roomfit.addProductFromPhoto(request), lamp('Broken', 'please-fail.png'))
+  if (failed.ok || failed.jobId === undefined) throw new Error('expected a failed job')
+  const retries = await page.evaluate((id) => Promise.all([window.roomfit.retryJob(id), window.roomfit.retryJob(id)]), failed.jobId)
+  expect(retries.filter((retry) => retry.jobId !== undefined)).toHaveLength(1)
+  await expect(card(page, '3D model · Broken')).toHaveCount(2)
+
+  const early = await page.evaluate(async (request) => {
+    const running = window.roomfit.addProductFromPhoto(request)
+    const retried = await window.roomfit.retryJob(window.roomfit.state().jobs.at(-1)!.id)
+    await running
+    return retried
+  }, lamp('Slow lamp', 'slow-lamp.png'))
+  expect(early).toMatchObject({ ok: false })
+  expect(early.jobId).toBeUndefined()
+  await expect(card(page, '3D model · Slow lamp')).toHaveCount(1)
+})
+
 test('AC-47 a running card shows its step, elapsed seconds and the expected time', async ({ page }) => {
   const running = page.evaluate((request) => window.roomfit.addProductFromPhoto(request), lamp('Slow lamp', 'slow-lamp.png'))
   await expect(card(page, '3D model · Slow lamp')).toContainText('generating', { timeout: 5_000 })
