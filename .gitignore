@@ -8,3 +8,5 @@ __pycache__/
 demo/out/
 .env.local
 .env
+.openrig/
+.claude/plugins/
