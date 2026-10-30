@@ -33,6 +33,7 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
+import { Ruler } from './ruler.tsx'
 import { PresetBar, StudioScene, StudioShadersAhead, ZoneChips } from './studio.tsx'
 import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, useEscapeCloses, WorkspaceRail } from './workspace.tsx'
 
@@ -214,9 +215,9 @@ function paint(model: Object3D, emphasis: Emphasis): void {
   })
 }
 
-type ItemProps = { item: PlacedItem; asset: Asset; mesh: Object3D | null | undefined; emphasis: Emphasis }
+type ItemProps = { item: PlacedItem; asset: Asset; mesh: Object3D | null | undefined; emphasis: Emphasis; draggable: boolean }
 
-function Item({ item, asset, mesh, emphasis }: ItemProps) {
+function Item({ item, asset, mesh, emphasis, draggable }: ItemProps) {
   const model = useMemo(() => (mesh ? itemModel(mesh) : null), [mesh])
   const grabOffset = useRef({ x: 0, z: 0 })
   const invalidate = useThree((three) => three.invalidate)
@@ -231,7 +232,7 @@ function Item({ item, asset, mesh, emphasis }: ItemProps) {
   const floorPoint = (event: ThreeEvent<PointerEvent>) => event.ray.intersectPlane(floorPlane, new Vector3())
 
   const onPointerDown = (event: ThreeEvent<PointerEvent>) => {
-    if (snapshot().walking) return
+    if (snapshot().walking || !draggable) return
     event.stopPropagation()
     const point = floorPoint(event)
     if (!point) return
@@ -695,6 +696,11 @@ function emphasisOf(id: string, problems: ReadonlySet<string>, selectedId: strin
   return id === selectedId ? 'selected' : 'none'
 }
 
+function viewportClass(studio: boolean, measuring: boolean): string {
+  if (studio) return 'viewport studio'
+  return measuring ? 'viewport measuring' : 'viewport'
+}
+
 export function App() {
   const editor = useSyncExternalStore(subscribe, snapshot)
   const layout = editor.history.present
@@ -705,11 +711,13 @@ export function App() {
   )
   const studio = editor.view === 'studio'
   const [railOpen, setRailOpen] = useState(true)
+  const [rulerOn, setRulerOn] = useState(false)
+  const measuring = rulerOn && !studio
   useKeyboardShortcuts()
 
   return (
     <>
-      <main className={studio ? 'viewport studio' : 'viewport'}>
+      <main className={viewportClass(studio, measuring)}>
         <Canvas style={studio ? UNDER_VIEWPORT : UNDER_VIEWPORT_AND_PANEL} frameloop="demand" shadows="percentage" camera={{ fov: 50, near: 1, far: 20000, position: [0, 450, 550] }} onPointerMissed={() => select(null)}>
           <Bridge revision={editor.revision} />
           <CameraRig />
@@ -734,9 +742,11 @@ export function App() {
                 asset={asset}
                 mesh={editor.meshes.get(meshKey(asset))}
                 emphasis={emphasisOf(item.id, problems, editor.selectedId)}
+                draggable={!measuring}
               />
             ) : null
           })}
+          {measuring && <Ruler />}
           <RoomLabels />
         </Canvas>
         {studio && (
@@ -748,6 +758,7 @@ export function App() {
         {studio && <SelectedItem asset={selectedAsset(layout, editor.selectedId)} />}
         <div className="view-toggles">
           <button aria-pressed={railOpen} onClick={() => setRailOpen(!railOpen)}>Workspace</button>
+          {!studio && <button aria-pressed={rulerOn} onClick={() => setRulerOn(!rulerOn)}>Ruler</button>}
           <button onClick={() => api.setView(studio ? 'editor' : 'studio')}>{studio ? 'Editor' : 'Studio'}</button>
         </div>
       </main>
