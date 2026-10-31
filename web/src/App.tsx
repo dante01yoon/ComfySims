@@ -33,6 +33,7 @@ import {
 } from './editor.ts'
 import { floorTexture } from './floors.ts'
 import { meshKey } from './meshes.ts'
+import { planPng } from './plan-png.ts'
 import { Ruler } from './ruler.tsx'
 import { PresetBar, StudioScene, StudioShadersAhead, ZoneChips } from './studio.tsx'
 import { AssetCard, base64Of, elapsedSeconds, LabelEditor, RoomLabels, selectedAsset, useClock, useEscapeCloses, WorkspaceRail } from './workspace.tsx'
@@ -297,13 +298,23 @@ function useKeyboardShortcuts(): void {
   }, [])
 }
 
-function download(): void {
-  const layout = api.save()
+function saveBlob(blob: Blob, fileName: string): void {
   const link = document.createElement('a')
-  link.href = URL.createObjectURL(new Blob([serializeLayout(layout)], { type: 'application/json' }))
-  link.download = `${layout.id}.json`
+  link.href = URL.createObjectURL(blob)
+  link.download = fileName
   link.click()
   URL.revokeObjectURL(link.href)
+}
+
+function download(): void {
+  const layout = api.save()
+  saveBlob(new Blob([serializeLayout(layout)], { type: 'application/json' }), `${layout.id}.json`)
+}
+
+async function downloadPlan(): Promise<void> {
+  const layout = api.save()
+  const png = await planPng(layout)
+  if (png) saveBlob(png, `${layout.id}-plan.png`)
 }
 
 function Panel({ hidden }: { hidden: boolean }) {
@@ -330,6 +341,7 @@ function Panel({ hidden }: { hidden: boolean }) {
       </Field>
       <div className="button-row">
         <button onClick={download}>Save</button>
+        <button onClick={() => void downloadPlan()}>Plan PNG</button>
         <button onClick={api.undo} disabled={history.past.length === 0}>Undo</button>
         <button onClick={api.redo} disabled={history.future.length === 0}>Redo</button>
       </div>
